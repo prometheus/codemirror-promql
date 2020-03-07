@@ -4,13 +4,16 @@
     "target": "es2015",
     "declaration": true,
     "outDir": "./lib",
-    "strict": true,
-    "lib": [
-      "es2018",
-      "dom"
-    ]
+    "module": "commonjs",
+    "strict": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "**/__tests__/*"],
+  "include": [
+    "src",
+    "@types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/__tests__/*"
+  ]
 }
 

@@ -23,6 +23,11 @@
   },
   "homepage": "https://github.com/Nexucis/codemirror-mode-promql/blob/master/README.md",
   "devDependencies": {
+    "@types/codemirror": "^0.0.87",
+    "codemirror": "^5.52.0",
     "typescript": "^3.8.3"
+  },
+  "peerDependencies": {
+    "codemirror": "^5.52.0"
   }
 }
