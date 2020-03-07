@@ -1,10 +1,10 @@
 import { defineMIME, defineMode, Mode } from "codemirror";
-import { tokenBase } from "./promql";
+import { PromQLState, tokenBase } from "./promql";
 
-defineMode('promql', function (config): Mode<any> {
+defineMode('promql', function (config): Mode<PromQLState> {
   return {
     lineComment: '#',
-    startState: function (): any {
+    startState: function (): PromQLState {
       return {
         tokenize: [ tokenBase ],
       };

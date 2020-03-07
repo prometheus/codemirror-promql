@@ -1,7 +1,11 @@
-// PromQL Aggregation Operators
-// (https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators)
 import { StringStream } from "codemirror";
 
+export interface PromQLState {
+  tokenize: { (stream: StringStream, state: PromQLState): null | string }[]
+}
+
+// PromQL Aggregation Operators
+// (https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators)
 const aggregations = [
   'sum',
   'min',
@@ -103,7 +107,7 @@ const floatSuffix = /[fFlL]?/;
 // Merging all the keywords in one list
 const keywords = aggregations.concat(functions).concat(aggregationsOverTime).concat(vectorMatching).concat(offsetModifier);
 
-export function tokenBase(stream: StringStream, state: any) {
+export function tokenBase(stream: StringStream, state: PromQLState) {
   if (stream.peek() === '#') {
     return readBlockComment(stream)
   }
@@ -214,7 +218,7 @@ function readNumber(currentChar: string, stream: StringStream) {
   }
 }
 
-function readVectorMatching(stream: StringStream, state: any) {
+function readVectorMatching(stream: StringStream, state: PromQLState): null {
   // first eat all space
   stream.eatSpace();
   // check if we have an open bracket, if we don't, just leave because it's or a wrong syntax or we are at the end of the matchingVector declaration
@@ -224,10 +228,11 @@ function readVectorMatching(stream: StringStream, state: any) {
     return null
   }
   // now use the function relative to the vectorMatching variable
-  state.tokenize.push(readVectorMatchingVariable)
+  state.tokenize.push(readVectorMatchingVariable);
+  return null
 }
 
-function readVectorMatchingVariable(stream: StringStream, state: any) {
+function readVectorMatchingVariable(stream: StringStream, state: PromQLState) {
   // first eat all space
   stream.eatSpace();
   const nextChar = stream.peek();
@@ -246,7 +251,7 @@ function readVectorMatchingVariable(stream: StringStream, state: any) {
   return "variable"
 }
 
-function readLabel(stream: StringStream, state: any) {
+function readLabel(stream: StringStream, state: PromQLState) {
   // first eat all space
   stream.eatSpace();
   const ch = stream.next();
