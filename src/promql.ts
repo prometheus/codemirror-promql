@@ -1,5 +1,7 @@
 // PromQL Aggregation Operators
 // (https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators)
+import { StringStream } from "codemirror";
+
 const aggregations = [
   'sum',
   'min',
@@ -74,8 +76,6 @@ const vectorMatching = [
   'by',
   'without',
 ];
-// Produce a regex matching elements : (elt1|elt2|...)
-const vectorMatchingRegex = `(${vectorMatching.reduce((prev, curr) => `${prev}|${curr}`)})`;
 
 // PromQL Operators
 // (https://prometheus.io/docs/prometheus/latest/querying/operators/)
@@ -84,12 +84,197 @@ const operators = [
   '==', '!=', '>', '<', '>=', '<=',
   'and', 'or', 'unless',
 ];
-
+const isShortOperator = /[+\-*^%:=<>!\/]/;
 // PromQL offset modifier
 // (https://prometheus.io/docs/prometheus/latest/querying/basics/#offset-modifier)
 const offsetModifier = [
   'offset',
 ];
 
+const atoms = [
+  "true",
+  "false",
+];
+
+// we include these common regular expressions
+const integerSuffix = /(ll|LL|u|U|l|L)?(ll|LL|u|U|l|L)?/;
+const floatSuffix = /[fFlL]?/;
+
 // Merging all the keywords in one list
 const keywords = aggregations.concat(functions).concat(aggregationsOverTime).concat(vectorMatching).concat(offsetModifier);
+
+export function tokenBase(stream: StringStream, state: any) {
+  if (stream.peek() === '#') {
+    return readBlockComment(stream)
+  }
+
+  if (stream.eatSpace()) {
+    return null
+  }
+  // get the next char and consume it, so in any case, the stream won't be stuck in an infinite loop
+  const ch = stream.next();
+  if (!ch) {
+    return null;
+  }
+  // analyze the current character
+  // check if it's the beginning of a string
+  if (ch === '\'' || ch === '"') {
+    readString(stream);
+    return 'string'
+  }
+  // check if it's the beginning of a number
+  if (/\d/.test(ch)) {
+    readNumber(ch, stream);
+    return 'number'
+  }
+  // check if it's a short operator
+  if (isShortOperator.test(ch)) {
+    stream.eatWhile(isShortOperator);
+    return "operator";
+  }
+  // if it's a delimiter, just ignore it
+  if (/[{}()\[\]]/.test(ch)) {
+    return null
+  }
+  // now move the cursor to the next word and check if it's a known word
+  stream.eatWhile(/[\w$_-]/);
+  const cur = stream.current();
+
+  // in case it's a vectorMatching keyword, we should use a different function to treat item between the bracket
+  if (vectorMatching.indexOf(cur) > -1) {
+    state.tokenize.push(readVectorMatching);
+    return "keyword"
+  }
+
+  if (keywords.indexOf(cur) > -1) {
+    return "keyword";
+  }
+
+  if (operators.indexOf(cur) > -1) {
+    return 'operator';
+  }
+
+  if (atoms.indexOf(cur) > -1) {
+    return 'atom';
+  }
+
+  // label special case
+  const nextChar = stream.peek();
+  if (nextChar === '{') {
+    // in that case properly parse key=value labels
+    stream.next();
+    state.tokenize.push(readLabel);
+    return null;
+  }
+
+  return null
+}
+
+function readBlockComment(stream: StringStream): string {
+  stream.skipToEnd();
+  return 'comment'
+}
+
+function readString(stream: StringStream) {
+  let next = null;
+  let previous = null;
+  while ((next = stream.next()) != null) {
+    if ((next === '\'' || next === '"') && previous !== '\\') {
+      return
+    }
+  }
+}
+
+function readNumber(currentChar: string, stream: StringStream) {
+  const integerRegex = /\d*[\d']*\d*/;
+  const floatRegex = /\d*\.?\d+([eE][\-+]?\d+)?/;
+  const hexRegex = /[xX][0-9a-fA-F']*[0-9a-fA-F]/;
+  const octalRegex = /[0-7']*[0-7]/;
+  const binaryRegex = /[bB][0-1']*[0-1]/;
+  // 24h, 5m are often encountered in prometheus
+  if (stream.match(/\d*[smhdwy]/)) {
+    return;
+  }
+  if (stream.match(new RegExp(floatRegex.source + "(" + floatSuffix.source + ")"))) {
+    return;
+  }
+
+  if (stream.match(new RegExp(integerRegex.source + "(" + integerSuffix.source + ")"))) {
+    return;
+  }
+
+  if (currentChar === '0') {
+    if (stream.match(new RegExp(hexRegex.source + "(" + integerSuffix.source + ")"))) { // hex
+      return;
+    }
+    if (stream.match(new RegExp(octalRegex.source + "(" + integerSuffix.source + ")"))) { // octal
+      return;
+    }
+    stream.match(new RegExp(binaryRegex.source + "(" + integerSuffix.source + ")")) // binary
+  }
+}
+
+function readVectorMatching(stream: StringStream, state: any) {
+  // first eat all space
+  stream.eatSpace();
+  // check if we have an open bracket, if we don't, just leave because it's or a wrong syntax or we are at the end of the matchingVector declaration
+  let ch = stream.next();
+  if (ch !== '(') {
+    state.tokenize.pop();
+    return null
+  }
+  // now use the function relative to the vectorMatching variable
+  state.tokenize.push(readVectorMatchingVariable)
+}
+
+function readVectorMatchingVariable(stream: StringStream, state: any) {
+  // first eat all space
+  stream.eatSpace();
+  const nextChar = stream.peek();
+  if (nextChar === ',') {
+    // it's the label separator, do nothing excepting consuming the next char
+    stream.next();
+    return null
+  }
+  if (nextChar === ')') {
+    // that's the end of the vectorMatching declaration. Stop using the current function
+    // don't consume the nextChar because it will be used by the method readVectorMatchingVariable to also remove it in the stack
+    state.tokenize.pop()
+  }
+  // now move the cursor to the next word and declare it's a variable
+  stream.eatWhile(/[\w$_-]/);
+  return "variable"
+}
+
+function readLabel(stream: StringStream, state: any) {
+  // first eat all space
+  stream.eatSpace();
+  const ch = stream.next();
+  if (ch === '}') {
+    // that's the end of the label declaration. Stop using the current function and go back to tokenBase function
+    state.tokenize.pop();
+    return null
+  }
+  if (ch === ',') {
+    // it's the label separator, do nothing
+    return null
+  }
+  // check if it's the beginning of a string
+  if (ch === '\'' || ch === '"') {
+    readString(stream);
+    return 'string'
+  }
+  // check if it's a short operator
+  if (isShortOperator.test(ch)) {
+    stream.eatWhile(isShortOperator);
+    return "operator";
+  }
+  // check if it's the beginning of a number
+  if (/\d/.test(ch)) {
+    readNumber(ch, stream);
+    return 'number'
+  }
+  // now move the cursor to the next word and check if it's a known word
+  stream.eatWhile(/[\w$_-]/);
+  return 'variable'
+}

@@ -1,10 +1,21 @@
-import * as CodeMirror from 'codemirror';
+import { defineMIME, defineMode, Mode } from "codemirror";
+import { tokenBase } from "./promql";
 
-CodeMirror.defineMode('promql', function (config): CodeMirror.Mode<any> {
+defineMode('promql', function (config): Mode<any> {
   return {
-    name: 'promql',
-    lineComment: '#'
-  } as CodeMirror.Mode<any>
+    lineComment: '#',
+    startState: function (): any {
+      return {
+        tokenize: [ tokenBase ],
+      };
+    },
+    token: (stream, state) => {
+      if (stream.eatSpace()) {
+        return null;
+      }
+      return (state.tokenize[ state.tokenize.length - 1 ] || tokenBase)(stream, state);
+    }
+  } as Mode<any>
 });
 
-CodeMirror.defineMIME('text/x-promql', 'promql');
+defineMIME('text/x-promql', 'promql');
