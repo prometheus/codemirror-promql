@@ -250,6 +250,9 @@ function readLabel(stream: StringStream, state: any) {
   // first eat all space
   stream.eatSpace();
   const ch = stream.next();
+  if (!ch) {
+    return null
+  }
   if (ch === '}') {
     // that's the end of the label declaration. Stop using the current function and go back to tokenBase function
     state.tokenize.pop();
