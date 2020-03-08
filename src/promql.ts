@@ -88,7 +88,7 @@ const operators = [
   '==', '!=', '>', '<', '>=', '<=',
   'and', 'or', 'unless',
 ];
-const isShortOperator = /[+\-*^%:=<>!\/]/;
+const isShortOperator = /[+\-*^%:=<>!\/~]/;
 // PromQL offset modifier
 // (https://prometheus.io/docs/prometheus/latest/querying/basics/#offset-modifier)
 const offsetModifier = [
@@ -116,7 +116,7 @@ function readString(stream: StringStream): void {
   let next = null;
   let previous = null;
   while ((next = stream.next()) != null) {
-    if ((next === '\'' || next === '"') && previous !== '\\') {
+    if (/['"`]/.test(next) && previous !== '\\') {
       return
     }
     previous = next
@@ -167,7 +167,7 @@ function readVectorMatchingVariable(stream: StringStream, state: PromQLState): n
     state.tokenize.pop()
   }
   // now move the cursor to the next word and declare it's a variable
-  stream.eatWhile(/[\w$_-]/);
+  stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
   return "variable"
 }
 
@@ -202,7 +202,7 @@ function readLabel(stream: StringStream, state: PromQLState): null | string {
     return null
   }
   // check if it's the beginning of a string
-  if (ch === '\'' || ch === '"') {
+  if (/['"`]/.test(ch)) {
     readString(stream);
     return 'string'
   }
@@ -216,8 +216,8 @@ function readLabel(stream: StringStream, state: PromQLState): null | string {
     readNumber(ch, stream);
     return 'number'
   }
-  // now move the cursor to the next word and check if it's a known word
-  stream.eatWhile(/[\w$_-]/);
+  // now move the cursor to the next word
+  stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
   return 'variable'
 }
 
@@ -236,7 +236,7 @@ export function tokenBase(stream: StringStream, state: PromQLState): null | stri
   }
   // analyze the current character
   // check if it's the beginning of a string
-  if (ch === '\'' || ch === '"') {
+  if (/['"`]/.test(ch)) {
     readString(stream);
     return 'string'
   }
@@ -250,12 +250,16 @@ export function tokenBase(stream: StringStream, state: PromQLState): null | stri
     stream.eatWhile(isShortOperator);
     return "operator";
   }
-  // if it's a delimiter, just ignore it
+  // check if it's a delimiter
   if (/[{}()\[\]]/.test(ch)) {
+    if (ch === '{') {
+      // starting to read label
+      state.tokenize.push(readLabel);
+    }
     return null
   }
   // now move the cursor to the next word and check if it's a known word
-  stream.eatWhile(/[\w$_-]/);
+  stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
   const cur = stream.current();
 
   // in case it's a vectorMatching keyword, we should use a different function to treat item between the bracket
@@ -274,15 +278,6 @@ export function tokenBase(stream: StringStream, state: PromQLState): null | stri
 
   if (atoms.indexOf(cur) > -1) {
     return 'atom';
-  }
-
-  // label special case
-  const nextChar = stream.peek();
-  if (nextChar === '{') {
-    // in that case properly parse key=value labels
-    stream.next();
-    state.tokenize.push(readLabel);
-    return null;
   }
 
   return null
