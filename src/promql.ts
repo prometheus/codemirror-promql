@@ -104,6 +104,8 @@ const atoms = [
 const integerSuffix = /(ll|LL|u|U|l|L)?(ll|LL|u|U|l|L)?/;
 const floatSuffix = /[fFlL]?/;
 
+const delimiter = /[{}()\[\]]/;
+
 // Merging all the keywords in one list
 const keywords = aggregations.concat(functions).concat(aggregationsOverTime).concat(vectorMatching).concat(offsetModifier);
 
@@ -161,28 +163,45 @@ function readVectorMatchingVariable(stream: StringStream, state: PromQLState): n
     stream.next();
     return null
   }
-  if (nextChar === ')') {
-    // that's the end of the vectorMatching declaration. Stop using the current function
-    // don't consume the nextChar because it will be used by the method readVectorMatchingVariable to also remove it in the stack
-    state.tokenize.pop()
+  if (nextChar && delimiter.test(nextChar)) {
+    if (nextChar === ')') {
+      // that's the end of the vectorMatching declaration. Stop using the current function
+      // don't consume the nextChar because it will be used by the method readVectorMatchingVariable to also remove it in the stack
+      state.tokenize.pop();
+    } else {
+      // otherwise the expression is not correct, so just leave the method, because the method readVectorMatching will return an error
+      state.tokenize.pop();
+      return null
+    }
   }
+
   // now move the cursor to the next word and declare it's a variable
   stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
   return "variable"
 }
 
-function readVectorMatching(stream: StringStream, state: PromQLState): null {
+function readVectorMatching(stream: StringStream, state: PromQLState): null | string {
   // first eat all space
   stream.eatSpace();
-  // check if we have an open bracket, if we don't, just leave because it's or a wrong syntax or we are at the end of the matchingVector declaration
+
   const ch = stream.next();
-  if (ch !== '(') {
-    state.tokenize.pop();
-    return null
+  // normally the character must be a delimiter. If it's not the case, then it's an error
+  if (ch && delimiter.test(ch)) {
+    if (ch === '(') {
+      // that's the start of the different label used for the matching vector
+      // now use the function relative to the vectorMatching variable
+      state.tokenize.push(readVectorMatchingVariable);
+      return null
+    }
+    // end of the vector matching reading
+    if (ch === ')') {
+      state.tokenize.pop();
+      return null
+    }
   }
-  // now use the function relative to the vectorMatching variable
-  state.tokenize.push(readVectorMatchingVariable);
-  return null
+
+  // for all other case, that's an error
+  return "keyword error";
 }
 
 function readLabel(stream: StringStream, state: PromQLState): null | string {
@@ -251,7 +270,7 @@ export function tokenBase(stream: StringStream, state: PromQLState): null | stri
     return "operator";
   }
   // check if it's a delimiter
-  if (/[{}()\[\]]/.test(ch)) {
+  if (delimiter.test(ch)) {
     if (ch === '{') {
       // starting to read label
       state.tokenize.push(readLabel);
