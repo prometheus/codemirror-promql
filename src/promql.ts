@@ -105,13 +105,18 @@ const integerSuffix = /(ll|LL|u|U|l|L)?(ll|LL|u|U|l|L)?/;
 const floatSuffix = /[fFlL]?/;
 
 const delimiter = /[{}()\[\]]/;
+const word = /[\w$_\-\xa1-\uffff]/;
 
-// Merging all the keywords in one list
-const keywords = aggregations.concat(functions).concat(aggregationsOverTime).concat(vectorMatching).concat(offsetModifier);
+const aggregationOrFunction = aggregations.concat(functions).concat(aggregationsOverTime);
 
-function readBlockComment(stream: StringStream): string {
-  stream.skipToEnd();
-  return 'comment'
+// startReadToken handle the space and comment usage that is possible to have at each time
+function startReadToken(stream: StringStream): null | string {
+  stream.eatSpace();
+  if (stream.peek() === '#') {
+    stream.skipToEnd();
+    return 'comment'
+  }
+  return null
 }
 
 function readString(stream: StringStream): void {
@@ -155,8 +160,10 @@ function readNumber(currentChar: string, stream: StringStream): void {
 }
 
 function readVectorMatchingVariable(stream: StringStream, state: PromQLState): null | string {
-  // first eat all space
-  stream.eatSpace();
+  const style = startReadToken(stream);
+  if (style) {
+    return style;
+  }
   const nextChar = stream.peek();
   if (nextChar === ',') {
     // it's the label separator, do nothing excepting consuming the next char
@@ -176,13 +183,15 @@ function readVectorMatchingVariable(stream: StringStream, state: PromQLState): n
   }
 
   // now move the cursor to the next word and declare it's a variable
-  stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
+  stream.eatWhile(word);
   return "variable"
 }
 
 function readVectorMatching(stream: StringStream, state: PromQLState): null | string {
-  // first eat all space
-  stream.eatSpace();
+  const style = startReadToken(stream);
+  if (style) {
+    return style;
+  }
 
   const ch = stream.next();
   // normally the character must be a delimiter. If it's not the case, then it's an error
@@ -200,22 +209,32 @@ function readVectorMatching(stream: StringStream, state: PromQLState): null | st
     }
   }
 
-  // for all other case, that's an error
+  // for all other case, that's an error and it's not anymore useful to stay in this function
+  state.tokenize.pop();
   return "keyword error";
 }
 
 function readLabel(stream: StringStream, state: PromQLState): null | string {
-  // first eat all space
-  stream.eatSpace();
+  const style = startReadToken(stream);
+  if (style) {
+    return style;
+  }
   const ch = stream.next();
   if (!ch) {
     return null
   }
-  if (ch === '}') {
-    // that's the end of the label declaration. Stop using the current function and go back to tokenBase function
+
+  if (delimiter.test(ch)) {
+    if (ch === '}') {
+      // that's the end of the label declaration. Stop using the current function and go back to parent function
+      state.tokenize.pop();
+      return null
+    }
+    // in other case that's an error
     state.tokenize.pop();
-    return null
+    return 'error'
   }
+
   if (ch === ',') {
     // it's the label separator, do nothing
     return null
@@ -235,18 +254,112 @@ function readLabel(stream: StringStream, state: PromQLState): null | string {
     readNumber(ch, stream);
     return 'number'
   }
-  // now move the cursor to the next word
-  stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
-  return 'variable'
+
+  if (word.test(ch)) {
+    // now move the cursor to the next word
+    stream.eatWhile(word);
+    return 'variable'
+  }
+  state.tokenize.pop();
+  return 'error'
+}
+
+function readNumberInMetric(stream: StringStream, state: PromQLState): null | string {
+  stream.eatSpace();
+  if (stream.match(/\d+[smhdwy]/)) {
+    return 'number'
+  }
+  const nextChar = stream.next();
+  if (!nextChar) {
+    return null
+  }
+  if (nextChar === ']') {
+    state.tokenize.pop();
+    return null
+  }
+  state.tokenize.pop();
+  return 'error'
+}
+
+function readMetric(stream: StringStream, state: PromQLState): null | string {
+  const style = startReadToken(stream);
+  if (style) {
+    return style;
+  }
+  const nextChar = stream.peek();
+  if (!nextChar) {
+    return null
+  }
+  if (delimiter.test(nextChar)) {
+    if (nextChar === '{') {
+      stream.next();
+      state.tokenize.push(readLabel);
+      return null
+    }
+    if (nextChar === '[') {
+      stream.next();
+      state.tokenize.push(readNumberInMetric);
+      return null
+    }
+    // in other case it can be the end of a function declaration
+    // since we cannot decide if it's an error or not, we let the parent function to decide
+    state.tokenize.pop();
+    return null
+  }
+  state.tokenize.pop();
+  return 'error'
+}
+
+function readAggregationOrFunction(stream: StringStream, state: PromQLState): null | string {
+  const style = startReadToken(stream);
+  if (style) {
+    return style;
+  }
+  const nextChar = stream.peek();
+  if (!nextChar) {
+    // eol
+    stream.next();
+    return null
+  }
+  // check if next char will be a delimiter or a char that could be a start of vectorMatching keyword
+  if (delimiter.test(nextChar)) {
+    if (nextChar === '{') {
+      state.tokenize.push(readMetric);
+      return null
+    }
+    // for all other case eat the delimiter
+    stream.next();
+    if (nextChar === '(') {
+      // can be a metric or another function/aggregation or space or a comment
+      // so simply start again the function
+      return null
+    }
+    if (nextChar === ')') {
+      state.tokenize.pop();
+      return null
+    }
+  } else if (word.test(nextChar)) {
+    stream.eatWhile(word);
+    const currentWord = stream.current();
+    if (vectorMatching.indexOf(currentWord) > -1) {
+      state.tokenize.push(readVectorMatching);
+      return "keyword"
+    }
+    if (aggregationOrFunction.indexOf(currentWord) > -1) {
+      return "keyword"
+    }
+    // in other case, that's the metric name
+    state.tokenize.push(readMetric);
+    return null
+  }
+  state.tokenize.pop();
+  return 'keyword error'
 }
 
 export function tokenBase(stream: StringStream, state: PromQLState): null | string {
-  if (stream.peek() === '#') {
-    return readBlockComment(stream)
-  }
-
-  if (stream.eatSpace()) {
-    return null
+  const style = startReadToken(stream);
+  if (style) {
+    return style;
   }
   // get the next char and consume it, so in any case, the stream won't be stuck in an infinite loop
   const ch = stream.next();
@@ -271,23 +384,24 @@ export function tokenBase(stream: StringStream, state: PromQLState): null | stri
   }
   // check if it's a delimiter
   if (delimiter.test(ch)) {
-    if (ch === '{') {
-      // starting to read label
-      state.tokenize.push(readLabel);
-    }
     return null
   }
   // now move the cursor to the next word and check if it's a known word
-  stream.eatWhile(/[\w$_\-\xa1-\uffff]/);
+  stream.eatWhile(word);
   const cur = stream.current();
 
-  // in case it's a vectorMatching keyword, we should use a different function to treat item between the bracket
+  // since a vectorMatching is necessary associated to a function/aggregation, if there is match here, that's an error
   if (vectorMatching.indexOf(cur) > -1) {
-    state.tokenize.push(readVectorMatching);
-    return "keyword"
+    return "keyword error"
   }
 
-  if (keywords.indexOf(cur) > -1) {
+  if (aggregationOrFunction.indexOf(cur) > -1) {
+    // aggregation or function are treated separately in order to be able to detect if there is a syntax error
+    state.tokenize.push(readAggregationOrFunction);
+    return "keyword";
+  }
+
+  if (offsetModifier.indexOf(cur) > -1) {
     return "keyword";
   }
 
@@ -298,6 +412,8 @@ export function tokenBase(stream: StringStream, state: PromQLState): null | stri
   if (atoms.indexOf(cur) > -1) {
     return 'atom';
   }
+
+  state.tokenize.push(readMetric);
 
   return null
 }
