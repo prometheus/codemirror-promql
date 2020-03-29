@@ -5,7 +5,10 @@ export const PromQLLightGrammar = {
     "Comment": "comment",
     "LabelKeyString": "variable",
     "LabelValueString": "string",
+    "Duration": "number",
+    "Integer": "number",
     "Aggregation": "keyword",
+    "AggregationVectorMatching": "keyword",
     "AggregationWithParameter": "keyword",
     "AggregationOverTime": "keyword",
     "LabelMatchingOperator": "operator",
@@ -16,14 +19,49 @@ export const PromQLLightGrammar = {
 // Lexical model
   "Lex": {
     "Comment:comment": [ "#", null ],
-    "String": "RE::/[a-zA-Z0-9_-]+/",
-    "StringList": "RE::/[a-zA-Z0-9_-]+( *, *[a-zA-Z0-9_-])*/",
+    "MetricName": {
+      "type": "simple",
+      "tokens": [
+        "RE::/[a-zA-Z0-9_-]+/"
+      ],
+      "except": [
+        "sum",
+        "min",
+        "max",
+        "avg",
+        "stddev",
+        "stdvar",
+        "count",
+        "count_values",
+        "quantile",
+        "topk",
+        "bottomk",
+        "sum_over_time",
+        "min_over_time",
+        "max_over_time",
+        "avg_over_time",
+        "stddev_over_time",
+        "stdvar_over_time",
+        "count_over_time",
+        "and",
+        "or",
+        "unless",
+        "on",
+        "ignoring",
+        "group_right",
+        "group_left",
+        "by",
+        "without"
+      ]
+    },
     "LabelKeyString": "RE::/[a-zA-Z0-9_-]+/",
     "LabelValueString": {
       "type": "escaped-block",
       "escape": "\\",
       "tokens": [ "RE::/([\'\"`])/", 1 ]
     },
+    "Duration": "RE::/\\d+(s|m|h|d|w|y)/",
+    "Integer": "RE::/\\d+/",
     "Aggregation": {
       "autocomplete": true,
       "tokens": [
@@ -106,10 +144,14 @@ export const PromQLLightGrammar = {
 // Syntax model
   "Syntax": {
     "BinaryOperator": "ArithmeticBinaryOperator | ComparisonBinaryOperator | LogicalBinaryOperator",
-    "LabelExpr": "LabelKeyString LabelMatchingOperator LabelValueString",
-    "SimpleInstantVector": "String ('{' LabelExpr (',' LabelExpr)* '}')?",
-    "Vector": "SimpleInstantVector",
-    "PromQLExpr": "Comment | SimpleInstantVector"
+    "LabelKeyStringList": "LabelKeyString (, LabelKeyString)*",
+    "LabelExpr": "LabelKeyString LabelMatchingOperator ( LabelValueString | Integer )",
+    "SimpleInstantVector": "MetricName ('{' LabelExpr (',' LabelExpr)* '}')?",
+    "SimpleRangeVector": "SimpleInstantVector '[' Duration ']'",
+    "AggregationOp": "Aggregation ('(' SimpleInstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '(' SimpleInstantVector ')')",
+    "InstantVector": "AggregationOp | SimpleInstantVector",
+    "Vector": "SimpleRangeVector | InstantVector",
+    "PromQLExpr": "Comment | Vector"
   },
   "Parser": [ [ "PromQLExpr" ] ]
 };
