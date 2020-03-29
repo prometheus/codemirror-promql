@@ -1,21 +1,9 @@
-import { defineMIME, defineMode, Mode } from "codemirror";
-import { PromQLState, tokenBase } from "./promql";
+import { PromQLLightGrammar } from "./promql-light-grammar";
 
-defineMode('promql', function (config): Mode<PromQLState> {
-  return {
-    lineComment: '#',
-    startState: function (): PromQLState {
-      return {
-        tokenize: [ tokenBase ],
-      };
-    },
-    token: (stream, state) => {
-      if (stream.eatSpace()) {
-        return null;
-      }
-      return (state.tokenize[ state.tokenize.length - 1 ] || tokenBase)(stream, state);
-    }
-  } as Mode<any>
-});
+const CodeMirror = require('codemirror');
+const CodeMirrorGrammar = require("codemirror_grammar").CodeMirrorGrammar;
 
-defineMIME('text/x-promql', 'promql');
+const promQLMode = CodeMirrorGrammar.getMode(PromQLLightGrammar);
+
+CodeMirror.defineMode('promql', promQLMode);
+CodeMirror.defineMIME('text/x-promql', 'promql');
