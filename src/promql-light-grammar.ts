@@ -14,6 +14,16 @@ export const PromQLLightGrammar = {
     "FunctionTakesRangeVectorReturnsInstantVector": "keyword",
     "FunctionClamp": "keyword",
     "FunctionDay": "keyword",
+    "FunctionHistogramQuantile": "keyword",
+    "FunctionHoltWinters": "keyword",
+    "FunctionLabelJoin": "keyword",
+    "FunctionLabelReplace": "keyword",
+    "FunctionPredictLinear": "keyword",
+    "FunctionRound": "keyword",
+    "FunctionScalar": "keyword",
+    "FunctionTime": "keyword",
+    "FunctionTimestamp": "keyword",
+    "FunctionVector": "keyword",
     "LabelMatchingOperator": "operator",
     "ArithmeticBinaryOperator": "operator",
     "ComparisonBinaryOperator": "operator",
@@ -27,9 +37,7 @@ export const PromQLLightGrammar = {
     "Comment:comment": [ "#", null ],
     "MetricName": {
       "type": "simple",
-      "tokens": [
-        "RE::/[a-zA-Z_-]+/"
-      ],
+      "tokens": "RE::/[a-zA-Z_-]+/",
       "except": [
         "sum",
         "min",
@@ -164,25 +172,30 @@ export const PromQLLightGrammar = {
     "LogicalBinaryOperator": {
       "autocomplete": true,
       "tokens": [
-        "and", "or", "unless"
+        "and",
+        "or",
+        "unless"
       ]
     },
     "VectorOneToOneMatching": {
       "autocomplete": true,
       "tokens": [
-        "on", "ignoring"
+        "on",
+        "ignoring"
       ]
     },
     "VectorOneToManyMatching": {
       "autocomplete": true,
       "tokens": [
-        "group_right", "group_left"
+        "group_right",
+        "group_left"
       ]
     },
     "AggregationVectorMatching": {
       "autocomplete": true,
       "tokens": [
-        "by", "without"
+        "by",
+        "without"
       ]
     },
     "FunctionTakesInstantVectorReturnsInstantVector": {
@@ -228,25 +241,83 @@ export const PromQLLightGrammar = {
         'day_of_month',
         'day_of_week',
         'days_in_month',
-      ]
-    },
-    "Function": {
-      "autocomplete": true,
-      "tokens": [
-        'holt_winters',
         'hour',
-        'label_join',
-        'label_replace',
         'minute',
         'month',
-        'predict_linear',
-        'round',
-        'scalar',
-        'time',
-        'timestamp',
-        'vector',
         'year',
       ]
+    },
+    "FunctionHistogramQuantile": {
+      "autocomplete": true,
+      "tokens": [
+        'histogram_quantile'
+      ],
+      "combine": '',
+    },
+    "FunctionHoltWinters": {
+      "autocomplete": true,
+      "tokens": [
+        'holt_winters'
+      ],
+      // Because there is only one token, we have to deactivate the default delimiter which is "\\b" (word-boundary)
+      // If we don't do that, it will match 'holt_winters(' and not just 'holt_winters'
+      "combine": '',
+    },
+    "FunctionLabelJoin": {
+      "autocomplete": true,
+      "tokens": [
+        'label_join',
+      ],
+      "combine": '',
+    },
+    "FunctionLabelReplace": {
+      "autocomplete": true,
+      "tokens": [
+        'label_replace',
+      ],
+      "combine": '',
+    },
+    "FunctionPredictLinear": {
+      "autocomplete": true,
+      'tokens': [
+        'predict_linear',
+      ],
+      "combine": '',
+    },
+    "FunctionRound": {
+      "autocomplete": true,
+      "tokens": [
+        'round'
+      ],
+      "combine": ''
+    },
+    "FunctionScalar": {
+      "autocomplete": true,
+      "tokens": [
+        "scalar"
+      ],
+      "combine": ''
+    },
+    "FunctionTime": {
+      "autocomplete": true,
+      "tokens": [
+        "time"
+      ],
+      "combine": ''
+    },
+    "FunctionTimestamp": {
+      "autocomplete": true,
+      "tokens": [
+        "timestamp"
+      ],
+      "combine": ''
+    },
+    "FunctionVector": {
+      "autocomplete": true,
+      "tokens": [
+        "vector"
+      ],
+      "combine": ''
     }
   },
 // Syntax model
@@ -259,18 +330,29 @@ export const PromQLLightGrammar = {
     "SimpleRangeVector": "SimpleInstantVector '[' Duration ']'",
     // Aggregation definition
     "AggregationOp": "Aggregation ('(' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '(' InstantVector ')')",
-    "AggregationOpWithParam": "AggregationWithParameter ('(' Number ',' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '('  Number ',' InstantVector ')')\"",
+    "AggregationOpWithParam": "AggregationWithParameter ('(' Number ',' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '('  Number ',' InstantVector ')')",
     "AggregationOverTimeOp": "AggregationOverTime '(' RangeVector ')'",
-    // Function Definition
+    // Function Definition for instant vector
     "FunctionTakesInstantVectorReturnsInstantVectorOp": "FunctionTakesInstantVectorReturnsInstantVector '(' InstantVector ')'",
     "FunctionTakesRangeVectorReturnsInstantVectorOp": "FunctionTakesRangeVectorReturnsInstantVector '(' RangeVector ')'",
     "FunctionClampOp": "FunctionClamp '(' InstantVector ',' Scalar ')'",
-    "FunctionDayOp": "FunctionDay '(' InstantVector? ')'",
-    "InstantVectorFunction": "FunctionTakesInstantVectorReturnsInstantVectorOp | FunctionTakesRangeVectorReturnsInstantVectorOp | FunctionClampOp",
+    "FunctionHistogramQuantileOp": "FunctionHistogramQuantile '(' Scalar ',' InstantVector ')'",
+    "FunctionHoltWintersOp": "FunctionHoltWinters '(' RangeVector ',' Scalar ',' Scalar ')'",
+    "FunctionLabelJoinOp": "FunctionLabelJoin '(' InstantVector ',' LabelValueString (',' LabelValueString)+ ')'",
+    "FunctionLabelReplaceOp": "FunctionLabelReplace '(' InstantVector ',' LabelValueString ',' LabelValueString ',' LabelValueString ',' LabelValueString ')'",
+    "FunctionPredictLinearOp": "FunctionPredictLinear '(' RangeVector ',' Scalar ')'",
+    "FunctionRoundOp": "FunctionRound '(' InstantVector (',' Scalar)? ')'",
+    "FunctionVectorOp": "FunctionVector '(' Scalar ')'",
+    "InstantVectorFunction": "FunctionTakesInstantVectorReturnsInstantVectorOp | FunctionTakesRangeVectorReturnsInstantVectorOp | FunctionClampOp | FunctionHistogramQuantileOp | FunctionHoltWintersOp | FunctionPredictLinearOp | FunctionLabelJoinOp | FunctionLabelReplaceOp | FunctionRoundOp | FunctionVectorOp",
     // Scalar
-    "Scalar": "Number | FunctionDayOp",
+    "FunctionDayOp": "FunctionDay '(' InstantVector? ')'",
+    "FunctionScalarOp": "FunctionScalar '(' InstantVector ')'",
+    "FunctionTimeOp": "FunctionTime '()'",
+    "FunctionTimestampOp": "FunctionTimestamp '(' InstantVector ')'",
+    // Note: don't change the order, FunctionTimestampOp must be evaluated before FunctionTimeOp
+    "Scalar": "Number | FunctionDayOp | FunctionScalarOp | FunctionTimestampOp | FunctionTimeOp",
     // Vector definition
-    "InstantVector": "(AggregationOp | AggregationOpWithParam | AggregationOverTimeOp | InstantVectorFunction | SimpleInstantVector) (ArithmeticBinaryOperator Scalar)*",
+    "InstantVector": "(Scalar (ArithmeticBinaryOperator | ComparisonBinaryOperator))* (AggregationOp | AggregationOpWithParam | AggregationOverTimeOp | InstantVectorFunction | SimpleInstantVector) ((ArithmeticBinaryOperator | ComparisonBinaryOperator) Scalar)*",
     "RangeVector": "SimpleRangeVector",
     "Vector": "RangeVector | InstantVector",
     "VectorMatchingOp": "Vector BinaryOperator ( VectorOneToOneMatching '(' LabelKeyStringList ')')?  ( VectorOneToManyMatching )? Vector",
