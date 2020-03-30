@@ -5,7 +5,7 @@
     "declaration": true,
     "outDir": "./lib",
     "module": "commonjs",
-    "strict": true
+    "strict": true,
   },
   "include": [
     "src",

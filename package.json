@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --ext .js,.ts"
+    "lint": "eslint src/ --ext .ts",
+    "copy-files": "copyfiles -u 1 \"src/**/*.js\" lib"
   },
   "repository": {
     "type": "git",
@@ -24,10 +25,12 @@
   },
   "homepage": "https://github.com/Nexucis/codemirror-mode-promql/blob/master/README.md",
   "devDependencies": {
+    "@types/codemirror": "^0.0.87",
+    "@types/node": "^13.9.1",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.22.0",
-    "@types/codemirror": "^0.0.87",
     "codemirror": "^5.52.0",
+    "copyfiles": "^2.2.0",
     "eslint": "^6.8.0",
     "typescript": "^3.8.3"
   },
