@@ -38,6 +38,10 @@ jobs:
             - v1-dependencies-
 
       - run: npm run build && npm run copy-files
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - lib
 
   lint-lib:
     <<: *defaults
@@ -61,7 +65,7 @@ jobs:
       - run:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
-      - run: cp ~/repo/README.md ~/repo/lib/onoff/README.md
+      - run: cp ~/repo/README.md ~/repo/lib/README.md
       - run: npm publish ~/repo/lib --access public
 
 workflows:
