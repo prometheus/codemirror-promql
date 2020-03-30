@@ -6,15 +6,19 @@ export const PromQLLightGrammar = {
     "LabelKeyString": "variable",
     "LabelValueString": "string",
     "Duration": "number",
-    "Integer": "number",
+    "Number": "number",
     "Aggregation": "keyword",
-    "AggregationVectorMatching": "keyword",
     "AggregationWithParameter": "keyword",
     "AggregationOverTime": "keyword",
+    "FunctionTakesInstantVectorReturnsInstantVector": "keyword",
+    "FunctionTakesRangeVectorReturnsInstantVector": "keyword",
     "LabelMatchingOperator": "operator",
     "ArithmeticBinaryOperator": "operator",
     "ComparisonBinaryOperator": "operator",
-    "LogicalBinaryOperator": "operator"
+    "LogicalBinaryOperator": "operator",
+    "AggregationVectorMatching": "operator",
+    "VectorOneToOneMatching": "operator",
+    "VectorOneToManyMatching": "operator",
   },
 // Lexical model
   "Lex": {
@@ -22,7 +26,7 @@ export const PromQLLightGrammar = {
     "MetricName": {
       "type": "simple",
       "tokens": [
-        "RE::/[a-zA-Z0-9_-]+/"
+        "RE::/[a-zA-Z_-]+/"
       ],
       "except": [
         "sum",
@@ -43,6 +47,45 @@ export const PromQLLightGrammar = {
         "stddev_over_time",
         "stdvar_over_time",
         "count_over_time",
+        'abs',
+        'absent',
+        'absent_over_time',
+        'ceil',
+        'changes',
+        'clamp_max',
+        'clamp_min',
+        'day_of_month',
+        'day_of_week',
+        'days_in_month',
+        'delta',
+        'deriv',
+        'exp',
+        'floor',
+        'histogram_quantile',
+        'holt_winters',
+        'hour',
+        'idelta',
+        'increase',
+        'irate',
+        'label_join',
+        'label_replace',
+        'ln',
+        'log2',
+        'log10',
+        'minute',
+        'month',
+        'predict_linear',
+        'rate',
+        'resets',
+        'round',
+        'scalar',
+        'sort',
+        'sort_desc',
+        'sqrt',
+        'time',
+        'timestamp',
+        'vector',
+        'year',
         "and",
         "or",
         "unless",
@@ -61,7 +104,7 @@ export const PromQLLightGrammar = {
       "tokens": [ "RE::/([\'\"`])/", 1 ]
     },
     "Duration": "RE::/\\d+(s|m|h|d|w|y)/",
-    "Integer": "RE::/\\d+/",
+    "Number": "RE::/\\d*\\.?\\d+([eE][\\-+]?\\d+[fFlL]?)?/",
     "Aggregation": {
       "autocomplete": true,
       "tokens": [
@@ -139,20 +182,79 @@ export const PromQLLightGrammar = {
       "tokens": [
         "by", "without"
       ]
+    },
+    "FunctionTakesInstantVectorReturnsInstantVector": {
+      "autocomplete": true,
+      "tokens": [
+        'abs',
+        'absent',
+        'ceil',
+        'exp',
+        'floor',
+        'ln',
+        'log2',
+        'log10',
+        'sort',
+        'sort_desc',
+        'sqrt',
+      ]
+    },
+    "FunctionTakesRangeVectorReturnsInstantVector": {
+      "autocomplete": true,
+      "tokens": [
+        'absent_over_time',
+        'changes',
+        'delta',
+        'deriv',
+        'idelta',
+        'increase',
+        'irate',
+        'rate',
+        'resets',
+      ]
+    },
+    "Function": {
+      "autocomplete": true,
+      "tokens": [
+        'clamp_max',
+        'clamp_min',
+        'day_of_month',
+        'day_of_week',
+        'days_in_month',
+        'histogram_quantile',
+        'holt_winters',
+        'hour',
+        'label_join',
+        'label_replace',
+        'minute',
+        'month',
+        'predict_linear',
+        'round',
+        'scalar',
+        'time',
+        'timestamp',
+        'vector',
+        'year',
+      ]
     }
   },
 // Syntax model
   "Syntax": {
     "BinaryOperator": "ArithmeticBinaryOperator | ComparisonBinaryOperator | LogicalBinaryOperator",
     "LabelKeyStringList": "LabelKeyString (, LabelKeyString)*",
-    "LabelExpr": "LabelKeyString LabelMatchingOperator ( LabelValueString | Integer )",
+    "LabelExpr": "LabelKeyString LabelMatchingOperator ( LabelValueString | Number )",
     "SimpleInstantVector": "MetricName ('{' LabelExpr (',' LabelExpr)* '}')? | '{' LabelExpr (',' LabelExpr)* '}'",
     "SimpleRangeVector": "SimpleInstantVector '[' Duration ']'",
     "AggregationOp": "Aggregation ('(' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '(' InstantVector ')')",
-    "AggregationOpWithParam" : "AggregationWithParameter ('(' Integer ',' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '('  Integer ',' InstantVector ')')\"",
-    "InstantVector": "AggregationOp | AggregationOpWithParam | SimpleInstantVector",
-    "Vector": "SimpleRangeVector | InstantVector",
-    "PromQLExpr": "Comment | Vector"
+    "AggregationOpWithParam": "AggregationWithParameter ('(' Number ',' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '('  Number ',' InstantVector ')')\"",
+    "AggregationOverTimeOp": "AggregationOverTime '(' RangeVector ')'",
+    "FunctionTakesInstantVectorReturnsInstantVectorOp": "FunctionTakesInstantVectorReturnsInstantVector '(' InstantVector ')'",
+    "FunctionTakesRangeVectorReturnsInstantVectorOp": "FunctionTakesRangeVectorReturnsInstantVector '(' RangeVector ')'",
+    "InstantVector": "AggregationOp | AggregationOpWithParam | AggregationOverTimeOp | FunctionTakesInstantVectorReturnsInstantVectorOp | FunctionTakesRangeVectorReturnsInstantVectorOp | SimpleInstantVector",
+    "RangeVector": "SimpleRangeVector",
+    "Vector": "RangeVector | ( InstantVector (ArithmeticBinaryOperator Number)*)",
+    "VectorMatchingOp": "Vector BinaryOperator ( VectorOneToOneMatching '(' LabelKeyStringList ')')?  ( VectorOneToManyMatching )? Vector",
+    "PromQLExpr": "Comment | VectorMatchingOp | Vector"
   },
   "Parser": [ [ "PromQLExpr" ] ]
 };
