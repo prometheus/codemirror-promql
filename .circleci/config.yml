@@ -51,6 +51,19 @@ jobs:
 
       - run: npm run lint
 
+
+  publish:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
+      - run: cp ~/repo/README.md ~/repo/lib/onoff/README.md
+      - run: npm publish ~/repo/lib --access public
+
 workflows:
   version: 2
   test-deploy:
@@ -70,4 +83,12 @@ workflows:
             - build-lib
           filters:
             tags:
+              ignore: /.*/
+      - publish:
+          requires:
+            - build-lib
+          filters:
+            tags:
+              only: /.*/
+            branches:
               ignore: /.*/
