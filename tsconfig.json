@@ -1,7 +1,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "allowJs": true,
     "target": "es2015",
     "declaration": true,
     "outDir": "./lib",
