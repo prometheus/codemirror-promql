@@ -8,7 +8,7 @@ Note: to integrate codeMirror in Angular, this project uses [ngx-codemirror](htt
 After importing the module "CodemirrorModule", you just have to import the lib in the main.ts:
 
 ```typescript
-import 'nexucis/codemirror-mode-promql'
+import 'codemirror-mode-promql'
 ```
 
 and then in your component: 
@@ -20,6 +20,11 @@ and then in your component:
     lineNumbers: true,
     theme: 'material',
     mode: 'promql'
+    lint: true,
+    matching: true,
+    extraKeys: {'Ctrl-Space': 'promQLAutoCompletion'},
+    foldGutter: true,
+    gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers', 'CodeMirror-foldgutter']
   }"
 ></ngx-codemirror>
 ```
@@ -31,7 +36,10 @@ Note: Don't forget to import the codeMirror theme in your angular.json:
             "styles": [
               "src/styles.css",
               "./node_modules/codemirror/lib/codemirror.css",
-              "./node_modules/codemirror/theme/material.css"
+              "./node_modules/codemirror/theme/material.css",
+              "./node_modules/codemirror/addon/fold/foldgutter.css",
+              "./node_modules/codemirror/addon/hint/show-hint.css",
+              "./node_modules/codemirror/addon/lint/lint.css"
             ]
 }
 ```
