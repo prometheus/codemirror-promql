@@ -12,6 +12,8 @@ export const PromQLLightGrammar = {
     "AggregationOverTime": "keyword",
     "FunctionTakesInstantVectorReturnsInstantVector": "keyword",
     "FunctionTakesRangeVectorReturnsInstantVector": "keyword",
+    "FunctionClamp": "keyword",
+    "FunctionDay": "keyword",
     "LabelMatchingOperator": "operator",
     "ArithmeticBinaryOperator": "operator",
     "ComparisonBinaryOperator": "operator",
@@ -213,15 +215,24 @@ export const PromQLLightGrammar = {
         'resets',
       ]
     },
-    "Function": {
+    "FunctionClamp": {
       "autocomplete": true,
       "tokens": [
         'clamp_max',
         'clamp_min',
+      ]
+    },
+    "FunctionDay": {
+      "autocomplete": true,
+      "tokens": [
         'day_of_month',
         'day_of_week',
         'days_in_month',
-        'histogram_quantile',
+      ]
+    },
+    "Function": {
+      "autocomplete": true,
+      "tokens": [
         'holt_winters',
         'hour',
         'label_join',
@@ -243,18 +254,28 @@ export const PromQLLightGrammar = {
     "BinaryOperator": "ArithmeticBinaryOperator | ComparisonBinaryOperator | LogicalBinaryOperator",
     "LabelKeyStringList": "LabelKeyString (, LabelKeyString)*",
     "LabelExpr": "LabelKeyString LabelMatchingOperator ( LabelValueString | Number )",
+    // Low level vector definition
     "SimpleInstantVector": "MetricName ('{' LabelExpr (',' LabelExpr)* '}')? | '{' LabelExpr (',' LabelExpr)* '}'",
     "SimpleRangeVector": "SimpleInstantVector '[' Duration ']'",
+    // Aggregation definition
     "AggregationOp": "Aggregation ('(' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '(' InstantVector ')')",
     "AggregationOpWithParam": "AggregationWithParameter ('(' Number ',' InstantVector ')' ( AggregationVectorMatching '(' LabelKeyStringList ')' )? | ( AggregationVectorMatching '(' LabelKeyStringList ')' )? '('  Number ',' InstantVector ')')\"",
     "AggregationOverTimeOp": "AggregationOverTime '(' RangeVector ')'",
+    // Function Definition
     "FunctionTakesInstantVectorReturnsInstantVectorOp": "FunctionTakesInstantVectorReturnsInstantVector '(' InstantVector ')'",
     "FunctionTakesRangeVectorReturnsInstantVectorOp": "FunctionTakesRangeVectorReturnsInstantVector '(' RangeVector ')'",
-    "InstantVector": "AggregationOp | AggregationOpWithParam | AggregationOverTimeOp | FunctionTakesInstantVectorReturnsInstantVectorOp | FunctionTakesRangeVectorReturnsInstantVectorOp | SimpleInstantVector",
+    "FunctionClampOp": "FunctionClamp '(' InstantVector ',' Scalar ')'",
+    "FunctionDayOp": "FunctionDay '(' InstantVector? ')'",
+    "InstantVectorFunction": "FunctionTakesInstantVectorReturnsInstantVectorOp | FunctionTakesRangeVectorReturnsInstantVectorOp | FunctionClampOp",
+    // Scalar
+    "Scalar": "Number | FunctionDayOp",
+    // Vector definition
+    "InstantVector": "(AggregationOp | AggregationOpWithParam | AggregationOverTimeOp | InstantVectorFunction | SimpleInstantVector) (ArithmeticBinaryOperator Scalar)*",
     "RangeVector": "SimpleRangeVector",
-    "Vector": "RangeVector | ( InstantVector (ArithmeticBinaryOperator Number)*)",
+    "Vector": "RangeVector | InstantVector",
     "VectorMatchingOp": "Vector BinaryOperator ( VectorOneToOneMatching '(' LabelKeyStringList ')')?  ( VectorOneToManyMatching )? Vector",
-    "PromQLExpr": "Comment | VectorMatchingOp | Vector"
+    // Definitive PromQL Grammar
+    "PromQLExpr": "Comment | VectorMatchingOp | Vector | Scalar"
   },
   "Parser": [ [ "PromQLExpr" ] ]
 };
