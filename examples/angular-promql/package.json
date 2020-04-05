@@ -21,7 +21,7 @@
     "@angular/router": "~9.1.0",
     "@ctrl/ngx-codemirror": "^2.2.1",
     "codemirror": "^5.52.0",
-    "codemirror-mode-promql": "^0.2.1",
+    "codemirror-mode-promql": "^0.2.2",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
     "zone.js": "~0.10.2"
