@@ -10,22 +10,6 @@ defaults: &defaults
     - image: circleci/node:10.16.3
 
 jobs:
-  install:
-    <<: *defaults
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package-lock.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
-      - run: npm install
-
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package-lock.json" }}
 
   build-lib:
     <<: *defaults
@@ -36,8 +20,10 @@ jobs:
             - v1-dependencies-{{ checksum "package-lock.json" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
+      - run: npm install
       - run: npm run build && npm run copy-files
+      - run: ls -latr lib/
+      - run: ls -latr src/
       - persist_to_workspace:
           root: ~/repo
           paths:
@@ -74,13 +60,7 @@ workflows:
   version: 2
   test-deploy:
     jobs:
-      - install:
-          filters:
-            tags:
-              only: /.*/
       - build-lib:
-          requires:
-            - install
           filters:
             tags:
               only: /.*/
