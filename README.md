@@ -18,7 +18,7 @@ Any contribution or suggestion would be really appreciated. Feel free to use the
 
 ## Development
 In case you want to contribute and change the code by yourself, an easy way to do it is to:
- * Copy all file in the folder **lib** in the folder **example/angular-promql/src**
+ * Copy all file in the folder **src** in the folder **example/angular-promql/src**
  * Modify the file main.ts and replace the line `import 'codemirror-mode-promql';` by `import './index.ts';`
  * Run `npm install` and `npm start` in the folder **example/angular-promql/src**
  
