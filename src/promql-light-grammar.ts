@@ -152,27 +152,9 @@ export const PromQLLightGrammar = {
         "count_over_time"
       ]
     },
-    "LabelMatchingOperator": {
-      "autocomplete": true,
-      "tokens": [
-        "=",
-        "!=",
-        "=~",
-        "!~"
-      ]
-    },
-    "ArithmeticBinaryOperator": {
-      "autocomplete": true,
-      "tokens": [
-        "+", "-", "*", "/", "%", "^"
-      ]
-    },
-    "ComparisonBinaryOperator": {
-      "autocomplete": true,
-      "tokens": [
-        "==", "!=", ">", "<", "<=", ">="
-      ]
-    },
+    "LabelMatchingOperator": "RE::/(=~?)|(!(=|~))/",
+    "ArithmeticBinaryOperator": "RE::/(\\+)|(\\-)|(\\*)|(\\/)|(\\%)|(\\^)/",
+    "ComparisonBinaryOperator": "RE::/((=|!)=)|(>=?)|(<=?)/",
     "LogicalBinaryOperator": {
       "autocomplete": true,
       "tokens": [
