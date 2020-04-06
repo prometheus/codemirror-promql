@@ -33,6 +33,9 @@ export const PromQLLightGrammar = {
     "VectorOneToOneMatching": "operator",
     "VectorOneToManyMatching": "operator",
   },
+  "Extra"         : {
+    "fold"      : "brace+parens+tags"
+  },
 // Lexical model
   "Lex": {
     "Comment:comment": [ "#", null ],
