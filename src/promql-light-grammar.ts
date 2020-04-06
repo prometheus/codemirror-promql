@@ -33,8 +33,8 @@ export const PromQLLightGrammar = {
     "VectorOneToOneMatching": "operator",
     "VectorOneToManyMatching": "operator",
   },
-  "Extra"         : {
-    "fold"      : "brace+parens+tags"
+  "Extra": {
+    "fold": "brace+parens+tags"
   },
 // Lexical model
   "Lex": {
@@ -159,19 +159,23 @@ export const PromQLLightGrammar = {
         "!=",
         "=~",
         "!~"
-      ]
+      ],
+      "combine": false
     },
-    "ArithmeticBinaryOperator": {
-      "autocomplete": true,
-      "tokens": [
-        "+", "-", "*", "/", "%", "^"
-      ]
-    },
+    // it seems we cannot create a list of token with each of them has only 1 character
+    // so we have to manage it through a regex
+    "ArithmeticBinaryOperator": "RE::/[\\/%^*+-]/",
     "ComparisonBinaryOperator": {
       "autocomplete": true,
       "tokens": [
-        "==", "!=", ">", "<", "<=", ">="
-      ]
+        "==",
+        "!=",
+        ">",
+        "<",
+        "<=",
+        ">="
+      ],
+      "combine": false,
     },
     "LogicalBinaryOperator": {
       "autocomplete": true,
@@ -256,7 +260,7 @@ export const PromQLLightGrammar = {
       "tokens": [
         'histogram_quantile'
       ],
-      "combine": '',
+      "combine": false,
     },
     "FunctionHoltWinters": {
       "autocomplete": true,
@@ -265,70 +269,70 @@ export const PromQLLightGrammar = {
       ],
       // Because there is only one token, we have to deactivate the default delimiter which is "\\b" (word-boundary)
       // If we don't do that, it will match 'holt_winters(' and not just 'holt_winters'
-      "combine": '',
+      "combine": false,
     },
     "FunctionLabelJoin": {
       "autocomplete": true,
       "tokens": [
         'label_join',
       ],
-      "combine": '',
+      "combine": false,
     },
     "FunctionLabelReplace": {
       "autocomplete": true,
       "tokens": [
         'label_replace',
       ],
-      "combine": '',
+      "combine": false,
     },
     "FunctionPredictLinear": {
       "autocomplete": true,
       'tokens': [
         'predict_linear',
       ],
-      "combine": '',
+      "combine": false,
     },
     "FunctionRound": {
       "autocomplete": true,
       "tokens": [
         'round'
       ],
-      "combine": ''
+      "combine": false
     },
     "FunctionScalar": {
       "autocomplete": true,
       "tokens": [
         "scalar"
       ],
-      "combine": ''
+      "combine": false
     },
     "FunctionTime": {
       "autocomplete": true,
       "tokens": [
         "time"
       ],
-      "combine": ''
+      "combine": false
     },
     "FunctionTimestamp": {
       "autocomplete": true,
       "tokens": [
         "timestamp"
       ],
-      "combine": ''
+      "combine": false
     },
     "FunctionVector": {
       "autocomplete": true,
       "tokens": [
         "vector"
       ],
-      "combine": ''
+      "combine": false
     },
     "BoolOperator": {
       "autocomplete": true,
       "tokens": [
         "bool"
       ],
-      "combine": ''
+      "combine": false
     }
   },
 // Syntax model
