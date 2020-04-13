@@ -28,6 +28,10 @@ jobs:
           root: ~/repo
           paths:
             - lib
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
 
   lint-lib:
     <<: *defaults
