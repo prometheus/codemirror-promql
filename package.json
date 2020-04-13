@@ -1,6 +1,6 @@
 {
-  "name": "codemirror-mode-promql",
-  "version": "0.2.2",
+  "name": "codemirror-promql",
+  "version": "0.3.0",
   "description": "a CodeMirror mode for the PromQL language",
   "main": "index.js",
   "scripts": {
@@ -12,19 +12,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nexucis/codemirror-mode-promql.git"
+    "url": "git+https://github.com/prometheus-community/codemirror-promql.git"
   },
   "keywords": [
     "promql",
     "codemirror",
-    "mode"
+    "mode",
+    "prometheus"
   ],
-  "author": "Augustin Husson <husson.augustin@gmailcom>",
+  "author": "Augustin Husson <husson.augustin@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Nexucis/codemirror-mode-promql/issues"
+    "url": "https://github.com/prometheus-community/codemirror-promql/issues"
   },
-  "homepage": "https://github.com/Nexucis/codemirror-mode-promql/blob/master/README.md",
+  "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "devDependencies": {
     "@types/codemirror": "^0.0.87",
     "@types/node": "^13.9.1",

@@ -8,7 +8,7 @@ Note: to integrate codeMirror in Angular, this project uses [ngx-codemirror](htt
 After importing the module "CodemirrorModule", you just have to import the lib in the main.ts:
 
 ```typescript
-import 'codemirror-mode-promql'
+import 'codemirror-promql'
 ```
 
 and then in your component: 
