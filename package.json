@@ -4,6 +4,7 @@
   "description": "a CodeMirror mode for the PromQL language",
   "main": "index.js",
   "scripts": {
+    "start": "webpack-dev-server --open",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src/ --ext .ts",
@@ -31,10 +32,18 @@
     "@types/node": "^13.9.1",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.22.0",
+    "clean-webpack-plugin": "^3.0.0",
     "codemirror": "^5.52.0",
     "copyfiles": "^2.2.0",
+    "css-loader": "^3.5.3",
     "eslint": "^6.8.0",
-    "typescript": "^3.8.3"
+    "html-webpack-plugin": "^4.3.0",
+    "style-loader": "^1.2.1",
+    "ts-loader": "^7.0.4",
+    "typescript": "^3.8.3",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
     "codemirror": "^5.52.0"
