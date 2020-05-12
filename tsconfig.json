@@ -5,10 +5,11 @@
     "declaration": true,
     "outDir": "./lib",
     "module": "commonjs",
-    "strict": true,
+    "sourceMap": true,
+    "strict": true
   },
   "include": [
-    "src",
+    "src/mode",
     "@types/**/*.d.ts"
   ],
   "exclude": [

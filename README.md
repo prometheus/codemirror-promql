@@ -36,8 +36,8 @@ Here is a picture that displays what happen when you write a promQL expression:
 Note: the following task are sorted by priority. So the last one has the less priority.
 
 - [x] Developed an offline mode using a light promQL grammar
-- [ ] Build a better development environment ( Having to copy the src folder to the example to test it is not acceptable)
-  - [ ] Create a test folder in the src folder that will contain a light app that will start the codeMirror
+- [ ] Build a better development environment
+  - [x] Create a test folder in the src folder that will contain a light app that will start the codeMirror
   - [ ] Automatized test to checked that all correct promQL syntax are covered
 - [ ] Implement the Online mode
 - [ ] Offline mode improvement
@@ -51,12 +51,9 @@ Note: the following task are sorted by priority. So the last one has the less pr
 Any contribution or suggestion would be really appreciated. Feel free to use the Issue section or to send a pull request.
 
 ## Development
-In case you want to contribute and change the code by yourself, an easy way to do it is to:
- * Copy all file in the folder **src** in the folder **example/angular-promql/src**
- * Modify the file main.ts and replace the line `import 'codemirror-mode-promql';` by `import './index.ts';`
- * Run `npm install` and `npm start` in the folder **example/angular-promql/src**
- 
-Once you modified the code of the lib, don't forget to report the changes in the tracked corresponding file :).
+In case you want to contribute and change the code by yourself, do the following command:
+ * `npm install` to install all dependencies
+ * `npm start` to start the web server. It should create a tab in your browser with the dev app that contains codeMirror with the promQL plugin.
 
 ### Deploy to Github Page
 * `npm install -g angular-cli-ghpages`
