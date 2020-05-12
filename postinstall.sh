@@ -5,7 +5,7 @@
 # Issue on codemirror-grammar side: https://github.com/foo123/codemirror-grammar/issues/14
 
 CODEMIRROR_VERSION=4.2.1
-CODEMIRROR_FILE=./src/codemirror_grammar.js
+CODEMIRROR_FILE=./src/mode/codemirror_grammar.js
 SRC_DIR=./src
 
 if [ -d "${SRC_DIR}" ]; then
