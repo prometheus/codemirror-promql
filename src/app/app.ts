@@ -1,8 +1,9 @@
 import '../mode/index'
 import './app.css';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const CodeMirror = require('codemirror');
 
-const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
     theme: 'material',
     mode: 'promql',
