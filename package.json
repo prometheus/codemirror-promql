@@ -7,9 +7,7 @@
     "start": "webpack-dev-server --open",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint src/ --ext .ts",
-    "copy-files": "copyfiles -u 1 \"src/**/*.js\" lib",
-    "postinstall": "bash ./postinstall.sh"
+    "lint": "eslint src/ --ext .ts"
   },
   "repository": {
     "type": "git",
@@ -27,18 +25,17 @@
     "url": "https://github.com/prometheus-community/codemirror-promql/issues"
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
+  "dependencies": {
+    "lezer-promql": "^0.1.1"
+  },
   "devDependencies": {
-    "@types/codemirror": "^0.0.87",
+    "@codemirror/next": "^0.8.0",
     "@types/node": "^13.9.1",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.22.0",
     "clean-webpack-plugin": "^3.0.0",
-    "codemirror": "^5.52.0",
-    "copyfiles": "^2.2.0",
-    "css-loader": "^3.5.3",
     "eslint": "^6.8.0",
     "html-webpack-plugin": "^4.3.0",
-    "style-loader": "^1.2.1",
     "ts-loader": "^7.0.4",
     "typescript": "^3.8.3",
     "webpack": "^4.43.0",
@@ -46,6 +43,6 @@
     "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
-    "codemirror": "^5.52.0"
+    "@codemirror/next": "^0.8.0"
   }
 }
