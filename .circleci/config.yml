@@ -21,9 +21,7 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
       - run: npm install
-      - run: npm run build && npm run copy-files
-      - run: ls -latr lib/
-      - run: ls -latr src/
+      - run: npm run build
       - persist_to_workspace:
           root: ~/repo
           paths:
@@ -57,7 +55,6 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run: cp ~/repo/README.md ~/repo/lib/README.md
       - run: cp ~/repo/package.json ~/repo/lib/package.json
-      - run: cp ~/repo/postinstall.sh ~/repo/lib/postinstall.sh
       - run: npm publish ~/repo/lib --access public
 
 workflows:

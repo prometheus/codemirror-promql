@@ -9,7 +9,7 @@
     "strict": true
   },
   "include": [
-    "src/mode",
+    "src/lang-promql",
     "@types/**/*.d.ts"
   ],
   "exclude": [
