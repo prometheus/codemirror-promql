@@ -2,6 +2,7 @@ import { LezerSyntax } from "@codemirror/next/syntax";
 import { parser } from "lezer-promql";
 import { styleTags } from "@codemirror/next/highlight";
 import { Extension } from "@codemirror/next/state";
+import { completePromQL } from "./complete";
 
 export const promQLSyntax = new LezerSyntax(parser.withProps(
   styleTags({
@@ -29,7 +30,9 @@ export const promQLSyntax = new LezerSyntax(parser.withProps(
   },
 })
 
+export const promQLCompletion = promQLSyntax.languageData.of({autocomplete: completePromQL})
+
 /// Returns an extension that installs the PromQL syntax
 export function promQL(): Extension {
-  return [ promQLSyntax ]
+  return [ promQLSyntax, promQLCompletion ]
 }
