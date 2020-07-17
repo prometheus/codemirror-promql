@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
+    "axios": "^0.19.2",
     "lezer-promql": "^0.1.1"
   },
   "devDependencies": {
