@@ -19,7 +19,7 @@
     "mode",
     "prometheus"
   ],
-  "author": "Augustin Husson <husson.augustin@gmail.com>",
+  "author": "Prometheus Authors <prometheus-developers@googlegroups.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/prometheus-community/codemirror-promql/issues"
