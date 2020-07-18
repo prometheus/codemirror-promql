@@ -15,7 +15,7 @@ export class LSPClient {
     this.url = url;
   }
 
-  autocomplete(context: AutocompleteContext): Promise<CompletionResult> {
+  complete(context: AutocompleteContext): Promise<CompletionResult> {
     const {state, pos} = context
     const line = state.doc.lineAt(pos)
     const body = {
@@ -29,7 +29,7 @@ export class LSPClient {
     return axios.post<AutocompleteResponse[]>(this.url + this.autocompleteEndpoint, body)
       .then((response) => {
         const options: Completion[] = []
-        // for every textEdit present, they qll have exactly the same value
+        // for every textEdit present, they all have exactly the same range.start value.
         // so the goal is to save the last one present in order to use it later to calculate the position "from"
         // Note: textEdit can be undefined but that's just because otherwise it doesn't compile
         // see more here: https://github.com/microsoft/TypeScript/issues/12916
