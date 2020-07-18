@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/next/autocomplete";
-import { AutocompleteResponse, TextEdit } from "./model";
+import { CompletionItem, TextEdit } from "vscode-languageserver-types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isIterable(obj: any): boolean {
@@ -26,7 +26,7 @@ export class LSPClient {
       // positionLine start at 0 from LSP and at 1 from CMN
       positionLine: line.number - 1,
     }
-    return axios.post<AutocompleteResponse[]>(this.url + this.autocompleteEndpoint, body)
+    return axios.post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
       .then((response) => {
         const options: Completion[] = []
         // for every textEdit present, they all have exactly the same range.start value.
