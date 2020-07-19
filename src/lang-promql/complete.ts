@@ -57,28 +57,32 @@ class LSPComplete implements Complete {
     return this.lspClient.complete(body)
       .then((items: CompletionItem[]) => {
         const options: Completion[] = []
-        // for every textEdit present, they all have exactly the same range.start value.
-        // so the goal is to save the last one present in order to use it later to calculate the position "from"
+        // for every `textEdit` present, they all have exactly the same `range.start` value.
+        // so the goal is to save the last one present in order to use it later to calculate the position `from`
         // Note: textEdit can be undefined but that's just because otherwise it doesn't compile
         // see more here: https://github.com/microsoft/TypeScript/issues/12916
         // and here https://github.com/microsoft/TypeScript/issues/9568
         let textEdit: TextEdit | undefined
+
         if (isIterable(items)) {
           for (const res of items) {
             // TODO map kind with icon Completion.type when it is released on CMN side
             // https://github.com/codemirror/codemirror.next/commit/459bba29c1fd1d80fc4f36dac27e5825b2362273
-            let label = res.label
+
+            // `apply` is the string that will be used when the completion is performed.
+            // By default it's the same value as the label (i.e the same string as the one shown in the completionList)
+            let apply = res.label
             if (res.textEdit) {
-              label = res.textEdit.newText
+              apply = res.textEdit.newText
               textEdit = res.textEdit
             }
-            options.push({label: label})
+            options.push({label: res.label, apply: apply})
           }
         }
 
-        // "from" and "to" are the absolute value in term of character and doesn't consider the line number
+        // `from` and `to` are the absolute value in term of character and doesn't consider the line number
         // so we have to calculate the position of "from"
-        // "to" is the direct value of pos
+        // `to` is the direct value of pos
         return {
           from: textEdit ? line.from + textEdit.range.start.character : line.from,
           to: pos,
