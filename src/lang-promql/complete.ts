@@ -24,11 +24,6 @@ import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/n
 import { LSPBody, LSPClient } from "./lsp/client";
 import { CompletionItem, TextEdit } from "vscode-languageserver-types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isIterable(obj: any): boolean {
-  return obj != null && typeof obj[ Symbol.iterator ] === 'function';
-}
-
 // Complete is the interface that defines the simple method that returns a CompletionResult
 // Every different completion mode must implement this interface
 interface Complete {
@@ -64,7 +59,7 @@ class LSPComplete implements Complete {
         // and here https://github.com/microsoft/TypeScript/issues/9568
         let textEdit: TextEdit | undefined
 
-        if (isIterable(items)) {
+        if (items) {
           for (const res of items) {
             // TODO map kind with icon Completion.type when it is released on CMN side
             // https://github.com/codemirror/codemirror.next/commit/459bba29c1fd1d80fc4f36dac27e5825b2362273
