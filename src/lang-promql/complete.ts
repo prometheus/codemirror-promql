@@ -32,7 +32,7 @@ function isIterable(obj: any): boolean {
 // Complete is the interface that defines the simple method that returns a CompletionResult
 // Every different completion mode must implement this interface
 interface Complete {
-  completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
+  promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
 }
 
 // LSPComplete will proviode an autocompletion based on what the langserver-promql is providing when requested
@@ -43,7 +43,7 @@ class LSPComplete implements Complete {
     this.lspClient = lspClient;
   }
 
-  completePromQL(context: AutocompleteContext): Promise<CompletionResult> {
+  promQL(context: AutocompleteContext): Promise<CompletionResult> {
     const {state, pos} = context
     const line = state.doc.lineAt(pos)
     const body: LSPBody = {
@@ -93,7 +93,7 @@ class LSPComplete implements Complete {
 class OfflineComplete implements Complete {
   // TODO to be implemented with a deep analyze of the tree to have an accurate result
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  completePromQL(context: AutocompleteContext): null {
+  promQL(context: AutocompleteContext): null {
     return null
   }
 }
@@ -109,5 +109,5 @@ function newCompleteObject(onlineMode: boolean): Complete {
 export function completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
   // TODO find a way to assign properly the mode, same pb as the URL.
   const complete = newCompleteObject(true)
-  return complete.completePromQL(context)
+  return complete.promQL(context)
 }
