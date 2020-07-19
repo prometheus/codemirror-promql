@@ -31,7 +31,7 @@ export interface LSPBody {
   positionChar?: number;
 }
 
-// LSPClient is the HTTP client that should be used to get some information from the different endpoint provided by langserver-promql
+// LSPClient is the HTTP client that should be used to get some information from the different endpoint provided by langserver-promql.
 export class LSPClient {
   private readonly url: string
   private readonly autocompleteEndpoint = "/completion"

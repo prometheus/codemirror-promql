@@ -24,13 +24,13 @@ import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/n
 import { LSPBody, LSPClient } from "./lsp/client";
 import { CompletionItem, TextEdit } from "vscode-languageserver-types";
 
-// Complete is the interface that defines the simple method that returns a CompletionResult
-// Every different completion mode must implement this interface
+// Complete is the interface that defines the simple method that returns a CompletionResult.
+// Every different completion mode must implement this interface.
 interface Complete {
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
 }
 
-// LSPComplete will proviode an autocompletion based on what the langserver-promql is providing when requested
+// LSPComplete will provide an autocompletion based on what the langserver-promql is providing when requested.
 class LSPComplete implements Complete {
   private readonly lspClient: LSPClient;
 
@@ -44,18 +44,18 @@ class LSPComplete implements Complete {
     const body: LSPBody = {
       expr: state.doc.sliceString(0),
       limit: 100,
-      // positionChar start at 0 at the beginning of the line for LSP
+      // positionChar starts at 0 at the beginning of the line for LSP.
       positionChar: pos - line.from - 1 > 0 ? pos - line.from - 1 : pos - line.from,
-      // positionLine start at 0 from LSP and at 1 from CMN
+      // positionLine starts at 0 from LSP and at 1 from CMN.
       positionLine: line.number - 1,
     }
     return this.lspClient.complete(body)
       .then((items: CompletionItem[]) => {
         const options: Completion[] = []
-        // for every `textEdit` present, they all have exactly the same `range.start` value.
-        // so the goal is to save the last one present in order to use it later to calculate the position `from`
-        // Note: textEdit can be undefined but that's just because otherwise it doesn't compile
-        // see more here: https://github.com/microsoft/TypeScript/issues/12916
+        // For every `textEdit` present, they all have exactly the same `range.start` value.
+        // so the goal is to save the last one present in order to use it later to calculate the position `from`.
+        // Note: textEdit can be undefined but that's just because otherwise it doesn't compile.
+        // See more here: https://github.com/microsoft/TypeScript/issues/12916
         // and here https://github.com/microsoft/TypeScript/issues/9568
         let textEdit: TextEdit | undefined
 
@@ -75,8 +75,8 @@ class LSPComplete implements Complete {
           }
         }
 
-        // `from` and `to` are the absolute value in term of character and doesn't consider the line number
-        // so we have to calculate the position of "from"
+        // `from` and `to` are the absolute value in term of character and doesn't consider the line number.
+        // So we have to calculate the position of "from".
         // `to` is the direct value of pos
         return {
           from: textEdit ? line.from + textEdit.range.start.character : line.from,
@@ -87,8 +87,8 @@ class LSPComplete implements Complete {
   }
 }
 
-// OfflineComplete is going to provide a full completion result without any distant server
-// So it will basically only provide the different keyword of the PromQL syntax
+// OfflineComplete is going to provide a full completion result without any distant server.
+// So it will basically only provide the different keyword of the PromQL syntax.
 class OfflineComplete implements Complete {
   // TODO to be implemented with a deep analyze of the tree to have an accurate result
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
