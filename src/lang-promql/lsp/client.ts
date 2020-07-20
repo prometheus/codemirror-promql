@@ -20,11 +20,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { basicSetup, EditorState, EditorView } from "@codemirror/next/basic-setup";
-import { promQL } from "../lang-promql";
+import axios from 'axios';
+import { CompletionItem } from "vscode-languageserver-types";
 
-new EditorView({
-  state: EditorState.create({extensions: [ basicSetup, promQL() ]}),
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  parent: document.querySelector("#editor")!
-})
+
+export interface LSPBody {
+  expr: string;
+  limit: number;
+  positionLine?: number;
+  positionChar?: number;
+}
+
+// LSPClient is the HTTP client that should be used to get some information from the different endpoint provided by langserver-promql.
+export class LSPClient {
+  private readonly url: string
+  private readonly autocompleteEndpoint = "/completion"
+
+  constructor(url: string) {
+    this.url = url;
+  }
+
+  complete(body: LSPBody): Promise<CompletionItem[]> {
+    return axios.post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
+      .then((response) => {
+        return response.data
+      })
+  }
+}
