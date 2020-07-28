@@ -54,20 +54,18 @@ export class LSPComplete implements Complete {
         // and here https://github.com/microsoft/TypeScript/issues/9568
         let textEdit: TextEdit | undefined
 
-        if (items) {
-          for (const res of items) {
-            // TODO map kind with icon Completion.type when it is released on CMN side
-            // https://github.com/codemirror/codemirror.next/commit/459bba29c1fd1d80fc4f36dac27e5825b2362273
+        for (const res of items) {
+          // TODO map kind with icon Completion.type when it is released on CMN side
+          // https://github.com/codemirror/codemirror.next/commit/459bba29c1fd1d80fc4f36dac27e5825b2362273
 
-            // `apply` is the string that will be used when the completion is performed.
-            // By default it's the same value as the label (i.e the same string as the one shown in the completionList)
-            let apply = res.label
-            if (res.textEdit) {
-              apply = res.textEdit.newText
-              textEdit = res.textEdit
-            }
-            options.push({label: res.label, apply: apply})
+          // `apply` is the string that will be used when the completion is performed.
+          // By default it's the same value as the label (i.e the same string as the one shown in the completionList)
+          let apply = res.label
+          if (res.textEdit) {
+            apply = res.textEdit.newText
+            textEdit = res.textEdit
           }
+          options.push({label: res.label, apply: apply})
         }
 
         // `from` and `to` are the absolute value in term of character and doesn't consider the line number.
