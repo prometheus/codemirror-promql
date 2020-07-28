@@ -23,7 +23,8 @@
 import { AutocompleteContext, CompletionResult } from "@codemirror/next/autocomplete";
 import { LSPClient } from "./lsp/client";
 import { LSPComplete } from "./lsp";
-import { OfflineComplete } from "./offline";
+import { HybridComplete } from "./hybrid";
+import { PrometheusClient } from "./prometheus/client";
 
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
@@ -41,7 +42,7 @@ function newCompleteObject(conf: CompleteConfiguration): Complete {
   if (conf.enableLSP) {
     return new LSPComplete(new LSPClient(conf.url))
   }
-  return new OfflineComplete()
+  return new HybridComplete(new PrometheusClient(conf.url))
 }
 
 // complete is the unique instance of the Complete interface. It means that the autocompletion for promQL is for the moment stateful.
@@ -55,7 +56,7 @@ export function setComplete(conf: CompleteConfiguration): void {
 }
 
 export function completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
-  if(!complete) {
+  if (!complete) {
     complete = newCompleteObject({enableLSP: false, url: ""})
   }
   return complete.promQL(context)

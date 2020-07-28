@@ -28,7 +28,7 @@ function activateLSPAutocompletion(): void {
 }
 
 function activateOfflineAutocompletion(): void {
-  setComplete({url: "", enableLSP: false})
+  setComplete({url: "http://localhost:9090", enableLSP: false})
 }
 
 
