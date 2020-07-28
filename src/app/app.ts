@@ -23,10 +23,29 @@
 import { basicSetup, EditorState, EditorView } from "@codemirror/next/basic-setup";
 import { promQL, setComplete } from "../lang-promql";
 
-setComplete({url: "http://localhost:8080", enableLSP: true})
+function activateLSPAutocompletion(): void {
+  setComplete({url: "http://localhost:8080", enableLSP: true})
+}
+
+function activateOfflineAutocompletion(): void {
+  setComplete({url: "", enableLSP: false})
+}
+
 
 new EditorView({
   state: EditorState.create({extensions: [ basicSetup, promQL() ]}),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   parent: document.querySelector("#editor")!
 })
+
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
+// @ts-ignore
+document.getElementById("lsp").addEventListener("click", function () {
+  activateLSPAutocompletion()
+});
+
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
+// @ts-ignore
+document.getElementById("offline").addEventListener("click", function () {
+  activateOfflineAutocompletion()
+});
