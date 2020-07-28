@@ -20,13 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { basicSetup, EditorState, EditorView } from "@codemirror/next/basic-setup";
-import { promQL, setComplete } from "../lang-promql";
+import { AutocompleteContext } from "@codemirror/next/autocomplete";
+import { Complete } from "./index";
 
-setComplete({url: "http://localhost:8080", enableLSP: true})
-
-new EditorView({
-  state: EditorState.create({extensions: [ basicSetup, promQL() ]}),
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  parent: document.querySelector("#editor")!
-})
+// OfflineComplete is going to provide a full completion result without any distant server.
+// So it will basically only provide the different keyword of the PromQL syntax.
+export class OfflineComplete implements Complete {
+  // TODO to be implemented with a deep analyze of the tree to have an accurate result
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  promQL(context: AutocompleteContext): null {
+    console.log("offline")
+    return null
+  }
+}

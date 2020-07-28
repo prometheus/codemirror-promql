@@ -20,18 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/next/autocomplete";
 import { LSPBody, LSPClient } from "./lsp/client";
+import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/next/autocomplete";
 import { CompletionItem, TextEdit } from "vscode-languageserver-types";
-
-// Complete is the interface that defines the simple method that returns a CompletionResult.
-// Every different completion mode must implement this interface.
-interface Complete {
-  promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
-}
+import { Complete } from "./index";
 
 // LSPComplete will provide an autocompletion based on what the langserver-promql is providing when requested.
-class LSPComplete implements Complete {
+export class LSPComplete implements Complete {
   private readonly lspClient: LSPClient;
 
   constructor(lspClient: LSPClient) {
@@ -85,28 +80,4 @@ class LSPComplete implements Complete {
         } as CompletionResult
       })
   }
-}
-
-// OfflineComplete is going to provide a full completion result without any distant server.
-// So it will basically only provide the different keyword of the PromQL syntax.
-class OfflineComplete implements Complete {
-  // TODO to be implemented with a deep analyze of the tree to have an accurate result
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  promQL(context: AutocompleteContext): null {
-    return null
-  }
-}
-
-function newCompleteObject(onlineMode: boolean): Complete {
-  if (onlineMode) {
-    // TODO find a way to assign properly the url
-    return new LSPComplete(new LSPClient("http://localhost:8080"))
-  }
-  return new OfflineComplete()
-}
-
-export function completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
-  // TODO find a way to assign properly the mode, same pb as the URL.
-  const complete = newCompleteObject(true)
-  return complete.promQL(context)
 }

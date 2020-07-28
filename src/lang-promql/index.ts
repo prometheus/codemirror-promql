@@ -21,3 +21,4 @@
 // SOFTWARE.
 
 export { promQLSyntax, promQLCompletion, promQL } from "./promql"
+export { setComplete } from "./complete"
