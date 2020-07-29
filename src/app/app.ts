@@ -24,11 +24,11 @@ import { basicSetup, EditorState, EditorView } from "@codemirror/next/basic-setu
 import { promQL, setComplete } from "../lang-promql";
 
 function activateLSPAutocompletion(): void {
-  setComplete({url: "http://localhost:8080", enableLSP: true})
+  setComplete({url: "http://localhost:8080", enableLSP: true, offline: false})
 }
 
 function activateOfflineAutocompletion(): void {
-  setComplete({url: "http://localhost:9090", enableLSP: false})
+  setComplete({url: "http://localhost:9090", enableLSP: false, offline: false})
 }
 
 

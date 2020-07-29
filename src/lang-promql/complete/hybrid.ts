@@ -127,9 +127,9 @@ function arrayToCompletionResult(data: string[], from: number, to: number): Comp
 
 // HybridComplete is going to provide a full completion result with or without a distant prometheus.
 export class HybridComplete implements Complete {
-  private readonly prometheusClient: PrometheusClient;
+  private readonly prometheusClient: PrometheusClient | null;
 
-  constructor(prometheusClient: PrometheusClient) {
+  constructor(prometheusClient: PrometheusClient | null) {
     this.prometheusClient = prometheusClient;
   }
 
@@ -139,10 +139,13 @@ export class HybridComplete implements Complete {
     if (tree.parent?.name === "MetricIdentifier" && tree.name === "Identifier") {
       // Here we cannot know if we have to autocomplete the metric_name, or the function or the aggregation.
       // So we will just autocomplete everything
-      return this.prometheusClient.labelValues("__name__")
-        .then((labelNames: string[]) => {
-          return arrayToCompletionResult(labelNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
-        })
+      if (this.prometheusClient) {
+        return this.prometheusClient.labelValues("__name__")
+          .then((labelNames: string[]) => {
+            return arrayToCompletionResult(labelNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+          })
+      }
+      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos)
     }
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
       // In that case we are in the given situation:
@@ -179,18 +182,17 @@ export class HybridComplete implements Complete {
   private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
     // First get the labelName.
     // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
-    if (!parent.firstChild || parent.firstChild.name !== "LabelName") {
-      // If it's not the case, then just stop to try to autocomplete it
-      return null
+    if (this.prometheusClient && parent.firstChild && parent.firstChild.name === "LabelName") {
+      return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
+        .then((labelValues: string[]) => {
+          // +1 to avoid to remove the first quote.
+          return arrayToCompletionResult(labelValues, current.start + 1, pos)
+        })
     }
-    return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
-      .then((labelValues: string[]) => {
-        // +1 to avoid to remove the first quote.
-        return arrayToCompletionResult(labelValues, current.start + 1, pos)
-      })
+    return null
   }
 
-  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, state: EditorState): Promise<CompletionResult> {
+  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
     // So we have to find if there is a defined metric name and then to autocomplete the associated labelName.
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
     let currentNode: Subtree | null = tree
@@ -219,8 +221,8 @@ export class HybridComplete implements Complete {
     return this.labelNames(tree, pos, state.sliceDoc(currentNode.start, currentNode.end))
   }
 
-  private labelNames(tree: Subtree, pos: number, metricName?: string): Promise<CompletionResult> {
-    return this.prometheusClient.labelNames(metricName)
+  private labelNames(tree: Subtree, pos: number, metricName?: string): Promise<CompletionResult> | null {
+    return !this.prometheusClient ? null : this.prometheusClient.labelNames(metricName)
       .then((labelNames: string[]) => {
         // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
         return arrayToCompletionResult(labelNames, tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos)

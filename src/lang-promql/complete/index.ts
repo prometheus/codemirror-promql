@@ -35,12 +35,16 @@ export interface Complete {
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
   enableLSP: boolean;
+  offline: boolean;
   url: string;
 }
 
 function newCompleteObject(conf: CompleteConfiguration): Complete {
   if (conf.enableLSP) {
     return new LSPComplete(new LSPClient(conf.url))
+  }
+  if (conf.offline) {
+    return new HybridComplete(null)
   }
   return new HybridComplete(new PrometheusClient(conf.url))
 }
@@ -57,7 +61,7 @@ export function setComplete(conf: CompleteConfiguration): void {
 
 export function completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
   if (!complete) {
-    complete = newCompleteObject({enableLSP: false, url: ""})
+    complete = newCompleteObject({enableLSP: false, url: "", offline: true})
   }
   return complete.promQL(context)
 }
