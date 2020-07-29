@@ -22,6 +22,11 @@
 
 import axios from 'axios';
 
+const apiPrefix = "/api/v1"
+const labelsEndpoint = apiPrefix + "/labels"
+const labelValuesEndpoint = apiPrefix + "/label/:name/values"
+const seriesEndpoint = apiPrefix + "/series"
+
 interface APIResponse {
   status: string;
   data: any;
@@ -33,10 +38,6 @@ interface APIResponse {
 export class PrometheusClient {
   private readonly lookbackInterval = (60 * 60 * 1000) * 12; //12 hours
   private readonly url: string
-  private readonly apiPrefix = "/api/v1"
-  private readonly labelsEndpoint = this.apiPrefix + "/labels"
-  private readonly labelValuesEndpoint = this.apiPrefix + "/label/:name/values"
-  private readonly seriesEndpoint = this.apiPrefix + "/series"
 
   constructor(url: string) {
     this.url = url;
@@ -48,7 +49,7 @@ export class PrometheusClient {
     start.setTime(start.getTime() - this.lookbackInterval)
 
     if (!metricName || metricName.length === 0) {
-      return axios.get<APIResponse>(this.url + this.labelsEndpoint, {
+      return axios.get<APIResponse>(this.url + labelsEndpoint, {
         params: {
           "start": start.toISOString(),
           "end": end.toISOString(),
@@ -60,7 +61,7 @@ export class PrometheusClient {
       })
     }
 
-    return axios.get<APIResponse>(this.url + this.seriesEndpoint, {
+    return axios.get<APIResponse>(this.url + seriesEndpoint, {
       params: {
         "start": start.toISOString(),
         "end": end.toISOString(),
@@ -95,7 +96,7 @@ export class PrometheusClient {
     const start = new Date()
     start.setTime(start.getTime() - this.lookbackInterval)
 
-    return axios.get<APIResponse>(this.url + this.labelValuesEndpoint.replace(/:name/gi, labelName), {
+    return axios.get<APIResponse>(this.url + labelValuesEndpoint.replace(/:name/gi, labelName), {
       params: {
         "start": start.toISOString(),
         "end": end.toISOString(),

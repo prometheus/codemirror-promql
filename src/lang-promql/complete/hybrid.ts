@@ -28,6 +28,103 @@ import { EditorState } from "@codemirror/next/basic-setup";
 
 // TODO: filter every list returned by the prometheusClient
 
+const autocompleteNode = {
+  "MatchOp": [
+    "=",
+    "!=",
+    "=~",
+    "!~"
+  ],
+  "BinOp": [
+    "^",
+    "*",
+    "/",
+    "%",
+    "+",
+    "-",
+    "==",
+    ">=",
+    ">",
+    "<",
+    "<=",
+    "!=",
+  ],
+  "FunctionIdentifier": [
+    "abs",
+    "absent",
+    "absent_over_time",
+    "avg_over_time",
+    "ceil",
+    "changes",
+    "clamp_max",
+    "clamp_min",
+    "count_over_time",
+    "days_in_month",
+    "day_of_month",
+    "day_of_week",
+    "delta",
+    "deriv",
+    "exp",
+    "floor",
+    "histogram_quantile",
+    "holt_winters",
+    "hour",
+    "idelta",
+    "increase",
+    "irate",
+    "label_replace",
+    "label_join",
+    "ln",
+    "log10",
+    "log2",
+    "max_over_time",
+    "min_over_time",
+    "minute",
+    "month",
+    "predict_linear",
+    "quantile_over_time",
+    "rate",
+    "resets",
+    "round",
+    "scalar",
+    "sort",
+    "sort_desc",
+    "sqrt",
+    "stddev_over_time",
+    "stdvar_over_time",
+    "sum_over_time",
+    "time",
+    "timestamp",
+    "vector",
+    "year"
+  ],
+  "AggregateOp": [
+    "avg",
+    "bottomk",
+    "count",
+    "count_values",
+    "max",
+    "min",
+    "quantile",
+    "stddev",
+    "stdvar",
+    "sum",
+    "topk",
+  ]
+}
+
+function arrayToCompletionResult(data: string[], from: number, to: number): CompletionResult {
+  const options: Completion[] = []
+  for (const value of data) {
+    options.push({label: value})
+  }
+  return {
+    from: from,
+    to: to,
+    options: options
+  } as CompletionResult
+}
+
 // HybridComplete is going to provide a full completion result with or without a distant prometheus.
 export class HybridComplete implements Complete {
   private readonly prometheusClient: PrometheusClient;
@@ -36,7 +133,7 @@ export class HybridComplete implements Complete {
     this.prometheusClient = prometheusClient;
   }
 
-  promQL(context: AutocompleteContext): Promise<CompletionResult> | null {
+  promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
     const {state, pos} = context
     const tree = state.tree.resolve(pos, -1)
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
@@ -56,6 +153,18 @@ export class HybridComplete implements Complete {
       // So we can autocomplete the labelValue
       return this.autocompleteLabelValue(tree.parent, tree, pos, state)
     }
+    if (tree.name === "MatchOp") {
+      return arrayToCompletionResult(autocompleteNode[ "MatchOp" ], tree.start, pos)
+    }
+    if (tree.name === "BinOp") {
+      return arrayToCompletionResult(autocompleteNode[ "BinOp" ], tree.start, pos)
+    }
+    if (tree.parent?.name === "FunctionIdentifier") {
+      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ], tree.start, pos)
+    }
+    if (tree.parent?.name === "AggregateOp") {
+      return arrayToCompletionResult(autocompleteNode[ "AggregateOp" ], tree.start, pos)
+    }
     return null
   }
 
@@ -68,16 +177,8 @@ export class HybridComplete implements Complete {
     }
     return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
       .then((labelValues: string[]) => {
-        const options: Completion[] = []
-        for (const value of labelValues) {
-          options.push({label: value})
-        }
-        return {
-          // +1 to avoid to remove the first quote.
-          from: current.start + 1,
-          to: pos,
-          options: options
-        } as CompletionResult
+        // +1 to avoid to remove the first quote.
+        return arrayToCompletionResult(labelValues, current.start + 1, pos)
       })
   }
 
@@ -113,16 +214,8 @@ export class HybridComplete implements Complete {
   private labelNames(tree: Subtree, pos: number, metricName?: string): Promise<CompletionResult> {
     return this.prometheusClient.labelNames(metricName)
       .then((labelNames: string[]) => {
-        const options: Completion[] = []
-        for (const name of labelNames) {
-          options.push({label: name})
-        }
-        return {
-          // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
-          from: tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start,
-          to: pos,
-          options: options
-        } as CompletionResult
+        // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
+        return arrayToCompletionResult(labelNames, tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos)
       })
   }
 }
