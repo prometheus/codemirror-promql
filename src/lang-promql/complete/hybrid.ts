@@ -50,7 +50,35 @@ export class HybridComplete implements Complete {
       //       metric_name{} or {}
       return this.autocompleteLabelNamesByMetric(tree, pos, state)
     }
+    if (tree.parent?.name === "LabelMatcher" && tree.name === "StringLiteral") {
+      // In that case we are in the given situation:
+      //      metric_name{labelName=""}
+      // So we can autocomplete the labelValue
+      return this.autocompleteLabelValue(tree.parent, tree, pos, state)
+    }
     return null
+  }
+
+  private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
+    // First get the labelName.
+    // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
+    if (!parent.firstChild || parent.firstChild.name !== "LabelName") {
+      // If it's not the case, then just stop to try to autocomplete it
+      return null
+    }
+    return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
+      .then((labelValues: string[]) => {
+        const options: Completion[] = []
+        for (const value of labelValues) {
+          options.push({label: value})
+        }
+        return {
+          // +1 to avoid to remove the first quote.
+          from: current.start + 1,
+          to: pos,
+          options: options
+        } as CompletionResult
+      })
   }
 
   private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, state: EditorState): Promise<CompletionResult> {

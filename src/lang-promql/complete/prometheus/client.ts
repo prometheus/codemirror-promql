@@ -28,12 +28,14 @@ interface APIResponse {
   warnings: string[];
 }
 
-// LSPClient is the HTTP client that should be used to get some information from the different endpoint provided by langserver-promql.
+// PrometheusClient is the HTTP client that should be used to get some information from the different endpoint provided by prometheus.
 // TODO integrate a cache
 export class PrometheusClient {
+  private readonly lookbackInterval = (60 * 60 * 1000) * 12; //12 hours
   private readonly url: string
   private readonly apiPrefix = "/api/v1"
   private readonly labelsEndpoint = this.apiPrefix + "/labels"
+  private readonly labelValuesEndpoint = this.apiPrefix + "/label/:name/values"
   private readonly seriesEndpoint = this.apiPrefix + "/series"
 
   constructor(url: string) {
@@ -42,9 +44,8 @@ export class PrometheusClient {
 
   labelNames(metricName?: string): Promise<string[]> {
     const end = new Date();
-    const offset = (60 * 60 * 1000) * 12; //12 hours
     const start = new Date()
-    start.setTime(start.getTime() - offset)
+    start.setTime(start.getTime() - this.lookbackInterval)
 
     if (!metricName || metricName.length === 0) {
       return axios.get<APIResponse>(this.url + this.labelsEndpoint, {
@@ -86,6 +87,23 @@ export class PrometheusClient {
         result.push(labelName)
       }
       return result
+    })
+  }
+
+  labelValues(labelName: string): Promise<string[]> {
+    const end = new Date();
+    const start = new Date()
+    start.setTime(start.getTime() - this.lookbackInterval)
+
+    return axios.get<APIResponse>(this.url + this.labelValuesEndpoint.replace(/:name/gi, labelName), {
+      params: {
+        "start": start.toISOString(),
+        "end": end.toISOString(),
+      }
+    }).then((response) => {
+      // In that case APIResponse.data already contain an array of string.
+      // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
+      return response.data ? response.data.data : []
     })
   }
 }
