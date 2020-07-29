@@ -85,6 +85,9 @@ export class PrometheusClient {
         }
       })
       for (const labelName of subResult.keys()) {
+        if (labelName === "__name__") {
+          continue
+        }
         result.push(labelName)
       }
       return result

@@ -136,6 +136,14 @@ export class HybridComplete implements Complete {
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
     const {state, pos} = context
     const tree = state.tree.resolve(pos, -1)
+    if (tree.parent?.name === "MetricIdentifier" && tree.name === "Identifier") {
+      // Here we cannot know if we have to autocomplete the metric_name, or the function or the aggregation.
+      // So we will just autocomplete everything
+      return this.prometheusClient.labelValues("__name__")
+        .then((labelNames: string[]) => {
+          return arrayToCompletionResult(labelNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+        })
+    }
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
       // In that case we are in the given situation:
       //      sum by ()
