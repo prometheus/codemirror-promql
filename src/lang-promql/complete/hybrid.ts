@@ -35,7 +35,7 @@ const autocompleteNode = {
     "=~",
     "!~"
   ],
-  "BinOp": [
+  "BinaryExpr": [
     "^",
     "*",
     "/",
@@ -48,6 +48,9 @@ const autocompleteNode = {
     "<",
     "<=",
     "!=",
+    "and",
+    "or",
+    "unless"
   ],
   "FunctionIdentifier": [
     "abs",
@@ -168,8 +171,8 @@ export class HybridComplete implements Complete {
     if (tree.name === "MatchOp") {
       return arrayToCompletionResult(autocompleteNode[ "MatchOp" ], tree.start, pos)
     }
-    if (tree.name === "BinOp") {
-      return arrayToCompletionResult(autocompleteNode[ "BinOp" ], tree.start, pos)
+    if (tree.parent?.name === "BinaryExpr") {
+      return arrayToCompletionResult(autocompleteNode[ "BinaryExpr" ], tree.start, pos)
     }
     if (tree.parent?.name === "FunctionIdentifier") {
       return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ], tree.start, pos)
