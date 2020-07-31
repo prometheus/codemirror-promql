@@ -75,22 +75,18 @@ export class PrometheusClient {
       // So we have to convert the data and we have to remove the potential duplicate labelName.
       // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
       const data = response.data.data as Map<string, string>[]
-      const result: string[] = []
-      const subResult = new Map<string, boolean>()
+      const result = new Set<string>()
 
       data.forEach((labelSet: Map<string, string>) => {
         for (const labelName of Object.keys(labelSet)) {
-          // Using the intermediate map will remove all duplicate LabelName.
-          subResult.set(labelName, true)
+          if (labelName === "__name__") {
+            continue
+          }
+          // Using the set will remove all duplicate LabelName.
+          result.add(labelName)
         }
       })
-      for (const labelName of subResult.keys()) {
-        if (labelName === "__name__") {
-          continue
-        }
-        result.push(labelName)
-      }
-      return result
+      return Array.from(result.keys())
     })
   }
 
