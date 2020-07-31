@@ -44,9 +44,8 @@ export class PrometheusClient {
   }
 
   labelNames(metricName?: string): Promise<string[]> {
-    const end = new Date();
-    const start = new Date()
-    start.setTime(start.getTime() - this.lookbackInterval)
+    const end = new Date()
+    const start = new Date(end.getTime() - this.lookbackInterval)
 
     if (!metricName || metricName.length === 0) {
       return axios.get<APIResponse>(this.url + labelsEndpoint, {
@@ -91,9 +90,8 @@ export class PrometheusClient {
   }
 
   labelValues(labelName: string): Promise<string[]> {
-    const end = new Date();
-    const start = new Date()
-    start.setTime(start.getTime() - this.lookbackInterval)
+    const end = new Date()
+    const start = new Date(end.getTime() - this.lookbackInterval)
 
     return axios.get<APIResponse>(this.url + labelValuesEndpoint.replace(/:name/gi, labelName), {
       params: {
