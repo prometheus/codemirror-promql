@@ -141,8 +141,8 @@ export class HybridComplete implements Complete {
       // So we will just autocomplete everything
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues("__name__")
-          .then((labelNames: string[]) => {
-            return arrayToCompletionResult(labelNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+          .then((metricNames: string[]) => {
+            return arrayToCompletionResult(metricNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
           })
       }
       return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos)
