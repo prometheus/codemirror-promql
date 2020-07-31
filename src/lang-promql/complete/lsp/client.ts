@@ -43,7 +43,7 @@ export class LSPClient {
   complete(body: LSPBody): Promise<CompletionItem[]> {
     return axios.post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
       .then((response) => {
-        return response.data
+        return response.data ? response.data : []
       })
   }
 }
