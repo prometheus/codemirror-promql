@@ -125,7 +125,7 @@ function arrayToCompletionResult(data: string[], from: number, to: number): Comp
   } as CompletionResult
 }
 
-// HybridComplete is going to provide a full completion result with or without a distant prometheus.
+// HybridComplete is going to provide a full completion result with or without a remote prometheus.
 export class HybridComplete implements Complete {
   private readonly prometheusClient: PrometheusClient | null;
 
@@ -148,7 +148,7 @@ export class HybridComplete implements Complete {
       return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos)
     }
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
-      // In that case we are in the given situation:
+      // In this case we are in the given situation:
       //      sum by ()
       // So we have to autocomplete any labelName
       return this.labelNames(tree, pos)
@@ -159,7 +159,7 @@ export class HybridComplete implements Complete {
       return this.autocompleteLabelNamesByMetric(tree, pos, state)
     }
     if (tree.parent?.name === "LabelMatcher" && tree.name === "StringLiteral") {
-      // In that case we are in the given situation:
+      // In this case we are in the given situation:
       //      metric_name{labelName=""}
       // So we can autocomplete the labelValue
       return this.autocompleteLabelValue(tree.parent, tree, pos, state)

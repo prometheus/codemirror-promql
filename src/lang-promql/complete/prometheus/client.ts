@@ -55,7 +55,7 @@ export class PrometheusClient {
           "end": end.toISOString(),
         }
       }).then((response) => {
-        // In that case APIResponse.data already contain an array of string.
+        // In this case APIResponse.data already contains an array of string.
         // See https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names
         return response.data ? response.data.data : []
       })
@@ -71,7 +71,7 @@ export class PrometheusClient {
       if (!response.data) {
         return []
       }
-      // In that case, APIResponse.data contain an array of map.
+      // In this case, APIResponse.data contains an array of map.
       // So we have to convert the data and we have to remove the potential duplicate labelName.
       // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
       const data = response.data.data as Map<string, string>[]
@@ -101,7 +101,7 @@ export class PrometheusClient {
         "end": end.toISOString(),
       }
     }).then((response) => {
-      // In that case APIResponse.data already contain an array of string.
+      // In this case APIResponse.data already contains an array of string.
       // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
       return response.data ? response.data.data : []
     })
