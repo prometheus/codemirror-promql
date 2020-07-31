@@ -103,6 +103,7 @@ const autocompleteNode = {
     "bottomk",
     "count",
     "count_values",
+    "group",
     "max",
     "min",
     "quantile",
