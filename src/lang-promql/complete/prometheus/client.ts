@@ -76,9 +76,18 @@ class Cache {
     this.labelValues.set(labelName, labelValues)
   }
 
-  getLabelValues(labelName: string): string[] {
-    const result = this.labelValues.get(labelName)
-    return result ? result : []
+  getLabelValues(labelName: string, metricName?: string): string[] {
+    if (!metricName || metricName.length === 0) {
+      const result = this.labelValues.get(labelName)
+      return result ? result : []
+    }
+
+    const labelSet = this.completeAssociation.get(metricName)
+    if (labelSet) {
+      const labelValues = labelSet.get(labelName)
+      return labelValues ? labelValues : []
+    }
+    return []
   }
 }
 
@@ -89,7 +98,6 @@ interface APIResponse {
 }
 
 // PrometheusClient is the HTTP client that should be used to get some information from the different endpoint provided by prometheus.
-// TODO integrate a cache
 export class PrometheusClient {
   private readonly lookbackInterval = (60 * 60 * 1000) * 12; //12 hours
   private readonly url: string
@@ -125,6 +133,45 @@ export class PrometheusClient {
       })
     }
 
+    return this.series(metricName, start, end)
+      .then((_) => {
+        return this.cache.getLabelNames(metricName)
+      })
+  }
+
+  // labelValues return a list of the value associated to the given labelName.
+  // In case a metric is provided, then the list of values is then associated to the couple <MetricName, LabelName>
+  labelValues(labelName: string, metricName?: string): Promise<string[]> {
+    if (this.cache.getLabelValues(labelName, metricName) && this.cache.getLabelValues(labelName, metricName).length > 0) {
+      return Promise.resolve(this.cache.getLabelValues(labelName, metricName))
+    }
+    const end = new Date()
+    const start = new Date(end.getTime() - this.lookbackInterval)
+
+    if (!metricName || metricName.length === 0) {
+      return axios.get<APIResponse>(this.url + labelValuesEndpoint.replace(/:name/gi, labelName), {
+        params: {
+          "start": start.toISOString(),
+          "end": end.toISOString(),
+        }
+      }).then((response) => {
+        // In this case APIResponse.data already contains an array of string.
+        // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
+        if (response.data) {
+          this.cache.setLabelValues(labelName, response.data.data)
+          return response.data.data
+        }
+        return []
+      })
+    }
+
+    return this.series(metricName, start, end)
+      .then((_) => {
+        return this.cache.getLabelValues(labelName, metricName)
+      })
+  }
+
+  private series(metricName: string, start: Date, end: Date): Promise<Map<string, string>[]> {
     return axios.get<APIResponse>(this.url + seriesEndpoint, {
       params: {
         "start": start.toISOString(),
@@ -136,46 +183,12 @@ export class PrometheusClient {
         return []
       }
       // In this case, APIResponse.data contains an array of map.
-      // So we have to convert the data and we have to remove the potential duplicate labelName.
       // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
       const data = response.data.data as Map<string, string>[]
-      const result = new Set<string>()
-
       data.forEach((labelSet: Map<string, string>) => {
         this.cache.setAssociation(metricName, labelSet)
-        for (const labelName of Object.keys(labelSet)) {
-          if (labelName === "__name__") {
-            continue
-          }
-          // Using the set will remove all duplicate LabelName.
-          result.add(labelName)
-        }
       })
-      return Array.from(result.keys())
-    })
-  }
-
-  // TODO to have a more accurate labelValue, we should provide as well the metric name. Because some value of the given label will be wrong for the associated metricName
-  labelValues(labelName: string): Promise<string[]> {
-    if (this.cache.getLabelValues(labelName) && this.cache.getLabelValues(labelName).length > 0) {
-      return Promise.resolve(this.cache.getLabelValues(labelName))
-    }
-    const end = new Date()
-    const start = new Date(end.getTime() - this.lookbackInterval)
-
-    return axios.get<APIResponse>(this.url + labelValuesEndpoint.replace(/:name/gi, labelName), {
-      params: {
-        "start": start.toISOString(),
-        "end": end.toISOString(),
-      }
-    }).then((response) => {
-      // In this case APIResponse.data already contains an array of string.
-      // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
-      if (response.data) {
-        this.cache.setLabelValues(labelName, response.data.data)
-        return response.data.data
-      }
-      return []
+      return data
     })
   }
 }

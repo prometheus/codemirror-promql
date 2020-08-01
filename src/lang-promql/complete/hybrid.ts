@@ -185,20 +185,30 @@ export class HybridComplete implements Complete {
   }
 
   private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, context: AutocompleteContext, state: EditorState): Promise<CompletionResult> | null {
+    if (!this.prometheusClient) {
+      return null
+    }
     // First get the labelName.
     // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
+    let labelName = ""
     if (this.prometheusClient && parent.firstChild && parent.firstChild.name === "LabelName") {
-      return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
-        .then((labelValues: string[]) => {
-          // +1 to avoid to remove the first quote.
-          return arrayToCompletionResult(labelValues, current.start + 1, pos, context, state)
-        })
+      labelName = state.sliceDoc(parent.firstChild.start, parent.firstChild.end)
     }
-    return null
+    // then find the metricName if it exists
+    const metricName = this.getMetricNameInVectorSelector(current, state)
+    return this.prometheusClient.labelValues(labelName, metricName)
+      .then((labelValues: string[]) => {
+        // +1 to avoid to remove the first quote.
+        return arrayToCompletionResult(labelValues, current.start + 1, pos, context, state)
+      })
   }
 
   private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, context: AutocompleteContext, state: EditorState): Promise<CompletionResult> | null {
-    // So we have to find if there is a defined metric name and then to autocomplete the associated labelName.
+    return this.labelNames(tree, pos, context, state, this.getMetricNameInVectorSelector(tree, state))
+  }
+
+  private getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
+    // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
     let currentNode: Subtree | null = tree
     while (currentNode && currentNode.name !== "VectorSelector") {
@@ -206,24 +216,22 @@ export class HybridComplete implements Complete {
     }
     if (!currentNode) {
       // Weird case that shouldn't happen, because "VectorSelector" is by definition the parent of the LabelMatchers.
-      // In case it's happening, then at least return all labelNames.
-      return this.labelNames(tree, pos, context, state)
+      return ""
     }
     // By definition "MetricIdentifier" is necessary the first child if it exists
     if (!currentNode.firstChild || currentNode.firstChild.name !== "MetricIdentifier") {
       // If it doesn't exist then we are in the given situation
       //     {}
-      return this.labelNames(tree, pos, context, state)
+      return ""
     }
     // Let's move forward to the next child.
     currentNode = currentNode.firstChild
     // By definition the next child should be an "Identifier" which contains the metricName
     if (!currentNode.firstChild || currentNode.firstChild.name !== "Identifier") {
-      // If it's not the case, then return all labelName
-      return this.labelNames(tree, pos, context, state)
+      return ""
     }
     currentNode = currentNode.firstChild
-    return this.labelNames(tree, pos, context, state, state.sliceDoc(currentNode.start, currentNode.end))
+    return state.sliceDoc(currentNode.start, currentNode.end)
   }
 
   private labelNames(tree: Subtree, pos: number, context: AutocompleteContext, state: EditorState, metricName?: string): Promise<CompletionResult> | null {
