@@ -27,6 +27,61 @@ const labelsEndpoint = apiPrefix + "/labels"
 const labelValuesEndpoint = apiPrefix + "/label/:name/values"
 const seriesEndpoint = apiPrefix + "/series"
 
+class Cache {
+  // completeAssociation is the association between a metric name, a label name and the possible label values
+  private completeAssociation: Map<string, Map<string, string[]>>
+  private labelValues: Map<string, string[]>
+  private labelNames: string[]
+
+  constructor() {
+    this.completeAssociation = new Map<string, Map<string, string[]>>()
+    this.labelValues = new Map<string, string[]>()
+    this.labelNames = []
+  }
+
+  setAssociation(metricName: string, labelSet: Map<string, string>): void {
+    let currentAssociation = this.completeAssociation.get(metricName)
+    if (!currentAssociation) {
+      currentAssociation = new Map<string, string[]>()
+      this.completeAssociation.set(metricName, currentAssociation)
+    }
+
+    for (const [ key, value ] of Object.entries(labelSet)) {
+      if (key === "__name__") {
+        continue
+      }
+      let labelValues = currentAssociation.get(key)
+      if (!labelValues || labelValues.length === 0) {
+        labelValues = [ value ]
+      } else if (!labelValues.includes(value)) {
+        labelValues.push(value)
+      }
+      currentAssociation.set(key, labelValues)
+    }
+  }
+
+  setLabelNames(labelNames: string[]): void {
+    this.labelNames = labelNames
+  }
+
+  getLabelNames(metricName?: string): string[] {
+    if (!metricName || metricName.length === 0) {
+      return this.labelNames
+    }
+    const labelSet = this.completeAssociation.get(metricName)
+    return labelSet ? Array.from(labelSet.keys()) : []
+  }
+
+  setLabelValues(labelName: string, labelValues: string[]): void {
+    this.labelValues.set(labelName, labelValues)
+  }
+
+  getLabelValues(labelName: string): string[] {
+    const result = this.labelValues.get(labelName)
+    return result ? result : []
+  }
+}
+
 interface APIResponse {
   status: string;
   data: any;
@@ -38,12 +93,18 @@ interface APIResponse {
 export class PrometheusClient {
   private readonly lookbackInterval = (60 * 60 * 1000) * 12; //12 hours
   private readonly url: string
+  private readonly cache: Cache
 
   constructor(url: string) {
+    this.cache = new Cache()
     this.url = url;
   }
 
   labelNames(metricName?: string): Promise<string[]> {
+    if (this.cache.getLabelNames(metricName) && this.cache.getLabelNames(metricName).length > 0) {
+      return Promise.resolve(this.cache.getLabelNames(metricName))
+    }
+
     const end = new Date()
     const start = new Date(end.getTime() - this.lookbackInterval)
 
@@ -56,7 +117,11 @@ export class PrometheusClient {
       }).then((response) => {
         // In this case APIResponse.data already contains an array of string.
         // See https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names
-        return response.data ? response.data.data : []
+        if (response.data) {
+          this.cache.setLabelNames(response.data.data)
+          return response.data.data
+        }
+        return []
       })
     }
 
@@ -77,6 +142,7 @@ export class PrometheusClient {
       const result = new Set<string>()
 
       data.forEach((labelSet: Map<string, string>) => {
+        this.cache.setAssociation(metricName, labelSet)
         for (const labelName of Object.keys(labelSet)) {
           if (labelName === "__name__") {
             continue
@@ -89,7 +155,11 @@ export class PrometheusClient {
     })
   }
 
+  // TODO to have a more accurate labelValue, we should provide as well the metric name. Because some value of the given label will be wrong for the associated metricName
   labelValues(labelName: string): Promise<string[]> {
+    if (this.cache.getLabelValues(labelName) && this.cache.getLabelValues(labelName).length > 0) {
+      return Promise.resolve(this.cache.getLabelValues(labelName))
+    }
     const end = new Date()
     const start = new Date(end.getTime() - this.lookbackInterval)
 
@@ -101,7 +171,11 @@ export class PrometheusClient {
     }).then((response) => {
       // In this case APIResponse.data already contains an array of string.
       // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
-      return response.data ? response.data.data : []
+      if (response.data) {
+        this.cache.setLabelValues(labelName, response.data.data)
+        return response.data.data
+      }
+      return []
     })
   }
 }
