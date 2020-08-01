@@ -26,8 +26,6 @@ import { PrometheusClient } from "./prometheus/client";
 import { Subtree } from "lezer-tree"
 import { EditorState } from "@codemirror/next/basic-setup";
 
-// TODO: filter every list returned by the prometheusClient
-
 const autocompleteNode = {
   "MatchOp": [
     "=",
@@ -117,10 +115,13 @@ const autocompleteNode = {
   ]
 }
 
-function arrayToCompletionResult(data: string[], from: number, to: number): CompletionResult {
+function arrayToCompletionResult(data: string[], from: number, to: number, context: AutocompleteContext, state: EditorState): CompletionResult {
+  const text = state.sliceDoc(from, to).toLowerCase()
   const options: Completion[] = []
   for (const value of data) {
-    options.push({label: value})
+    if (context.filter(value, text, false)) {
+      options.push({label: value})
+    }
   }
   return {
     from: from,
@@ -146,57 +147,57 @@ export class HybridComplete implements Complete {
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues("__name__")
           .then((metricNames: string[]) => {
-            return arrayToCompletionResult(metricNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+            return arrayToCompletionResult(metricNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
           })
       }
-      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
     }
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
       // In this case we are in the given situation:
       //      sum by ()
       // So we have to autocomplete any labelName
-      return this.labelNames(tree, pos)
+      return this.labelNames(tree, pos, context, state)
     }
     if (tree.name === "LabelMatchers" || (tree.parent?.name === "LabelMatcher" && tree.name === "LabelName")) {
       // In that case we are in the given situation:
       //       metric_name{} or {}
-      return this.autocompleteLabelNamesByMetric(tree, pos, state)
+      return this.autocompleteLabelNamesByMetric(tree, pos, context, state)
     }
     if (tree.parent?.name === "LabelMatcher" && tree.name === "StringLiteral") {
       // In this case we are in the given situation:
       //      metric_name{labelName=""}
       // So we can autocomplete the labelValue
-      return this.autocompleteLabelValue(tree.parent, tree, pos, state)
+      return this.autocompleteLabelValue(tree.parent, tree, pos, context, state)
     }
     if (tree.name === "MatchOp") {
-      return arrayToCompletionResult(autocompleteNode[ "MatchOp" ], tree.start, pos)
+      return arrayToCompletionResult(autocompleteNode[ "MatchOp" ], tree.start, pos, context, state)
     }
     if (tree.parent?.name === "BinaryExpr") {
-      return arrayToCompletionResult(autocompleteNode[ "BinaryExpr" ], tree.start, pos)
+      return arrayToCompletionResult(autocompleteNode[ "BinaryExpr" ], tree.start, pos, context, state)
     }
     if (tree.parent?.name === "FunctionIdentifier") {
-      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ], tree.start, pos)
+      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ], tree.start, pos, context, state)
     }
     if (tree.parent?.name === "AggregateOp") {
-      return arrayToCompletionResult(autocompleteNode[ "AggregateOp" ], tree.start, pos)
+      return arrayToCompletionResult(autocompleteNode[ "AggregateOp" ], tree.start, pos, context, state)
     }
     return null
   }
 
-  private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
+  private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, context: AutocompleteContext, state: EditorState): Promise<CompletionResult> | null {
     // First get the labelName.
     // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
     if (this.prometheusClient && parent.firstChild && parent.firstChild.name === "LabelName") {
       return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
         .then((labelValues: string[]) => {
           // +1 to avoid to remove the first quote.
-          return arrayToCompletionResult(labelValues, current.start + 1, pos)
+          return arrayToCompletionResult(labelValues, current.start + 1, pos, context, state)
         })
     }
     return null
   }
 
-  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
+  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, context: AutocompleteContext, state: EditorState): Promise<CompletionResult> | null {
     // So we have to find if there is a defined metric name and then to autocomplete the associated labelName.
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
     let currentNode: Subtree | null = tree
@@ -206,30 +207,30 @@ export class HybridComplete implements Complete {
     if (!currentNode) {
       // Weird case that shouldn't happen, because "VectorSelector" is by definition the parent of the LabelMatchers.
       // In case it's happening, then at least return all labelNames.
-      return this.labelNames(tree, pos)
+      return this.labelNames(tree, pos, context, state)
     }
     // By definition "MetricIdentifier" is necessary the first child if it exists
     if (!currentNode.firstChild || currentNode.firstChild.name !== "MetricIdentifier") {
       // If it doesn't exist then we are in the given situation
       //     {}
-      return this.labelNames(tree, pos)
+      return this.labelNames(tree, pos, context, state)
     }
     // Let's move forward to the next child.
     currentNode = currentNode.firstChild
     // By definition the next child should be an "Identifier" which contains the metricName
     if (!currentNode.firstChild || currentNode.firstChild.name !== "Identifier") {
       // If it's not the case, then return all labelName
-      return this.labelNames(tree, pos)
+      return this.labelNames(tree, pos, context, state)
     }
     currentNode = currentNode.firstChild
-    return this.labelNames(tree, pos, state.sliceDoc(currentNode.start, currentNode.end))
+    return this.labelNames(tree, pos, context, state, state.sliceDoc(currentNode.start, currentNode.end))
   }
 
-  private labelNames(tree: Subtree, pos: number, metricName?: string): Promise<CompletionResult> | null {
+  private labelNames(tree: Subtree, pos: number, context: AutocompleteContext, state: EditorState, metricName?: string): Promise<CompletionResult> | null {
     return !this.prometheusClient ? null : this.prometheusClient.labelNames(metricName)
       .then((labelNames: string[]) => {
         // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
-        return arrayToCompletionResult(labelNames, tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos)
+        return arrayToCompletionResult(labelNames, tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos, context, state)
       })
   }
 }
