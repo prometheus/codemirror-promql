@@ -26,102 +26,120 @@ import { PrometheusClient } from "./prometheus/client";
 import { Subtree } from "lezer-tree"
 import { EditorState } from "@codemirror/next/basic-setup";
 
-const autocompleteNode = {
-  "MatchOp": [
-    "=",
-    "!=",
-    "=~",
-    "!~"
-  ],
-  "BinaryExpr": [
-    "^",
-    "*",
-    "/",
-    "%",
-    "+",
-    "-",
-    "==",
-    ">=",
-    ">",
-    "<",
-    "<=",
-    "!=",
-    "and",
-    "or",
-    "unless"
-  ],
-  "FunctionIdentifier": [
-    "abs",
-    "absent",
-    "absent_over_time",
-    "avg_over_time",
-    "ceil",
-    "changes",
-    "clamp_max",
-    "clamp_min",
-    "count_over_time",
-    "days_in_month",
-    "day_of_month",
-    "day_of_week",
-    "delta",
-    "deriv",
-    "exp",
-    "floor",
-    "histogram_quantile",
-    "holt_winters",
-    "hour",
-    "idelta",
-    "increase",
-    "irate",
-    "label_replace",
-    "label_join",
-    "ln",
-    "log10",
-    "log2",
-    "max_over_time",
-    "min_over_time",
-    "minute",
-    "month",
-    "predict_linear",
-    "quantile_over_time",
-    "rate",
-    "resets",
-    "round",
-    "scalar",
-    "sort",
-    "sort_desc",
-    "sqrt",
-    "stddev_over_time",
-    "stdvar_over_time",
-    "sum_over_time",
-    "time",
-    "timestamp",
-    "vector",
-    "year"
-  ],
-  "AggregateOp": [
-    "avg",
-    "bottomk",
-    "count",
-    "count_values",
-    "group",
-    "max",
-    "min",
-    "quantile",
-    "stddev",
-    "stdvar",
-    "sum",
-    "topk",
-  ]
+interface AutoCompleteNode {
+  labels: string[];
+  type: string;
 }
 
-function arrayToCompletionResult(data: string[], from: number, to: number, context: AutocompleteContext, state: EditorState): CompletionResult {
+const autocompleteNode = {
+  "MatchOp": {
+    labels: [
+      "=",
+      "!=",
+      "=~",
+      "!~"
+    ],
+    type: ""
+  },
+  "BinaryExpr": {
+    labels: [
+      "^",
+      "*",
+      "/",
+      "%",
+      "+",
+      "-",
+      "==",
+      ">=",
+      ">",
+      "<",
+      "<=",
+      "!=",
+      "and",
+      "or",
+      "unless"
+    ],
+    type: ""
+  },
+  "FunctionIdentifier": {
+    labels: [
+      "abs",
+      "absent",
+      "absent_over_time",
+      "avg_over_time",
+      "ceil",
+      "changes",
+      "clamp_max",
+      "clamp_min",
+      "count_over_time",
+      "days_in_month",
+      "day_of_month",
+      "day_of_week",
+      "delta",
+      "deriv",
+      "exp",
+      "floor",
+      "histogram_quantile",
+      "holt_winters",
+      "hour",
+      "idelta",
+      "increase",
+      "irate",
+      "label_replace",
+      "label_join",
+      "ln",
+      "log10",
+      "log2",
+      "max_over_time",
+      "min_over_time",
+      "minute",
+      "month",
+      "predict_linear",
+      "quantile_over_time",
+      "rate",
+      "resets",
+      "round",
+      "scalar",
+      "sort",
+      "sort_desc",
+      "sqrt",
+      "stddev_over_time",
+      "stdvar_over_time",
+      "sum_over_time",
+      "time",
+      "timestamp",
+      "vector",
+      "year"
+    ],
+    type: "function",
+  },
+  "AggregateOp": {
+    labels: [
+      "avg",
+      "bottomk",
+      "count",
+      "count_values",
+      "group",
+      "max",
+      "min",
+      "quantile",
+      "stddev",
+      "stdvar",
+      "sum",
+      "topk",
+    ],
+    "type": "keyword"
+  }
+}
+
+function arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, context: AutocompleteContext, state: EditorState): CompletionResult {
   const text = state.sliceDoc(from, to).toLowerCase()
   const options: Completion[] = []
-  for (const value of data) {
-    if (context.filter(value, text, false)) {
-      options.push({label: value})
-    }
+  for (const completionList of data) {
+    for (const label of completionList.labels)
+      if (context.filter(label, text, false)) {
+        options.push({label: label, apply: "", type: completionList.type})
+      }
   }
   return {
     from: from,
@@ -147,10 +165,11 @@ export class HybridComplete implements Complete {
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues("__name__")
           .then((metricNames: string[]) => {
-            return arrayToCompletionResult(metricNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
+            const result: AutoCompleteNode[] = [ {labels: metricNames, type: "constant"} ]
+            return arrayToCompletionResult(result.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
           })
       }
-      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
+      return arrayToCompletionResult([ autocompleteNode[ "FunctionIdentifier" ] ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
     }
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
       // In this case we are in the given situation:
@@ -170,16 +189,16 @@ export class HybridComplete implements Complete {
       return this.autocompleteLabelValue(tree.parent, tree, pos, context, state)
     }
     if (tree.name === "MatchOp") {
-      return arrayToCompletionResult(autocompleteNode[ "MatchOp" ], tree.start, pos, context, state)
+      return arrayToCompletionResult([ autocompleteNode[ "MatchOp" ] ], tree.start, pos, context, state)
     }
     if (tree.parent?.name === "BinaryExpr") {
-      return arrayToCompletionResult(autocompleteNode[ "BinaryExpr" ], tree.start, pos, context, state)
+      return arrayToCompletionResult([ autocompleteNode[ "BinaryExpr" ] ], tree.start, pos, context, state)
     }
     if (tree.parent?.name === "FunctionIdentifier") {
-      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ], tree.start, pos, context, state)
+      return arrayToCompletionResult([ autocompleteNode[ "FunctionIdentifier" ] ], tree.start, pos, context, state)
     }
     if (tree.parent?.name === "AggregateOp") {
-      return arrayToCompletionResult(autocompleteNode[ "AggregateOp" ], tree.start, pos, context, state)
+      return arrayToCompletionResult([ autocompleteNode[ "AggregateOp" ] ], tree.start, pos, context, state)
     }
     return null
   }
@@ -199,7 +218,7 @@ export class HybridComplete implements Complete {
     return this.prometheusClient.labelValues(labelName, metricName)
       .then((labelValues: string[]) => {
         // +1 to avoid to remove the first quote.
-        return arrayToCompletionResult(labelValues, current.start + 1, pos, context, state)
+        return arrayToCompletionResult([ {labels: labelValues, type: "text"} ], current.start + 1, pos, context, state)
       })
   }
 
@@ -238,7 +257,11 @@ export class HybridComplete implements Complete {
     return !this.prometheusClient ? null : this.prometheusClient.labelNames(metricName)
       .then((labelNames: string[]) => {
         // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
-        return arrayToCompletionResult(labelNames, tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos, context, state)
+        return arrayToCompletionResult([ {
+            labels: labelNames,
+            type: "constant"
+          } ],
+          tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos, context, state)
       })
   }
 }
