@@ -128,16 +128,16 @@ const autocompleteNode = {
       "sum",
       "topk",
     ],
-    "type": "keyword"
+    type: "keyword"
   }
 }
 
 function arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, context: AutocompleteContext, state: EditorState): CompletionResult {
-  const text = state.sliceDoc(from, to).toLowerCase()
+  const text = state.sliceDoc(from, to)
   const options: Completion[] = []
   for (const completionList of data) {
     for (const label of completionList.labels)
-      if (context.filter(label, text, false)) {
+      if (context.filter(label, text, true)) {
         options.push({label: label, apply: "", type: completionList.type})
       }
   }
