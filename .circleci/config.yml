@@ -1,61 +1,40 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
-version: 2
-
-defaults: &defaults
-  working_directory: ~/repo
-  docker:
-    - image: circleci/node:10.16.3
-
+version: 2.1
+orbs:
+  node: circleci/node@3.0.1
 jobs:
-
   build-lib:
-    <<: *defaults
+    executor:
+      name: node/default
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package-lock.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-      - run: npm install
+      - node/install-packages
       - run: npm run build
       - persist_to_workspace:
-          root: ~/repo
+          root: ~/project
           paths:
             - lib
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
 
   lint-lib:
-    <<: *defaults
+    executor:
+      name: node/default
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package-lock.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
+      - node/install-packages
       - run: npm run lint
 
-
   publish:
-    <<: *defaults
+    executor:
+      name: node/default
     steps:
       - checkout
       - attach_workspace:
-          at: ~/repo
+          at: ~/project
       - run:
           name: Authenticate with registry
-          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
-      - run: cp ~/repo/README.md ~/repo/lib/README.md
-      - run: cp ~/repo/package.json ~/repo/lib/package.json
-      - run: npm publish ~/repo/lib --access public
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/project/.npmrc
+      - run: cp ~/project/README.md ~/project/lib/README.md
+      - run: cp ~/project/package.json ~/project/lib/package.json
+      - run: npm publish ~/project/lib --access public
 
 workflows:
   version: 2
