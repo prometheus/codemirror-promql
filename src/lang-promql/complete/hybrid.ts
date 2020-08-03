@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/next/autocomplete";
+import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from "@codemirror/next/autocomplete";
 import { Complete } from "./index";
 import { PrometheusClient } from "./prometheus/client";
 import { Subtree } from "lezer-tree"
@@ -132,7 +132,25 @@ const autocompleteNode = {
   }
 }
 
-function arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, context: AutocompleteContext, state: EditorState): CompletionResult {
+const snippets: readonly SnippetSpec[] = [
+  {
+    keyword: 'sum(rate(<input vector>[5m]))',
+    snippet: 'sum(rate(${<input vector>}[5m]))',
+  },
+  {
+    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>[5m])))',
+    snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
+  },
+  {
+    keyword: 'label_replace(<input vector>, "<dst>", "<replacement>", "<src>", "<regex>")',
+    snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
+  },
+];
+
+// parsedSnippets shouldn't be modified. It's only there to not parse everytime the above list of snippet
+const parsedSnippets = snippets.map(s => ({label: s.name || s.keyword, apply: snippet(s.snippet)}))
+
+function arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, context: AutocompleteContext, state: EditorState, includeSnippet = false): CompletionResult {
   const text = state.sliceDoc(from, to)
   const options: Completion[] = []
   for (const completionList of data) {
@@ -140,6 +158,13 @@ function arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: num
       if (context.filter(label, text, true)) {
         options.push({label: label, apply: "", type: completionList.type})
       }
+  }
+  if (includeSnippet) {
+    for (const s of parsedSnippets) {
+      if (context.filter(s.label, text, false)) {
+        options.push(s)
+      }
+    }
   }
   return {
     from: from,
@@ -166,10 +191,10 @@ export class HybridComplete implements Complete {
         return this.prometheusClient.labelValues("__name__")
           .then((metricNames: string[]) => {
             const result: AutoCompleteNode[] = [ {labels: metricNames, type: "constant"} ]
-            return arrayToCompletionResult(result.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
+            return arrayToCompletionResult(result.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state, true)
           })
       }
-      return arrayToCompletionResult([ autocompleteNode[ "FunctionIdentifier" ] ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state)
+      return arrayToCompletionResult([ autocompleteNode[ "FunctionIdentifier" ] ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state, true)
     }
     if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
       // In this case we are in the given situation:
