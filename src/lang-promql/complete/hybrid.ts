@@ -25,109 +25,44 @@ import { Complete } from "./index";
 import { PrometheusClient } from "./prometheus/client";
 import { Subtree } from "lezer-tree"
 import { EditorState } from "@codemirror/next/basic-setup";
+import { promQLSyntax } from 'lezer-promql';
 
 interface AutoCompleteNode {
   labels: string[];
   type: string;
 }
 
+const
+  MatchOp = "MatchOp",
+  BinOp = "BinOp",
+  BinaryExpr = "BinaryExpr",
+  FunctionIdentifier = "FunctionIdentifier",
+  AggregateOp = "AggregateOp",
+  MetricIdentifier = "MetricIdentifier",
+  Identifier = "Identifier",
+  GroupingLabels = "GroupingLabels",
+  GroupingLabel = "GroupingLabel",
+  LabelMatchers = "LabelMatchers",
+  LabelMatcher = "LabelMatcher",
+  LabelName = "LabelName",
+  VectorSelector = "VectorSelector",
+  StringLiteral = "StringLiteral"
+
 const autocompleteNode = {
   "MatchOp": {
-    labels: [
-      "=",
-      "!=",
-      "=~",
-      "!~"
-    ],
+    labels: promQLSyntax[MatchOp],
     type: ""
   },
   "BinaryExpr": {
-    labels: [
-      "^",
-      "*",
-      "/",
-      "%",
-      "+",
-      "-",
-      "==",
-      ">=",
-      ">",
-      "<",
-      "<=",
-      "!=",
-      "and",
-      "or",
-      "unless"
-    ],
+    labels: promQLSyntax[BinOp],
     type: ""
   },
   "FunctionIdentifier": {
-    labels: [
-      "abs",
-      "absent",
-      "absent_over_time",
-      "avg_over_time",
-      "ceil",
-      "changes",
-      "clamp_max",
-      "clamp_min",
-      "count_over_time",
-      "days_in_month",
-      "day_of_month",
-      "day_of_week",
-      "delta",
-      "deriv",
-      "exp",
-      "floor",
-      "histogram_quantile",
-      "holt_winters",
-      "hour",
-      "idelta",
-      "increase",
-      "irate",
-      "label_replace",
-      "label_join",
-      "ln",
-      "log10",
-      "log2",
-      "max_over_time",
-      "min_over_time",
-      "minute",
-      "month",
-      "predict_linear",
-      "quantile_over_time",
-      "rate",
-      "resets",
-      "round",
-      "scalar",
-      "sort",
-      "sort_desc",
-      "sqrt",
-      "stddev_over_time",
-      "stdvar_over_time",
-      "sum_over_time",
-      "time",
-      "timestamp",
-      "vector",
-      "year"
-    ],
+    labels: promQLSyntax[FunctionIdentifier],
     type: "function",
   },
   "AggregateOp": {
-    labels: [
-      "avg",
-      "bottomk",
-      "count",
-      "count_values",
-      "group",
-      "max",
-      "min",
-      "quantile",
-      "stddev",
-      "stdvar",
-      "sum",
-      "topk",
-    ],
+    labels: promQLSyntax[AggregateOp],
     type: "keyword"
   }
 }
@@ -184,46 +119,46 @@ export class HybridComplete implements Complete {
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
     const {state, pos} = context
     const tree = state.tree.resolve(pos, -1)
-    if (tree.parent?.name === "MetricIdentifier" && tree.name === "Identifier") {
+    if (tree.parent?.name === MetricIdentifier && tree.name === Identifier) {
       // Here we cannot know if we have to autocomplete the metric_name, or the function or the aggregation.
       // So we will just autocomplete everything
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues("__name__")
           .then((metricNames: string[]) => {
             const result: AutoCompleteNode[] = [ {labels: metricNames, type: "constant"} ]
-            return arrayToCompletionResult(result.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state, true)
+            return arrayToCompletionResult(result.concat(autocompleteNode[ FunctionIdentifier ], autocompleteNode[ AggregateOp ]), tree.start, pos, context, state, true)
           })
       }
-      return arrayToCompletionResult([ autocompleteNode[ "FunctionIdentifier" ] ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos, context, state, true)
+      return arrayToCompletionResult([ autocompleteNode[ FunctionIdentifier ] ].concat(autocompleteNode[AggregateOp ]), tree.start, pos, context, state, true)
     }
-    if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
+    if (tree.name === GroupingLabels || (tree.parent?.name === GroupingLabel && tree.name === LabelName)) {
       // In this case we are in the given situation:
       //      sum by ()
       // So we have to autocomplete any labelName
       return this.labelNames(tree, pos, context, state)
     }
-    if (tree.name === "LabelMatchers" || (tree.parent?.name === "LabelMatcher" && tree.name === "LabelName")) {
+    if (tree.name === LabelMatchers || (tree.parent?.name === LabelMatcher && tree.name === LabelName)) {
       // In that case we are in the given situation:
       //       metric_name{} or {}
       return this.autocompleteLabelNamesByMetric(tree, pos, context, state)
     }
-    if (tree.parent?.name === "LabelMatcher" && tree.name === "StringLiteral") {
+    if (tree.parent?.name === LabelMatcher && tree.name === StringLiteral) {
       // In this case we are in the given situation:
       //      metric_name{labelName=""}
       // So we can autocomplete the labelValue
       return this.autocompleteLabelValue(tree.parent, tree, pos, context, state)
     }
-    if (tree.name === "MatchOp") {
-      return arrayToCompletionResult([ autocompleteNode[ "MatchOp" ] ], tree.start, pos, context, state)
+    if (tree.name === MatchOp) {
+      return arrayToCompletionResult([ autocompleteNode[ MatchOp ] ], tree.start, pos, context, state)
     }
-    if (tree.parent?.name === "BinaryExpr") {
-      return arrayToCompletionResult([ autocompleteNode[ "BinaryExpr" ] ], tree.start, pos, context, state)
+    if (tree.parent?.name === BinaryExpr) {
+      return arrayToCompletionResult([ autocompleteNode[ BinaryExpr ] ], tree.start, pos, context, state)
     }
-    if (tree.parent?.name === "FunctionIdentifier") {
-      return arrayToCompletionResult([ autocompleteNode[ "FunctionIdentifier" ] ], tree.start, pos, context, state)
+    if (tree.parent?.name === FunctionIdentifier) {
+      return arrayToCompletionResult([ autocompleteNode[ FunctionIdentifier ] ], tree.start, pos, context, state)
     }
-    if (tree.parent?.name === "AggregateOp") {
-      return arrayToCompletionResult([ autocompleteNode[ "AggregateOp" ] ], tree.start, pos, context, state)
+    if (tree.parent?.name === AggregateOp) {
+      return arrayToCompletionResult([ autocompleteNode[ AggregateOp ] ], tree.start, pos, context, state)
     }
     return null
   }
@@ -235,7 +170,7 @@ export class HybridComplete implements Complete {
     // First get the labelName.
     // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
     let labelName = ""
-    if (this.prometheusClient && parent.firstChild && parent.firstChild.name === "LabelName") {
+    if (this.prometheusClient && parent.firstChild && parent.firstChild.name === LabelName) {
       labelName = state.sliceDoc(parent.firstChild.start, parent.firstChild.end)
     }
     // then find the metricName if it exists
@@ -255,7 +190,7 @@ export class HybridComplete implements Complete {
     // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
     let currentNode: Subtree | null = tree
-    while (currentNode && currentNode.name !== "VectorSelector") {
+    while (currentNode && currentNode.name !== VectorSelector) {
       currentNode = currentNode.parent
     }
     if (!currentNode) {
@@ -263,7 +198,7 @@ export class HybridComplete implements Complete {
       return ""
     }
     // By definition "MetricIdentifier" is necessary the first child if it exists
-    if (!currentNode.firstChild || currentNode.firstChild.name !== "MetricIdentifier") {
+    if (!currentNode.firstChild || currentNode.firstChild.name !== MetricIdentifier) {
       // If it doesn't exist then we are in the given situation
       //     {}
       return ""
@@ -271,7 +206,7 @@ export class HybridComplete implements Complete {
     // Let's move forward to the next child.
     currentNode = currentNode.firstChild
     // By definition the next child should be an "Identifier" which contains the metricName
-    if (!currentNode.firstChild || currentNode.firstChild.name !== "Identifier") {
+    if (!currentNode.firstChild || currentNode.firstChild.name !== Identifier) {
       return ""
     }
     currentNode = currentNode.firstChild
@@ -286,7 +221,7 @@ export class HybridComplete implements Complete {
             labels: labelNames,
             type: "constant"
           } ],
-          tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos, context, state)
+          tree.name === GroupingLabels || tree.name === LabelMatchers ? tree.start + 1 : tree.start, pos, context, state)
       })
   }
 }
