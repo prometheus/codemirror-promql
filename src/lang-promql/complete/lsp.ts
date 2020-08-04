@@ -55,8 +55,15 @@ export class LSPComplete implements Complete {
         let textEdit: TextEdit | undefined
 
         for (const res of items) {
-          // TODO map kind with icon Completion.type when it is released on CMN side
-          // https://github.com/codemirror/codemirror.next/commit/459bba29c1fd1d80fc4f36dac27e5825b2362273
+          let type = ""
+          switch (res.kind) {
+            case 12:
+              type = "constant"
+              break
+            case 3:
+              type = "function"
+              break
+          }
 
           // `apply` is the string that will be used when the completion is performed.
           // By default it's the same value as the label (i.e the same string as the one shown in the completionList)
@@ -65,7 +72,7 @@ export class LSPComplete implements Complete {
             apply = res.textEdit.newText
             textEdit = res.textEdit
           }
-          options.push({label: res.label, apply: apply})
+          options.push({label: res.label, apply: apply, type: type})
         }
 
         // `from` and `to` are the absolute value in term of character and doesn't consider the line number.

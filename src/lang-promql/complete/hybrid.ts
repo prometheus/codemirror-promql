@@ -20,107 +20,86 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/next/autocomplete";
+import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from "@codemirror/next/autocomplete";
 import { Complete } from "./index";
 import { PrometheusClient } from "./prometheus/client";
 import { Subtree } from "lezer-tree"
 import { EditorState } from "@codemirror/next/basic-setup";
+import { promQLSyntax } from 'lezer-promql';
 
-// TODO: filter every list returned by the prometheusClient
-
-const autocompleteNode = {
-  "MatchOp": [
-    "=",
-    "!=",
-    "=~",
-    "!~"
-  ],
-  "BinaryExpr": [
-    "^",
-    "*",
-    "/",
-    "%",
-    "+",
-    "-",
-    "==",
-    ">=",
-    ">",
-    "<",
-    "<=",
-    "!=",
-    "and",
-    "or",
-    "unless"
-  ],
-  "FunctionIdentifier": [
-    "abs",
-    "absent",
-    "absent_over_time",
-    "avg_over_time",
-    "ceil",
-    "changes",
-    "clamp_max",
-    "clamp_min",
-    "count_over_time",
-    "days_in_month",
-    "day_of_month",
-    "day_of_week",
-    "delta",
-    "deriv",
-    "exp",
-    "floor",
-    "histogram_quantile",
-    "holt_winters",
-    "hour",
-    "idelta",
-    "increase",
-    "irate",
-    "label_replace",
-    "label_join",
-    "ln",
-    "log10",
-    "log2",
-    "max_over_time",
-    "min_over_time",
-    "minute",
-    "month",
-    "predict_linear",
-    "quantile_over_time",
-    "rate",
-    "resets",
-    "round",
-    "scalar",
-    "sort",
-    "sort_desc",
-    "sqrt",
-    "stddev_over_time",
-    "stdvar_over_time",
-    "sum_over_time",
-    "time",
-    "timestamp",
-    "vector",
-    "year"
-  ],
-  "AggregateOp": [
-    "avg",
-    "bottomk",
-    "count",
-    "count_values",
-    "group",
-    "max",
-    "min",
-    "quantile",
-    "stddev",
-    "stdvar",
-    "sum",
-    "topk",
-  ]
+interface AutoCompleteNode {
+  labels: string[];
+  type: string;
 }
 
-function arrayToCompletionResult(data: string[], from: number, to: number): CompletionResult {
+const
+  MatchOp = "MatchOp",
+  BinOp = "BinOp",
+  BinaryExpr = "BinaryExpr",
+  FunctionIdentifier = "FunctionIdentifier",
+  AggregateOp = "AggregateOp",
+  MetricIdentifier = "MetricIdentifier",
+  Identifier = "Identifier",
+  GroupingLabels = "GroupingLabels",
+  GroupingLabel = "GroupingLabel",
+  LabelMatchers = "LabelMatchers",
+  LabelMatcher = "LabelMatcher",
+  LabelName = "LabelName",
+  VectorSelector = "VectorSelector",
+  StringLiteral = "StringLiteral"
+
+const autocompleteNode = {
+  "MatchOp": {
+    labels: promQLSyntax[MatchOp],
+    type: ""
+  },
+  "BinaryExpr": {
+    labels: promQLSyntax[BinOp],
+    type: ""
+  },
+  "FunctionIdentifier": {
+    labels: promQLSyntax[FunctionIdentifier],
+    type: "function",
+  },
+  "AggregateOp": {
+    labels: promQLSyntax[AggregateOp],
+    type: "keyword"
+  }
+}
+
+const snippets: readonly SnippetSpec[] = [
+  {
+    keyword: 'sum(rate(<input vector>[5m]))',
+    snippet: 'sum(rate(${<input vector>}[5m]))',
+  },
+  {
+    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>[5m])))',
+    snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
+  },
+  {
+    keyword: 'label_replace(<input vector>, "<dst>", "<replacement>", "<src>", "<regex>")',
+    snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
+  },
+];
+
+// parsedSnippets shouldn't be modified. It's only there to not parse everytime the above list of snippet
+const parsedSnippets = snippets.map(s => ({label: s.name || s.keyword, apply: snippet(s.snippet)}))
+
+function arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, context: AutocompleteContext, state: EditorState, includeSnippet = false): CompletionResult {
+  const text = state.sliceDoc(from, to)
   const options: Completion[] = []
-  for (const value of data) {
-    options.push({label: value})
+  for (const completionList of data) {
+    for (const label of completionList.labels)
+      if (context.filter(label, text, true)) {
+        options.push({label: label, apply: "", type: completionList.type})
+      }
+  }
+  if (includeSnippet) {
+    for (const s of parsedSnippets) {
+      if (context.filter(s.label, text, false)) {
+        options.push(s)
+      }
+    }
   }
   return {
     from: from,
@@ -140,96 +119,109 @@ export class HybridComplete implements Complete {
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
     const {state, pos} = context
     const tree = state.tree.resolve(pos, -1)
-    if (tree.parent?.name === "MetricIdentifier" && tree.name === "Identifier") {
+    if (tree.parent?.name === MetricIdentifier && tree.name === Identifier) {
       // Here we cannot know if we have to autocomplete the metric_name, or the function or the aggregation.
       // So we will just autocomplete everything
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues("__name__")
           .then((metricNames: string[]) => {
-            return arrayToCompletionResult(metricNames.concat(autocompleteNode[ "FunctionIdentifier" ], autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+            const result: AutoCompleteNode[] = [ {labels: metricNames, type: "constant"} ]
+            return arrayToCompletionResult(result.concat(autocompleteNode[ FunctionIdentifier ], autocompleteNode[ AggregateOp ]), tree.start, pos, context, state, true)
           })
       }
-      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ].concat(autocompleteNode[ "AggregateOp" ]), tree.start, pos)
+      return arrayToCompletionResult([ autocompleteNode[ FunctionIdentifier ] ].concat(autocompleteNode[AggregateOp ]), tree.start, pos, context, state, true)
     }
-    if (tree.name === "GroupingLabels" || (tree.parent?.name === "GroupingLabel" && tree.name === "LabelName")) {
+    if (tree.name === GroupingLabels || (tree.parent?.name === GroupingLabel && tree.name === LabelName)) {
       // In this case we are in the given situation:
       //      sum by ()
       // So we have to autocomplete any labelName
-      return this.labelNames(tree, pos)
+      return this.labelNames(tree, pos, context, state)
     }
-    if (tree.name === "LabelMatchers" || (tree.parent?.name === "LabelMatcher" && tree.name === "LabelName")) {
+    if (tree.name === LabelMatchers || (tree.parent?.name === LabelMatcher && tree.name === LabelName)) {
       // In that case we are in the given situation:
       //       metric_name{} or {}
-      return this.autocompleteLabelNamesByMetric(tree, pos, state)
+      return this.autocompleteLabelNamesByMetric(tree, pos, context, state)
     }
-    if (tree.parent?.name === "LabelMatcher" && tree.name === "StringLiteral") {
+    if (tree.parent?.name === LabelMatcher && tree.name === StringLiteral) {
       // In this case we are in the given situation:
       //      metric_name{labelName=""}
       // So we can autocomplete the labelValue
-      return this.autocompleteLabelValue(tree.parent, tree, pos, state)
+      return this.autocompleteLabelValue(tree.parent, tree, pos, context, state)
     }
-    if (tree.name === "MatchOp") {
-      return arrayToCompletionResult(autocompleteNode[ "MatchOp" ], tree.start, pos)
+    if (tree.name === MatchOp) {
+      return arrayToCompletionResult([ autocompleteNode[ MatchOp ] ], tree.start, pos, context, state)
     }
-    if (tree.parent?.name === "BinaryExpr") {
-      return arrayToCompletionResult(autocompleteNode[ "BinaryExpr" ], tree.start, pos)
+    if (tree.parent?.name === BinaryExpr) {
+      return arrayToCompletionResult([ autocompleteNode[ BinaryExpr ] ], tree.start, pos, context, state)
     }
-    if (tree.parent?.name === "FunctionIdentifier") {
-      return arrayToCompletionResult(autocompleteNode[ "FunctionIdentifier" ], tree.start, pos)
+    if (tree.parent?.name === FunctionIdentifier) {
+      return arrayToCompletionResult([ autocompleteNode[ FunctionIdentifier ] ], tree.start, pos, context, state)
     }
-    if (tree.parent?.name === "AggregateOp") {
-      return arrayToCompletionResult(autocompleteNode[ "AggregateOp" ], tree.start, pos)
+    if (tree.parent?.name === AggregateOp) {
+      return arrayToCompletionResult([ autocompleteNode[ AggregateOp ] ], tree.start, pos, context, state)
     }
     return null
   }
 
-  private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
+  private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, context: AutocompleteContext, state: EditorState): Promise<CompletionResult> | null {
+    if (!this.prometheusClient) {
+      return null
+    }
     // First get the labelName.
     // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
-    if (this.prometheusClient && parent.firstChild && parent.firstChild.name === "LabelName") {
-      return this.prometheusClient.labelValues(state.sliceDoc(parent.firstChild.start, parent.firstChild.end))
-        .then((labelValues: string[]) => {
-          // +1 to avoid to remove the first quote.
-          return arrayToCompletionResult(labelValues, current.start + 1, pos)
-        })
+    let labelName = ""
+    if (this.prometheusClient && parent.firstChild && parent.firstChild.name === LabelName) {
+      labelName = state.sliceDoc(parent.firstChild.start, parent.firstChild.end)
     }
-    return null
+    // then find the metricName if it exists
+    const metricName = this.getMetricNameInVectorSelector(current, state)
+    return this.prometheusClient.labelValues(labelName, metricName)
+      .then((labelValues: string[]) => {
+        // +1 to avoid to remove the first quote.
+        return arrayToCompletionResult([ {labels: labelValues, type: "text"} ], current.start + 1, pos, context, state)
+      })
   }
 
-  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
-    // So we have to find if there is a defined metric name and then to autocomplete the associated labelName.
+  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, context: AutocompleteContext, state: EditorState): Promise<CompletionResult> | null {
+    return this.labelNames(tree, pos, context, state, this.getMetricNameInVectorSelector(tree, state))
+  }
+
+  private getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
+    // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
     let currentNode: Subtree | null = tree
-    while (currentNode && currentNode.name !== "VectorSelector") {
+    while (currentNode && currentNode.name !== VectorSelector) {
       currentNode = currentNode.parent
     }
     if (!currentNode) {
       // Weird case that shouldn't happen, because "VectorSelector" is by definition the parent of the LabelMatchers.
-      // In case it's happening, then at least return all labelNames.
-      return this.labelNames(tree, pos)
+      return ""
     }
     // By definition "MetricIdentifier" is necessary the first child if it exists
-    if (!currentNode.firstChild || currentNode.firstChild.name !== "MetricIdentifier") {
+    if (!currentNode.firstChild || currentNode.firstChild.name !== MetricIdentifier) {
       // If it doesn't exist then we are in the given situation
       //     {}
-      return this.labelNames(tree, pos)
+      return ""
     }
     // Let's move forward to the next child.
     currentNode = currentNode.firstChild
     // By definition the next child should be an "Identifier" which contains the metricName
-    if (!currentNode.firstChild || currentNode.firstChild.name !== "Identifier") {
-      // If it's not the case, then return all labelName
-      return this.labelNames(tree, pos)
+    if (!currentNode.firstChild || currentNode.firstChild.name !== Identifier) {
+      return ""
     }
     currentNode = currentNode.firstChild
-    return this.labelNames(tree, pos, state.sliceDoc(currentNode.start, currentNode.end))
+    return state.sliceDoc(currentNode.start, currentNode.end)
   }
 
-  private labelNames(tree: Subtree, pos: number, metricName?: string): Promise<CompletionResult> | null {
+  private labelNames(tree: Subtree, pos: number, context: AutocompleteContext, state: EditorState, metricName?: string): Promise<CompletionResult> | null {
     return !this.prometheusClient ? null : this.prometheusClient.labelNames(metricName)
       .then((labelNames: string[]) => {
         // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
-        return arrayToCompletionResult(labelNames, tree.name === "GroupingLabels" || tree.name === "LabelMatchers" ? tree.start + 1 : tree.start, pos)
+        return arrayToCompletionResult([ {
+            labels: labelNames,
+            type: "constant"
+          } ],
+          tree.name === GroupingLabels || tree.name === LabelMatchers ? tree.start + 1 : tree.start, pos, context, state)
       })
   }
 }

@@ -27,11 +27,11 @@
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
     "axios": "^0.19.2",
-    "lezer-promql": "^0.2.0",
+    "lezer-promql": "0.5.0",
     "vscode-languageserver-types": "^3.15.1"
   },
   "devDependencies": {
-    "@codemirror/next": "^0.8.0",
+    "@codemirror/next": "^0.9.0",
     "@types/node": "^13.9.1",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.22.0",
@@ -45,6 +45,6 @@
     "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
-    "@codemirror/next": "^0.8.0"
+    "@codemirror/next": "^0.9.0"
   }
 }
