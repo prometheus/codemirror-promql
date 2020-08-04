@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import { LSPBody, LSPClient } from './lsp/client';
-import { AutocompleteContext, Completion, CompletionResult } from '@codemirror/next/autocomplete';
+import { AutocompleteContext, Completion, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
 import { CompletionItem, TextEdit } from 'vscode-languageserver-types';
 import { Complete } from './index';
 
@@ -71,7 +71,7 @@ export class LSPComplete implements Complete {
           apply = res.textEdit.newText;
           textEdit = res.textEdit;
         }
-        options.push({ label: res.label, apply: apply, type: type });
+        options.push({ label: res.label, apply: apply, type: type, score: 0 });
       }
 
       // `from` and `to` are the absolute value in term of character and doesn't consider the line number.

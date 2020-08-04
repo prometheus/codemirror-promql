@@ -20,7 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from '@codemirror/next/autocomplete';
+import {
+  AutocompleteContext,
+  Completion,
+  CompletionResult,
+  snippet,
+  SnippetSpec,
+} from '@nexucis/codemirror-next-autocomplete';
 import { Complete } from './index';
 import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
@@ -85,6 +91,7 @@ const snippets: readonly SnippetSpec[] = [
 const parsedSnippets = snippets.map((s) => ({
   label: s.name || s.keyword,
   apply: snippet(s.snippet),
+  score: 0,
 }));
 
 function arrayToCompletionResult(
@@ -98,14 +105,18 @@ function arrayToCompletionResult(
   const text = state.sliceDoc(from, to);
   const options: Completion[] = [];
   for (const completionList of data) {
-    for (const label of completionList.labels)
-      if (context.filter(label, text, true)) {
-        options.push({ label: label, apply: '', type: completionList.type });
+    for (const label of completionList.labels) {
+      let score: number | null;
+      if ((score = context.filter(label, text, true))) {
+        options.push({ label: label, apply: '', type: completionList.type, score: score });
       }
+    }
   }
   if (includeSnippet) {
     for (const s of parsedSnippets) {
-      if (context.filter(s.label, text, false)) {
+      let score: number | null;
+      if ((score = context.filter(s.label, text, false))) {
+        s.score = score;
         options.push(s);
       }
     }

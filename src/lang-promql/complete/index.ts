@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, CompletionResult } from '@codemirror/next/autocomplete';
+import { AutocompleteContext, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
 import { LSPClient } from './lsp/client';
 import { LSPComplete } from './lsp';
 import { HybridComplete } from './hybrid';
