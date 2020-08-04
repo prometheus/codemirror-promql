@@ -20,41 +20,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { LezerSyntax } from "@codemirror/next/syntax";
-import { parser } from "lezer-promql";
-import { styleTags } from "@codemirror/next/highlight";
-import { Extension } from "@codemirror/next/state";
-import { completePromQL } from "./complete";
+import { LezerSyntax } from '@codemirror/next/syntax';
+import { parser } from 'lezer-promql';
+import { styleTags } from '@codemirror/next/highlight';
+import { Extension } from '@codemirror/next/state';
+import { completePromQL } from './complete';
 
-export const promQLSyntax = new LezerSyntax(parser.withProps(
-  styleTags({
-    LineComment: "comment",
-    LabelName: "labelName",
-    StringLiteral: "string",
-    NumberLiteral: "number",
-    Duration: "number",
-    "abs absent absent_over_time avg_over_time ceil changes clamp_max clamp_min count_over_time days_in_month day_of_month day_of_week delta deriv exp floor histogram_quantile holt_winters hour idelta increase irate label_replace label_join ln log10 log2 max_over_time min_over_time minute month predict_linear quantile_over_time rate resets round scalar sort sort_desc sqrt stddev_over_time stdvar_over_time sum_over_time time timestamp vector year": "functionName",
-    "avg bottomk count count_values group max min quantile stddev stdvar sum topk": "operatorKeyword",
-    "by without bool on ignoring group_left group_right offset": "modifier",
-    "and unless or": "logicOperator",
-    BinOp: "operator",
-    MatchOp: "compareOperator",
-    UnaryOp: "arithmeticOperator",
-    "( )": "paren",
-    "[ ]": "squareBracket",
-    "{ }": "brace",
-    "⚠": "invalid",
-  })
-), {
-  languageData: {
-    closeBrackets: {brackets: [ '(', '[', '{', "'", '"', '`' ]},
-    commentTokens: {line: '#'},
-  },
-})
+export const promQLSyntax = new LezerSyntax(
+  parser.withProps(
+    styleTags({
+      LineComment: 'comment',
+      LabelName: 'labelName',
+      StringLiteral: 'string',
+      NumberLiteral: 'number',
+      Duration: 'number',
+      'abs absent absent_over_time avg_over_time ceil changes clamp_max clamp_min count_over_time days_in_month day_of_month day_of_week delta deriv exp floor histogram_quantile holt_winters hour idelta increase irate label_replace label_join ln log10 log2 max_over_time min_over_time minute month predict_linear quantile_over_time rate resets round scalar sort sort_desc sqrt stddev_over_time stdvar_over_time sum_over_time time timestamp vector year':
+        'functionName',
+      'avg bottomk count count_values group max min quantile stddev stdvar sum topk': 'operatorKeyword',
+      'by without bool on ignoring group_left group_right offset': 'modifier',
+      'and unless or': 'logicOperator',
+      BinOp: 'operator',
+      MatchOp: 'compareOperator',
+      UnaryOp: 'arithmeticOperator',
+      '( )': 'paren',
+      '[ ]': 'squareBracket',
+      '{ }': 'brace',
+      '⚠': 'invalid',
+    })
+  ),
+  {
+    languageData: {
+      closeBrackets: { brackets: ['(', '[', '{', "'", '"', '`'] },
+      commentTokens: { line: '#' },
+    },
+  }
+);
 
-export const promQLCompletion = promQLSyntax.languageData.of({autocomplete: completePromQL})
+export const promQLCompletion = promQLSyntax.languageData.of({
+  autocomplete: completePromQL,
+});
 
 /// Returns an extension that installs the PromQL syntax
 export function promQL(): Extension {
-  return [ promQLSyntax, promQLCompletion ]
+  return [promQLSyntax, promQLCompletion];
 }

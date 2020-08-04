@@ -20,41 +20,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { basicSetup, EditorState, EditorView } from "@codemirror/next/basic-setup";
-import { promQL, setComplete } from "../lang-promql";
+import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
+import { promQL, setComplete } from '../lang-promql';
 
 function activateLSPAutocompletion(): void {
-  setComplete({url: "http://localhost:8080", enableLSP: true, offline: false})
+  setComplete({
+    url: 'http://localhost:8080',
+    enableLSP: true,
+    offline: false,
+  });
 }
 
 function activatePrometheusAutocompletion(): void {
-  setComplete({url: "http://localhost:9090", enableLSP: false, offline: false})
+  setComplete({
+    url: 'http://localhost:9090',
+    enableLSP: false,
+    offline: false,
+  });
 }
 
 function activateOfflineAutocompletion(): void {
-  setComplete({url: "", enableLSP: false, offline: true})
+  setComplete({ url: '', enableLSP: false, offline: true });
 }
 
 new EditorView({
-  state: EditorState.create({extensions: [ basicSetup, promQL() ]}),
+  state: EditorState.create({ extensions: [basicSetup, promQL()] }),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  parent: document.querySelector("#editor")!
-})
-
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
-// @ts-ignore
-document.getElementById("lsp").addEventListener("click", function () {
-  activateLSPAutocompletion()
+  parent: document.querySelector('#editor')!,
 });
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
 // @ts-ignore
-document.getElementById("offline").addEventListener("click", function () {
-  activateOfflineAutocompletion()
+document.getElementById('lsp').addEventListener('click', function () {
+  activateLSPAutocompletion();
 });
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
 // @ts-ignore
-document.getElementById("prometheus").addEventListener("click", function () {
-  activatePrometheusAutocompletion()
+document.getElementById('offline').addEventListener('click', function () {
+  activateOfflineAutocompletion();
+});
+
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
+// @ts-ignore
+document.getElementById('prometheus').addEventListener('click', function () {
+  activatePrometheusAutocompletion();
 });

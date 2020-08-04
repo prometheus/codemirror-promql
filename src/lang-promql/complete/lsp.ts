@@ -20,10 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { LSPBody, LSPClient } from "./lsp/client";
-import { AutocompleteContext, Completion, CompletionResult } from "@codemirror/next/autocomplete";
-import { CompletionItem, TextEdit } from "vscode-languageserver-types";
-import { Complete } from "./index";
+import { LSPBody, LSPClient } from './lsp/client';
+import { AutocompleteContext, Completion, CompletionResult } from '@codemirror/next/autocomplete';
+import { CompletionItem, TextEdit } from 'vscode-languageserver-types';
+import { Complete } from './index';
 
 // LSPComplete will provide an autocompletion based on what the langserver-promql is providing when requested.
 export class LSPComplete implements Complete {
@@ -34,8 +34,8 @@ export class LSPComplete implements Complete {
   }
 
   promQL(context: AutocompleteContext): Promise<CompletionResult> {
-    const {state, pos} = context
-    const line = state.doc.lineAt(pos)
+    const { state, pos } = context;
+    const line = state.doc.lineAt(pos);
     const body: LSPBody = {
       expr: state.doc.sliceString(0),
       limit: 100,
@@ -43,46 +43,45 @@ export class LSPComplete implements Complete {
       positionChar: pos - line.from - 1 > 0 ? pos - line.from - 1 : pos - line.from,
       // positionLine starts at 0 from LSP and at 1 from CMN.
       positionLine: line.number - 1,
-    }
-    return this.lspClient.complete(body)
-      .then((items: CompletionItem[]) => {
-        const options: Completion[] = []
-        // For every `textEdit` present, they all have exactly the same `range.start` value.
-        // so the goal is to save the last one present in order to use it later to calculate the position `from`.
-        // Note: textEdit can be undefined but that's just because otherwise it doesn't compile.
-        // See more here: https://github.com/microsoft/TypeScript/issues/12916
-        // and here https://github.com/microsoft/TypeScript/issues/9568
-        let textEdit: TextEdit | undefined
+    };
+    return this.lspClient.complete(body).then((items: CompletionItem[]) => {
+      const options: Completion[] = [];
+      // For every `textEdit` present, they all have exactly the same `range.start` value.
+      // so the goal is to save the last one present in order to use it later to calculate the position `from`.
+      // Note: textEdit can be undefined but that's just because otherwise it doesn't compile.
+      // See more here: https://github.com/microsoft/TypeScript/issues/12916
+      // and here https://github.com/microsoft/TypeScript/issues/9568
+      let textEdit: TextEdit | undefined;
 
-        for (const res of items) {
-          let type = ""
-          switch (res.kind) {
-            case 12:
-              type = "constant"
-              break
-            case 3:
-              type = "function"
-              break
-          }
-
-          // `apply` is the string that will be used when the completion is performed.
-          // By default it's the same value as the label (i.e the same string as the one shown in the completionList)
-          let apply = res.label
-          if (res.textEdit) {
-            apply = res.textEdit.newText
-            textEdit = res.textEdit
-          }
-          options.push({label: res.label, apply: apply, type: type})
+      for (const res of items) {
+        let type = '';
+        switch (res.kind) {
+          case 12:
+            type = 'constant';
+            break;
+          case 3:
+            type = 'function';
+            break;
         }
 
-        // `from` and `to` are the absolute value in term of character and doesn't consider the line number.
-        // So we have to calculate the position of "from".
-        // `to` is the direct value of pos
-        return {
-          from: textEdit ? line.from + textEdit.range.start.character : line.from,
-          to: pos,
-          options: options
-        } as CompletionResult
-      })
+        // `apply` is the string that will be used when the completion is performed.
+        // By default it's the same value as the label (i.e the same string as the one shown in the completionList)
+        let apply = res.label;
+        if (res.textEdit) {
+          apply = res.textEdit.newText;
+          textEdit = res.textEdit;
+        }
+        options.push({ label: res.label, apply: apply, type: type });
+      }
+
+      // `from` and `to` are the absolute value in term of character and doesn't consider the line number.
+      // So we have to calculate the position of "from".
+      // `to` is the direct value of pos
+      return {
+        from: textEdit ? line.from + textEdit.range.start.character : line.from,
+        to: pos,
+        options: options,
+      } as CompletionResult;
+    });
   }
 }
