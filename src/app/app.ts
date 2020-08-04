@@ -20,8 +20,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
+import { EditorState, EditorView } from '@codemirror/next/basic-setup';
 import { promQL, setComplete } from '../lang-promql';
+import { Extension } from '@codemirror/next/state';
+import { history, historyKeymap } from '@codemirror/next/history';
+import { highlightSpecialChars, keymap, multipleSelections } from '@codemirror/next/view';
+import { lineNumbers } from '@codemirror/next/gutter';
+import { foldGutter, foldKeymap } from '@codemirror/next/fold';
+import { defaultHighlighter } from '@codemirror/next/highlight';
+import { bracketMatching } from '@codemirror/next/matchbrackets';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/next/closebrackets';
+import { autocomplete, autocompleteKeymap, FilterType } from '@nexucis/codemirror-next-autocomplete';
+import { rectangularSelection } from '@codemirror/next/rectangular-selection';
+import { highlightActiveLine, highlightSelectionMatches } from '@codemirror/next/highlight-selection';
+import { defaultKeymap } from '@codemirror/next/commands';
+import { searchKeymap } from '@codemirror/next/search';
+import { commentKeymap } from '@codemirror/next/comment';
+import { gotoLineKeymap } from '@codemirror/next/goto-line';
+import { lintKeymap } from '@codemirror/next/lint';
+
+export const basicSetup: Extension = [
+  lineNumbers(),
+  highlightSpecialChars(),
+  history(),
+  foldGutter(),
+  multipleSelections(),
+  defaultHighlighter,
+  bracketMatching(),
+  closeBrackets(),
+  autocomplete({ filterType: FilterType.Fuzzy }),
+  rectangularSelection(),
+  highlightActiveLine(),
+  highlightSelectionMatches(),
+  keymap([
+    ...closeBracketsKeymap,
+    ...defaultKeymap,
+    ...searchKeymap,
+    ...historyKeymap,
+    ...foldKeymap,
+    ...commentKeymap,
+    ...gotoLineKeymap,
+    ...autocompleteKeymap,
+    ...lintKeymap,
+  ]),
+];
 
 function activateLSPAutocompletion(): void {
   setComplete({
