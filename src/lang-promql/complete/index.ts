@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, CompletionResult } from "@codemirror/next/autocomplete";
-import { LSPClient } from "./lsp/client";
-import { LSPComplete } from "./lsp";
-import { HybridComplete } from "./hybrid";
-import { PrometheusClient } from "./prometheus/client";
+import { AutocompleteContext, CompletionResult } from '@codemirror/next/autocomplete';
+import { LSPClient } from './lsp/client';
+import { LSPComplete } from './lsp';
+import { HybridComplete } from './hybrid';
+import { PrometheusClient } from './prometheus/client';
 
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
@@ -41,12 +41,12 @@ export interface CompleteConfiguration {
 
 function newCompleteObject(conf: CompleteConfiguration): Complete {
   if (conf.enableLSP) {
-    return new LSPComplete(new LSPClient(conf.url))
+    return new LSPComplete(new LSPClient(conf.url));
   }
   if (conf.offline) {
-    return new HybridComplete(null)
+    return new HybridComplete(null);
   }
-  return new HybridComplete(new PrometheusClient(conf.url))
+  return new HybridComplete(new PrometheusClient(conf.url));
 }
 
 // complete is the unique instance of the Complete interface. It means that the autocompletion for promQL is for the moment stateful.
@@ -56,12 +56,12 @@ let complete: Complete;
 
 // setComplete should be called in order to customize the autocompletion mode.
 export function setComplete(conf: CompleteConfiguration): void {
-  complete = newCompleteObject(conf)
+  complete = newCompleteObject(conf);
 }
 
 export function completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
   if (!complete) {
-    complete = newCompleteObject({enableLSP: false, url: "", offline: true})
+    complete = newCompleteObject({ enableLSP: false, url: '', offline: true });
   }
-  return complete.promQL(context)
+  return complete.promQL(context);
 }
