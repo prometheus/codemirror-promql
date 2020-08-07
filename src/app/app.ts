@@ -21,13 +21,12 @@
 // SOFTWARE.
 
 import { EditorState, EditorView } from '@codemirror/next/basic-setup';
-import { promQL, setComplete } from '../lang-promql';
+import { promQL, promQLHighlightMaterialTheme, setComplete } from '../lang-promql';
 import { Extension } from '@codemirror/next/state';
 import { history, historyKeymap } from '@codemirror/next/history';
 import { highlightSpecialChars, keymap, multipleSelections } from '@codemirror/next/view';
 import { lineNumbers } from '@codemirror/next/gutter';
 import { foldGutter, foldKeymap } from '@codemirror/next/fold';
-import { defaultHighlighter } from '@codemirror/next/highlight';
 import { bracketMatching } from '@codemirror/next/matchbrackets';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/next/closebrackets';
 import { autocomplete, autocompleteKeymap, FilterType } from '@nexucis/codemirror-next-autocomplete';
@@ -45,7 +44,6 @@ export const basicSetup: Extension = [
   history(),
   foldGutter(),
   multipleSelections(),
-  defaultHighlighter,
   bracketMatching(),
   closeBrackets(),
   autocomplete({ filterType: FilterType.Fuzzy }),
@@ -86,7 +84,7 @@ function activateOfflineAutocompletion(): void {
 }
 
 new EditorView({
-  state: EditorState.create({ extensions: [basicSetup, promQL()] }),
+  state: EditorState.create({ extensions: [basicSetup, promQL(), promQLHighlightMaterialTheme] }),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   parent: document.querySelector('#editor')!,
 });
