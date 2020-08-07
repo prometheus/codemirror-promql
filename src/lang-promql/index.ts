@@ -22,4 +22,3 @@
 
 export { promQLSyntax, promQLCompletion, promQL } from './promql';
 export { setComplete } from './complete';
-export { promQLHighlightMaterialTheme } from './theme';
