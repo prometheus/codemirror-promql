@@ -1,12 +1,14 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "allowJs": true,
     "target": "es2015",
     "declaration": true,
     "outDir": "./lib",
     "module": "commonjs",
     "sourceMap": true,
-    "strict": true
+    "strict": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/lang-promql",
