@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import { EditorState, EditorView } from '@codemirror/next/basic-setup';
-import { promQL, promQLHighlightMaterialTheme, setComplete } from '../lang-promql';
+import { promQL, setComplete } from '../lang-promql';
 import { Extension } from '@codemirror/next/state';
 import { history, historyKeymap } from '@codemirror/next/history';
 import { highlightSpecialChars, keymap, multipleSelections } from '@codemirror/next/view';
@@ -37,6 +37,7 @@ import { searchKeymap } from '@codemirror/next/search';
 import { commentKeymap } from '@codemirror/next/comment';
 import { gotoLineKeymap } from '@codemirror/next/goto-line';
 import { lintKeymap } from '@codemirror/next/lint';
+import { promQLHighlightMaterialTheme } from './theme';
 
 export const basicSetup: Extension = [
   lineNumbers(),
