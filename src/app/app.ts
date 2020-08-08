@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import { EditorState, EditorView } from '@codemirror/next/basic-setup';
-import { promQL, setComplete } from '../lang-promql';
+import { PromQLExtension } from '../lang-promql';
 import { Extension } from '@codemirror/next/state';
 import { history, historyKeymap } from '@codemirror/next/history';
 import { highlightSpecialChars, keymap, multipleSelections } from '@codemirror/next/view';
@@ -64,8 +64,10 @@ export const basicSetup: Extension = [
   ]),
 ];
 
+const promqlExtension = new PromQLExtension();
+
 function activateLSPAutocompletion(): void {
-  setComplete({
+  promqlExtension.setComplete({
     url: 'http://localhost:8080',
     enableLSP: true,
     offline: false,
@@ -73,7 +75,7 @@ function activateLSPAutocompletion(): void {
 }
 
 function activatePrometheusAutocompletion(): void {
-  setComplete({
+  promqlExtension.setComplete({
     url: 'http://localhost:9090',
     enableLSP: false,
     offline: false,
@@ -81,11 +83,11 @@ function activatePrometheusAutocompletion(): void {
 }
 
 function activateOfflineAutocompletion(): void {
-  setComplete({ url: '', enableLSP: false, offline: true });
+  promqlExtension.setComplete({ url: '', enableLSP: false, offline: true });
 }
 
 new EditorView({
-  state: EditorState.create({ extensions: [basicSetup, promQL(), promQLHighlightMaterialTheme] }),
+  state: EditorState.create({ extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme] }),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   parent: document.querySelector('#editor')!,
 });

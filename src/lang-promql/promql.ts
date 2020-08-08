@@ -24,7 +24,8 @@ import { LezerSyntax } from '@codemirror/next/syntax';
 import { parser } from 'lezer-promql';
 import { styleTags } from '@codemirror/next/highlight';
 import { Extension } from '@codemirror/next/state';
-import { completePromQL } from './complete';
+import { CompleteStrategy, CompleteConfiguration, newCompleteStrategy } from './complete';
+import { AutocompleteContext } from '@nexucis/codemirror-next-autocomplete';
 
 export const promQLSyntax = new LezerSyntax(
   parser.withProps(
@@ -56,11 +57,27 @@ export const promQLSyntax = new LezerSyntax(
   }
 );
 
-export const promQLCompletion = promQLSyntax.languageData.of({
-  autocomplete: completePromQL,
-});
+/**
+ * This class holds the state of the completion extension for CodeMirror and allow hot-swapping the complete strategy.
+ */
+export class PromQLExtension {
+  private complete: CompleteStrategy;
 
-/// Returns an extension that installs the PromQL syntax
-export function promQL(): Extension {
-  return [promQLSyntax, promQLCompletion];
+  constructor() {
+    this.complete = newCompleteStrategy({ enableLSP: false, url: '', offline: true });
+  }
+
+  setComplete(completeConfig: CompleteConfiguration) {
+    this.complete = newCompleteStrategy(completeConfig);
+  }
+
+  asExtension(): Extension {
+    const completion = promQLSyntax.languageData.of({
+      autocomplete: (context: AutocompleteContext) => {
+        return this.complete.promQL(context);
+      },
+    });
+
+    return [promQLSyntax, completion];
+  }
 }

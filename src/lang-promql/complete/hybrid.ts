@@ -27,7 +27,7 @@ import {
   snippet,
   SnippetSpec,
 } from '@nexucis/codemirror-next-autocomplete';
-import { Complete } from './index';
+import { CompleteStrategy } from './index';
 import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
 import { EditorState } from '@codemirror/next/basic-setup';
@@ -129,7 +129,7 @@ function arrayToCompletionResult(
 }
 
 // HybridComplete is going to provide a full completion result with or without a remote prometheus.
-export class HybridComplete implements Complete {
+export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | null;
 
   constructor(prometheusClient: PrometheusClient | null) {
