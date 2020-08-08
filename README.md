@@ -26,10 +26,9 @@ You can try out the latest release version of this mode on:
 
 https://prometheus-community.github.io/codemirror-promql/
 
-This screenshot demonstrates the syntax highlighting for some example PromQL expressions:
+Here is a short preview of it looks like currently:
 
-![sample](https://user-images.githubusercontent.com/4548045/76161611-478ff880-6135-11ea-8b73-a35be5f650a7.PNG)
-> Samples coming from https://github.com/infinityworks/prometheus-example-queries
+![final_highlight](https://user-images.githubusercontent.com/4548045/89693931-565f1f00-d910-11ea-8bcf-c8b37d6d3196.gif)
 
 ### RoadMap
 A roadmap is available in the issue [#5](https://github.com/prometheus-community/codemirror-promql/issues/5).
