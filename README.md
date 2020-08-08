@@ -1,6 +1,7 @@
 CodeMirror-mode-promql
 ======================
-[![CircleCI](https://circleci.com/gh/prometheus-community/codemirror-promql.svg?style=shield)](https://circleci.com/gh/prometheus-community/codemirror-promql) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![CircleCI](https://circleci.com/gh/prometheus-community/codemirror-promql.svg?style=shield)](https://circleci.com/gh/prometheus-community/codemirror-promql) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE) 
+[![NPM version](https://img.shields.io/npm/v/codemirror-promql.svg)](https://www.npmjs.org/package/codemirror-promql)
 
 ## Overview
 This project provides a mode for [CodeMirror Next](https://codemirror.net/6) that handles syntax highlighting and autocompletion for the PromQL ([Prometheus Query Language](https://prometheus.io/docs/introduction/overview/)).
