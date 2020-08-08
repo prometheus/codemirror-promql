@@ -28,7 +28,7 @@ import { PrometheusClient } from './prometheus/client';
 
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
-export interface Complete {
+export interface CompleteStrategy {
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
 }
 
@@ -39,7 +39,7 @@ export interface CompleteConfiguration {
   url: string;
 }
 
-function newCompleteObject(conf: CompleteConfiguration): Complete {
+export function newCompleteStrategy(conf: CompleteConfiguration): CompleteStrategy {
   if (conf.enableLSP) {
     return new LSPComplete(new LSPClient(conf.url));
   }
@@ -47,21 +47,4 @@ function newCompleteObject(conf: CompleteConfiguration): Complete {
     return new HybridComplete(null);
   }
   return new HybridComplete(new PrometheusClient(conf.url));
-}
-
-// complete is the unique instance of the Complete interface. It means that the autocompletion for promQL is for the moment stateful.
-// With other words, that means all CodeMirror instances will share the same `complete` object,
-// and so you cannot (for the moment) instantiate one CodeMirror dedicated to an instance A of prometheus and another one for an instance B of prometheus.
-let complete: Complete;
-
-// setComplete should be called in order to customize the autocompletion mode.
-export function setComplete(conf: CompleteConfiguration): void {
-  complete = newCompleteObject(conf);
-}
-
-export function completePromQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
-  if (!complete) {
-    complete = newCompleteObject({ enableLSP: false, url: '', offline: true });
-  }
-  return complete.promQL(context);
 }
