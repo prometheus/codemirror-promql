@@ -76,15 +76,15 @@ const autocompleteNode = {
 
 const snippets: readonly SnippetSpec[] = [
   {
-    keyword: 'sum(rate(&lt;input vector&gt;[5m]))',
+    keyword: 'sum(rate(<input vector>;[5m]))',
     snippet: 'sum(rate(${<input vector>}[5m]))',
   },
   {
-    keyword: 'histogram_quantile(&lt;quantile&gt;, sum by(le) (rate(&lt;histogram metric&gt;[5m])))',
+    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>;[5m])))',
     snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
   },
   {
-    keyword: 'label_replace(&lt;input vector&gt;, ";&lt;dst&gt;", "&lt;replacement&gt;", "&lt;src&gt;", "&lt;regex&gt;")',
+    keyword: 'label_replace(<input vector>;, "<dst>", "<replacement>", "<src>", "<regex>")',
     snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
   },
 ];
@@ -96,16 +96,20 @@ const parsedSnippets = snippets.map((s) => ({
   score: 0,
 }));
 
+function escape(text: string): string {
+  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // HybridComplete is going to provide a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | null;
-  private fuzzyPre: string;
-  private fuzzyPost: string;
+  private readonly fuzzyPre: string;
+  private readonly fuzzyPost: string;
 
-  constructor(prometheusClient: PrometheusClient | null, fuzzyPre: string | undefined, fuzzyPost: string | undefined) {
+  constructor(prometheusClient: PrometheusClient | null, fuzzyPre?: string, fuzzyPost?: string) {
     this.prometheusClient = prometheusClient;
-    this.fuzzyPre = fuzzyPre ? fuzzyPre : '';
-    this.fuzzyPost = fuzzyPost ? fuzzyPost : '';
+    this.fuzzyPre = fuzzyPre || '';
+    this.fuzzyPost = fuzzyPost || '';
   }
 
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
@@ -269,14 +273,14 @@ export class HybridComplete implements CompleteStrategy {
     for (const completionList of data) {
       for (const label of completionList.labels) {
         if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.filter(text, [label], fuzzyOption);
+          const result = fuzzy.filter(text, [escape(label)], fuzzyOption);
           if (result && result.length > 0) {
             options.push({ label: result[0].string, apply: label, type: completionList.type, score: result[0].score });
           }
         } else {
           let score: number | null;
           if ((score = context.filter(label, text, true))) {
-            options.push({ label: label, apply: label, type: completionList.type, score: score });
+            options.push({ label: escape(label), apply: label, type: completionList.type, score: score });
           }
         }
       }
@@ -284,15 +288,14 @@ export class HybridComplete implements CompleteStrategy {
     if (includeSnippet) {
       for (const s of parsedSnippets) {
         if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.filter(text, [s.label], fuzzyOption);
+          const result = fuzzy.filter(text, [escape(s.label)], fuzzyOption);
           if (result && result.length > 0) {
             options.push({ label: result[0].string, apply: s.apply, score: result[0].score });
           }
         } else {
           let score: number | null;
           if ((score = context.filter(s.label, text, false))) {
-            s.score = score;
-            options.push(s);
+            options.push({ label: escape(s.label), apply: s.apply, score: score });
           }
         }
       }
