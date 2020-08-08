@@ -24,6 +24,7 @@ import {
   AutocompleteContext,
   Completion,
   CompletionResult,
+  FilterType,
   snippet,
   SnippetSpec,
 } from '@nexucis/codemirror-next-autocomplete';
@@ -32,6 +33,7 @@ import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
 import { EditorState } from '@codemirror/next/basic-setup';
 import { promQLSyntax } from 'lezer-promql';
+import * as fuzzy from 'fuzzy';
 
 interface AutoCompleteNode {
   labels: string[];
@@ -74,15 +76,15 @@ const autocompleteNode = {
 
 const snippets: readonly SnippetSpec[] = [
   {
-    keyword: 'sum(rate(<input vector>[5m]))',
+    keyword: 'sum(rate(&lt;input vector>[5m]))',
     snippet: 'sum(rate(${<input vector>}[5m]))',
   },
   {
-    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>[5m])))',
+    keyword: 'histogram_quantile(&lt;quantile>, sum by(le) (rate(&lt;histogram metric>[5m])))',
     snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
   },
   {
-    keyword: 'label_replace(<input vector>, "<dst>", "<replacement>", "<src>", "<regex>")',
+    keyword: 'label_replace(&lt;input vector>, "&lt;dst>", "&lt;replacement>", "&lt;src>", "&lt;regex>")',
     snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
   },
 ];
@@ -94,46 +96,33 @@ const parsedSnippets = snippets.map((s) => ({
   score: 0,
 }));
 
-function arrayToCompletionResult(
-  data: AutoCompleteNode[],
-  from: number,
-  to: number,
-  context: AutocompleteContext,
-  state: EditorState,
-  includeSnippet = false
-): CompletionResult {
-  const text = state.sliceDoc(from, to);
-  const options: Completion[] = [];
-  for (const completionList of data) {
-    for (const label of completionList.labels) {
-      let score: number | null;
-      if ((score = context.filter(label, text, true))) {
-        options.push({ label: label, apply: '', type: completionList.type, score: score });
-      }
+function escape(text: string): string {
+  return text.replace(/[&<>"']/g, (m: string) => {
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      default:
+        return '&#039;';
     }
-  }
-  if (includeSnippet) {
-    for (const s of parsedSnippets) {
-      let score: number | null;
-      if ((score = context.filter(s.label, text, false))) {
-        s.score = score;
-        options.push(s);
-      }
-    }
-  }
-  return {
-    from: from,
-    to: to,
-    options: options,
-  } as CompletionResult;
+  });
 }
 
 // HybridComplete is going to provide a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | null;
+  private readonly fuzzyPre: string;
+  private readonly fuzzyPost: string;
 
-  constructor(prometheusClient: PrometheusClient | null) {
+  constructor(prometheusClient: PrometheusClient | null, fuzzyPre?: string, fuzzyPost?: string) {
     this.prometheusClient = prometheusClient;
+    this.fuzzyPre = fuzzyPre || '';
+    this.fuzzyPost = fuzzyPost || '';
   }
 
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
@@ -145,7 +134,7 @@ export class HybridComplete implements CompleteStrategy {
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues('__name__').then((metricNames: string[]) => {
           const result: AutoCompleteNode[] = [{ labels: metricNames, type: 'constant' }];
-          return arrayToCompletionResult(
+          return this.arrayToCompletionResult(
             result.concat(autocompleteNode[FunctionIdentifier], autocompleteNode[AggregateOp]),
             tree.start,
             pos,
@@ -155,7 +144,7 @@ export class HybridComplete implements CompleteStrategy {
           );
         });
       }
-      return arrayToCompletionResult(
+      return this.arrayToCompletionResult(
         [autocompleteNode[FunctionIdentifier]].concat(autocompleteNode[AggregateOp]),
         tree.start,
         pos,
@@ -182,16 +171,16 @@ export class HybridComplete implements CompleteStrategy {
       return this.autocompleteLabelValue(tree.parent, tree, pos, context, state);
     }
     if (tree.name === MatchOp) {
-      return arrayToCompletionResult([autocompleteNode[MatchOp]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode[MatchOp]], tree.start, pos, context, state);
     }
     if (tree.parent?.name === BinaryExpr) {
-      return arrayToCompletionResult([autocompleteNode[BinaryExpr]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode[BinaryExpr]], tree.start, pos, context, state);
     }
     if (tree.parent?.name === FunctionIdentifier) {
-      return arrayToCompletionResult([autocompleteNode[FunctionIdentifier]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode[FunctionIdentifier]], tree.start, pos, context, state);
     }
     if (tree.parent?.name === AggregateOp) {
-      return arrayToCompletionResult([autocompleteNode[AggregateOp]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode[AggregateOp]], tree.start, pos, context, state);
     }
     return null;
   }
@@ -216,7 +205,7 @@ export class HybridComplete implements CompleteStrategy {
     const metricName = this.getMetricNameInVectorSelector(current, state);
     return this.prometheusClient.labelValues(labelName, metricName).then((labelValues: string[]) => {
       // +1 to avoid to remove the first quote.
-      return arrayToCompletionResult([{ labels: labelValues, type: 'text' }], current.start + 1, pos, context, state);
+      return this.arrayToCompletionResult([{ labels: labelValues, type: 'text' }], current.start + 1, pos, context, state);
     });
   }
 
@@ -267,7 +256,7 @@ export class HybridComplete implements CompleteStrategy {
       ? null
       : this.prometheusClient.labelNames(metricName).then((labelNames: string[]) => {
           // this case can happen when you are in empty bracket. Then you don't want to remove the first bracket
-          return arrayToCompletionResult(
+          return this.arrayToCompletionResult(
             [
               {
                 labels: labelNames,
@@ -280,5 +269,54 @@ export class HybridComplete implements CompleteStrategy {
             state
           );
         });
+  }
+
+  private arrayToCompletionResult(
+    data: AutoCompleteNode[],
+    from: number,
+    to: number,
+    context: AutocompleteContext,
+    state: EditorState,
+    includeSnippet = false
+  ): CompletionResult {
+    const text = state.sliceDoc(from, to);
+    const options: Completion[] = [];
+    const fuzzyOption = { pre: this.fuzzyPre, post: this.fuzzyPost };
+
+    for (const completionList of data) {
+      for (const label of completionList.labels) {
+        if (context.filterType === FilterType.Fuzzy) {
+          const result = fuzzy.match(text, escape(label), fuzzyOption);
+          if (result) {
+            options.push({ label: result.rendered, apply: label, type: completionList.type, score: result.score });
+          }
+        } else {
+          let score: number | null;
+          if ((score = context.filter(label, text, true))) {
+            options.push({ label: escape(label), apply: label, type: completionList.type, score: score });
+          }
+        }
+      }
+    }
+    if (includeSnippet) {
+      for (const s of parsedSnippets) {
+        if (context.filterType === FilterType.Fuzzy) {
+          const result = fuzzy.match(text, s.label, fuzzyOption);
+          if (result) {
+            options.push({ label: result.rendered, apply: s.apply, score: result.score });
+          }
+        } else {
+          let score: number | null;
+          if ((score = context.filter(s.label, text, false))) {
+            options.push({ label: s.label, apply: s.apply, score: score });
+          }
+        }
+      }
+    }
+    return {
+      from: from,
+      to: to,
+      options: options,
+    } as CompletionResult;
   }
 }
