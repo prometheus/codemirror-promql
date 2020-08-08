@@ -76,15 +76,15 @@ const autocompleteNode = {
 
 const snippets: readonly SnippetSpec[] = [
   {
-    keyword: 'sum(rate(<input vector>[5m]))',
+    keyword: 'sum(rate(&lt;input vector>[5m]))',
     snippet: 'sum(rate(${<input vector>}[5m]))',
   },
   {
-    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>[5m])))',
+    keyword: 'histogram_quantile(&lt;quantile>, sum by(le) (rate(&lt;histogram metric>[5m])))',
     snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
   },
   {
-    keyword: 'label_replace(<input vector>, "<dst>", "<replacement>", "<src>", "<regex>")',
+    keyword: 'label_replace(&lt;input vector>, "&lt;dst>", "&lt;replacement>", "&lt;src>", "&lt;regex>")',
     snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
   },
 ];
@@ -97,7 +97,20 @@ const parsedSnippets = snippets.map((s) => ({
 }));
 
 function escape(text: string): string {
-  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return text.replace(/[&<>"']/g, (m: string) => {
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      default:
+        return '&#039;';
+    }
+  });
 }
 
 // HybridComplete is going to provide a full completion result with or without a remote prometheus.
@@ -288,14 +301,14 @@ export class HybridComplete implements CompleteStrategy {
     if (includeSnippet) {
       for (const s of parsedSnippets) {
         if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.filter(text, [escape(s.label)], fuzzyOption);
+          const result = fuzzy.filter(text, [s.label], fuzzyOption);
           if (result && result.length > 0) {
             options.push({ label: result[0].string, apply: s.apply, score: result[0].score });
           }
         } else {
           let score: number | null;
           if ((score = context.filter(s.label, text, false))) {
-            options.push({ label: escape(s.label), apply: s.apply, score: score });
+            options.push({ label: s.label, apply: s.apply, score: score });
           }
         }
       }
