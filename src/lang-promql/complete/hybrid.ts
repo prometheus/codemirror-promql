@@ -286,9 +286,9 @@ export class HybridComplete implements CompleteStrategy {
     for (const completionList of data) {
       for (const label of completionList.labels) {
         if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.filter(text, [escape(label)], fuzzyOption);
-          if (result && result.length > 0) {
-            options.push({ label: result[0].string, apply: label, type: completionList.type, score: result[0].score });
+          const result = fuzzy.match(text, escape(label), fuzzyOption);
+          if (result) {
+            options.push({ label: result.rendered, apply: label, type: completionList.type, score: result.score });
           }
         } else {
           let score: number | null;
@@ -301,9 +301,9 @@ export class HybridComplete implements CompleteStrategy {
     if (includeSnippet) {
       for (const s of parsedSnippets) {
         if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.filter(text, [s.label], fuzzyOption);
-          if (result && result.length > 0) {
-            options.push({ label: result[0].string, apply: s.apply, score: result[0].score });
+          const result = fuzzy.match(text, s.label, fuzzyOption);
+          if (result) {
+            options.push({ label: result.rendered, apply: s.apply, score: result.score });
           }
         } else {
           let score: number | null;
