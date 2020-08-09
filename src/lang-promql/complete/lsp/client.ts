@@ -34,14 +34,24 @@ export interface LSPBody {
 export class LSPClient {
   private readonly url: string;
   private readonly autocompleteEndpoint = '/completion';
+  private readonly errorHandler?: (error: any) => void;
 
-  constructor(url: string) {
+  constructor(url: string, errorHandler?: (error: any) => void) {
     this.url = url;
+    this.errorHandler = errorHandler;
   }
 
   complete(body: LSPBody): Promise<CompletionItem[]> {
-    return axios.post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body).then((response) => {
-      return response.data ? response.data : [];
-    });
+    return axios
+      .post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
+      .then((response) => {
+        return response.data ? response.data : [];
+      })
+      .catch((error) => {
+        if (this.errorHandler) {
+          this.errorHandler(error);
+        }
+        return [];
+      });
   }
 }

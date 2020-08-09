@@ -102,10 +102,12 @@ export class PrometheusClient {
   private readonly lookbackInterval = 60 * 60 * 1000 * 12; //12 hours
   private readonly url: string;
   private readonly cache: Cache;
+  private readonly errorHandler?: (error: any) => void;
 
-  constructor(url: string) {
+  constructor(url: string, errorHandler?: (error: any) => void) {
     this.cache = new Cache();
     this.url = url;
+    this.errorHandler = errorHandler;
   }
 
   labelNames(metricName?: string): Promise<string[]> {
@@ -130,6 +132,12 @@ export class PrometheusClient {
           if (response.data) {
             this.cache.setLabelNames(response.data.data);
             return response.data.data;
+          }
+          return [];
+        })
+        .catch((error) => {
+          if (this.errorHandler) {
+            this.errorHandler(error);
           }
           return [];
         });
@@ -165,6 +173,12 @@ export class PrometheusClient {
             return response.data.data;
           }
           return [];
+        })
+        .catch((error) => {
+          if (this.errorHandler) {
+            this.errorHandler(error);
+          }
+          return [];
         });
     }
 
@@ -193,6 +207,12 @@ export class PrometheusClient {
           this.cache.setAssociation(metricName, labelSet);
         });
         return data;
+      })
+      .catch((error) => {
+        if (this.errorHandler) {
+          this.errorHandler(error);
+        }
+        return [];
       });
   }
 }

@@ -37,6 +37,7 @@ export interface CompleteConfiguration {
   enableLSP: boolean;
   offline: boolean;
   url: string;
+  httpErrorHandler?: (error: any) => void;
   hybrid?: {
     fuzzyPre: string;
     fuzzyPost: string;
@@ -45,10 +46,14 @@ export interface CompleteConfiguration {
 
 export function newCompleteStrategy(conf: CompleteConfiguration): CompleteStrategy {
   if (conf.enableLSP) {
-    return new LSPComplete(new LSPClient(conf.url));
+    return new LSPComplete(new LSPClient(conf.url, conf.httpErrorHandler));
   }
   if (conf.offline) {
     return new HybridComplete(null, conf.hybrid?.fuzzyPre, conf.hybrid?.fuzzyPost);
   }
-  return new HybridComplete(new PrometheusClient(conf.url), conf.hybrid?.fuzzyPre, conf.hybrid?.fuzzyPost);
+  return new HybridComplete(
+    new PrometheusClient(conf.url, conf.httpErrorHandler),
+    conf.hybrid?.fuzzyPre,
+    conf.hybrid?.fuzzyPost
+  );
 }
