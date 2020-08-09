@@ -31,7 +31,7 @@ import {
 import { CompleteStrategy } from './index';
 import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
-import { EditorState } from '@codemirror/next/basic-setup';
+import { EditorState, EditorView } from '@codemirror/next/basic-setup';
 import { promQLSyntax } from 'lezer-promql';
 import * as fuzzy from 'fuzzy';
 
@@ -281,35 +281,20 @@ export class HybridComplete implements CompleteStrategy {
   ): CompletionResult {
     const text = state.sliceDoc(from, to);
     const options: Completion[] = [];
-    const fuzzyOption = { pre: this.fuzzyPre, post: this.fuzzyPost };
 
     for (const completionList of data) {
       for (const label of completionList.labels) {
-        if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.match(text, escape(label), fuzzyOption);
-          if (result) {
-            options.push({ label: result.rendered, apply: label, type: completionList.type, score: result.score });
-          }
-        } else {
-          let score: number | null;
-          if ((score = context.filter(label, text, true))) {
-            options.push({ label: escape(label), apply: label, type: completionList.type, score: score });
-          }
+        const completionResult = this.filter(escape(label), text, label, context);
+        if (completionResult) {
+          options.push(completionResult);
         }
       }
     }
     if (includeSnippet) {
       for (const s of parsedSnippets) {
-        if (context.filterType === FilterType.Fuzzy) {
-          const result = fuzzy.match(text, s.label, fuzzyOption);
-          if (result) {
-            options.push({ label: result.rendered, apply: s.apply, score: result.score });
-          }
-        } else {
-          let score: number | null;
-          if ((score = context.filter(s.label, text, false))) {
-            options.push({ label: s.label, apply: s.apply, score: score });
-          }
+        const completionResult = this.filter(s.label, text, s.apply, context);
+        if (completionResult) {
+          options.push(completionResult);
         }
       }
     }
@@ -318,5 +303,28 @@ export class HybridComplete implements CompleteStrategy {
       to: to,
       options: options,
     } as CompletionResult;
+  }
+
+  private filter(
+    label: string,
+    text: string,
+    apply: string | ((view: EditorView, result: CompletionResult, completion: Completion) => void),
+    context: AutocompleteContext,
+    type?: string
+  ): Completion | null {
+    if (context.filterType !== FilterType.Fuzzy) {
+      // in case the fuzzy filtering is not used, then use the filter method coming from CMN
+      let score: number | null;
+      if ((score = context.filter(label, text, false))) {
+        return { label: label, apply: apply, type: type, score: score };
+      }
+    }
+
+    const fuzzyOption = { pre: this.fuzzyPre, post: this.fuzzyPost };
+    const result = fuzzy.match(text, label, fuzzyOption);
+    if (result) {
+      return { label: result.rendered, apply: label, type: type, score: result.score };
+    }
+    return null;
   }
 }
