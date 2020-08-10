@@ -104,10 +104,13 @@ export class PrometheusClient {
   private readonly cache: Cache;
   private readonly errorHandler?: (error: any) => void;
 
-  constructor(url: string, errorHandler?: (error: any) => void) {
+  constructor(url: string, errorHandler?: (error: any) => void, lookbackInterval?: number) {
     this.cache = new Cache();
     this.url = url;
     this.errorHandler = errorHandler;
+    if (lookbackInterval) {
+      this.lookbackInterval = lookbackInterval;
+    }
   }
 
   labelNames(metricName?: string): Promise<string[]> {

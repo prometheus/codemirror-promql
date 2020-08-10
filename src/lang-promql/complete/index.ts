@@ -41,6 +41,7 @@ export interface CompleteConfiguration {
   hybrid?: {
     fuzzyPre: string;
     fuzzyPost: string;
+    lookbackInterval?: number;
   };
 }
 
@@ -52,7 +53,7 @@ export function newCompleteStrategy(conf: CompleteConfiguration): CompleteStrate
     return new HybridComplete(null, conf.hybrid?.fuzzyPre, conf.hybrid?.fuzzyPost);
   }
   return new HybridComplete(
-    new PrometheusClient(conf.url, conf.httpErrorHandler),
+    new PrometheusClient(conf.url, conf.httpErrorHandler, conf.hybrid?.lookbackInterval),
     conf.hybrid?.fuzzyPre,
     conf.hybrid?.fuzzyPost
   );
