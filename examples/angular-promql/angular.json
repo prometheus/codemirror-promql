@@ -24,12 +24,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css",
-              "./node_modules/codemirror/lib/codemirror.css",
-              "./node_modules/codemirror/theme/material.css",
-              "./node_modules/codemirror/addon/fold/foldgutter.css",
-              "./node_modules/codemirror/addon/hint/show-hint.css",
-              "./node_modules/codemirror/addon/lint/lint.css"
+              "src/styles.css"
             ],
             "scripts": []
           },

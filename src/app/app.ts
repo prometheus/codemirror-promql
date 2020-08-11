@@ -39,7 +39,7 @@ import { gotoLineKeymap } from '@codemirror/next/goto-line';
 import { lintKeymap } from '@codemirror/next/lint';
 import { promQLHighlightMaterialTheme } from './theme';
 
-export const basicSetup: Extension = [
+const basicSetup: Extension = [
   lineNumbers(),
   highlightSpecialChars(),
   history(),
