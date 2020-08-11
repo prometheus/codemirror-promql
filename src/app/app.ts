@@ -79,10 +79,6 @@ function activatePrometheusAutocompletion(): void {
     url: 'http://localhost:9090',
     enableLSP: false,
     offline: false,
-    hybrid: {
-      fuzzyPre: '<b style="color: brown">',
-      fuzzyPost: '</b>',
-    },
   });
 }
 
@@ -91,10 +87,6 @@ function activateOfflineAutocompletion(): void {
     url: '',
     enableLSP: false,
     offline: true,
-    hybrid: {
-      fuzzyPre: '<b style="color: brown">',
-      fuzzyPost: '</b>',
-    },
   });
 }
 

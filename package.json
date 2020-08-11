@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
-    "@nexucis/codemirror-next-autocomplete": "^0.1.3",
+    "@nexucis/codemirror-next-autocomplete": "^0.1.4",
     "axios": "^0.19.2",
     "fuzzy": "^0.1.3",
     "lezer-promql": "0.5.0",
