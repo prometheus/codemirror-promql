@@ -71,7 +71,7 @@ export class LSPComplete implements CompleteStrategy {
           apply = res.textEdit.newText;
           textEdit = res.textEdit;
         }
-        options.push({ label: res.label, apply: apply, type: type, score: 0 });
+        options.push({ label: res.label, original: res.label, apply: apply, type: type, score: 0 });
       }
 
       // `from` and `to` are the absolute value in term of character and doesn't consider the line number.

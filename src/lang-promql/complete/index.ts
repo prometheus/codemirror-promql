@@ -39,8 +39,6 @@ export interface CompleteConfiguration {
   url: string;
   httpErrorHandler?: (error: any) => void;
   hybrid?: {
-    fuzzyPre: string;
-    fuzzyPost: string;
     lookbackInterval?: number;
   };
 }
@@ -50,11 +48,7 @@ export function newCompleteStrategy(conf: CompleteConfiguration): CompleteStrate
     return new LSPComplete(new LSPClient(conf.url, conf.httpErrorHandler));
   }
   if (conf.offline) {
-    return new HybridComplete(null, conf.hybrid?.fuzzyPre, conf.hybrid?.fuzzyPost);
+    return new HybridComplete(null);
   }
-  return new HybridComplete(
-    new PrometheusClient(conf.url, conf.httpErrorHandler, conf.hybrid?.lookbackInterval),
-    conf.hybrid?.fuzzyPre,
-    conf.hybrid?.fuzzyPost
-  );
+  return new HybridComplete(new PrometheusClient(conf.url, conf.httpErrorHandler, conf.hybrid?.lookbackInterval));
 }

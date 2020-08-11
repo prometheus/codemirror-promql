@@ -24,16 +24,14 @@ import {
   AutocompleteContext,
   Completion,
   CompletionResult,
-  FilterType,
   snippet,
   SnippetSpec,
 } from '@nexucis/codemirror-next-autocomplete';
 import { CompleteStrategy } from './index';
 import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
-import { EditorState, EditorView } from '@codemirror/next/basic-setup';
+import { EditorState } from '@codemirror/next/basic-setup';
 import { promQLSyntax } from 'lezer-promql';
-import * as fuzzy from 'fuzzy';
 
 interface AutoCompleteNode {
   labels: string[];
@@ -76,53 +74,33 @@ const autocompleteNode = {
 
 const snippets: readonly SnippetSpec[] = [
   {
-    keyword: 'sum(rate(&lt;input vector>[5m]))',
+    keyword: 'sum(rate(<input vector>[5m]))',
     snippet: 'sum(rate(${<input vector>}[5m]))',
   },
   {
-    keyword: 'histogram_quantile(&lt;quantile>, sum by(le) (rate(&lt;histogram metric>[5m])))',
+    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>[5m])))',
     snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
   },
   {
-    keyword: 'label_replace(&lt;input vector>, "&lt;dst>", "&lt;replacement>", "&lt;src>", "&lt;regex>")',
+    keyword: 'label_replace(<input vector>, "<dst>", "<replacement>", "<src>", "<regex>")',
     snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
   },
 ];
 
 // parsedSnippets shouldn't be modified. It's only there to not parse everytime the above list of snippet
-const parsedSnippets = snippets.map((s) => ({
+const parsedSnippets: Completion[] = snippets.map((s) => ({
   label: s.name || s.keyword,
+  original: s.name || s.keyword,
   apply: snippet(s.snippet),
   score: 0,
 }));
 
-function escape(text: string): string {
-  return text.replace(/[&<>"']/g, (m: string) => {
-    switch (m) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      default:
-        return '&#039;';
-    }
-  });
-}
-
-// HybridComplete is going to provide a full completion result with or without a remote prometheus.
+// HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | null;
-  private readonly fuzzyPre: string;
-  private readonly fuzzyPost: string;
 
-  constructor(prometheusClient: PrometheusClient | null, fuzzyPre?: string, fuzzyPost?: string) {
+  constructor(prometheusClient: PrometheusClient | null) {
     this.prometheusClient = prometheusClient;
-    this.fuzzyPre = fuzzyPre || '';
-    this.fuzzyPost = fuzzyPost || '';
   }
 
   promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
@@ -284,16 +262,20 @@ export class HybridComplete implements CompleteStrategy {
 
     for (const completionList of data) {
       for (const label of completionList.labels) {
-        const completionResult = this.filter(escape(label), text, label, context);
-        if (completionResult) {
+        const completionResult = context.filter(
+          { label: label, original: label, apply: label, type: completionList.type, score: 0 },
+          text
+        );
+        console.log('==', completionResult);
+        if (completionResult !== null) {
           options.push(completionResult);
         }
       }
     }
     if (includeSnippet) {
       for (const s of parsedSnippets) {
-        const completionResult = this.filter(s.label, text, s.apply, context);
-        if (completionResult) {
+        const completionResult = context.filter(s, text);
+        if (completionResult !== null) {
           options.push(completionResult);
         }
       }
@@ -302,29 +284,7 @@ export class HybridComplete implements CompleteStrategy {
       from: from,
       to: to,
       options: options,
+      filterDownOn: /^[a-zA-Z0-9_:]+$/,
     } as CompletionResult;
-  }
-
-  private filter(
-    label: string,
-    text: string,
-    apply: string | ((view: EditorView, result: CompletionResult, completion: Completion) => void),
-    context: AutocompleteContext,
-    type?: string
-  ): Completion | null {
-    if (context.filterType !== FilterType.Fuzzy) {
-      // in case the fuzzy filtering is not used, then use the filter method coming from CMN
-      let score: number | null;
-      if ((score = context.filter(label, text, false))) {
-        return { label: label, apply: apply, type: type, score: score };
-      }
-    }
-
-    const fuzzyOption = { pre: this.fuzzyPre, post: this.fuzzyPost };
-    const result = fuzzy.match(text, label, fuzzyOption);
-    if (result) {
-      return { label: result.rendered, apply: label, type: type, score: result.score };
-    }
-    return null;
   }
 }
