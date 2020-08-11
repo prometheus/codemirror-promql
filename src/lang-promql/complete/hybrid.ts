@@ -266,7 +266,6 @@ export class HybridComplete implements CompleteStrategy {
           { label: label, original: label, apply: label, type: completionList.type, score: 0 },
           text
         );
-        console.log('==', completionResult);
         if (completionResult !== null) {
           options.push(completionResult);
         }
