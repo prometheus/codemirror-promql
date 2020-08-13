@@ -20,13 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import {
-  AutocompleteContext,
-  Completion,
-  CompletionResult,
-  snippet,
-  SnippetSpec,
-} from '@nexucis/codemirror-next-autocomplete';
+import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from '@nexucis/codemirror-next-autocomplete';
 import { CompleteStrategy } from './index';
 import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
@@ -262,10 +256,7 @@ export class HybridComplete implements CompleteStrategy {
 
     for (const completionList of data) {
       for (const label of completionList.labels) {
-        const completionResult = context.filter(
-          { label: label, original: label, apply: label, type: completionList.type, score: 0 },
-          text
-        );
+        const completionResult = context.filter({ label: label, original: label, apply: label, type: completionList.type, score: 0 }, text);
         if (completionResult !== null) {
           options.push(completionResult);
         }
