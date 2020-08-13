@@ -47,7 +47,7 @@ const basicSetup: Extension = [
   multipleSelections(),
   bracketMatching(),
   closeBrackets(),
-  autocomplete({ filterType: FilterType.Fuzzy }),
+  autocomplete({ matchPre: '<b style="color: brown">', matchPost: '</b>' }),
   rectangularSelection(),
   highlightActiveLine(),
   highlightSelectionMatches(),
