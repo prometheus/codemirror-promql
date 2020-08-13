@@ -29,7 +29,7 @@ import { lineNumbers } from '@codemirror/next/gutter';
 import { foldGutter, foldKeymap } from '@codemirror/next/fold';
 import { bracketMatching } from '@codemirror/next/matchbrackets';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/next/closebrackets';
-import { autocomplete, autocompleteKeymap, FilterType } from '@nexucis/codemirror-next-autocomplete';
+import { autocomplete, autocompleteKeymap } from '@nexucis/codemirror-next-autocomplete';
 import { rectangularSelection } from '@codemirror/next/rectangular-selection';
 import { highlightActiveLine, highlightSelectionMatches } from '@codemirror/next/highlight-selection';
 import { defaultKeymap } from '@codemirror/next/commands';
@@ -47,7 +47,7 @@ const basicSetup: Extension = [
   multipleSelections(),
   bracketMatching(),
   closeBrackets(),
-  autocomplete({ filterType: FilterType.Fuzzy }),
+  autocomplete({ matchPre: '<b style="color: brown">', matchPost: '</b>' }),
   rectangularSelection(),
   highlightActiveLine(),
   highlightSelectionMatches(),
