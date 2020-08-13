@@ -20,6 +20,5 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-export { LSPClient, PrometheusClient } from './client';
-export { CompleteConfiguration } from './complete';
-export { PromQLExtension, promQLSyntax } from './promql';
+export { LSPClient, LSPBody } from './lsp';
+export { PrometheusClient } from './prometheus';

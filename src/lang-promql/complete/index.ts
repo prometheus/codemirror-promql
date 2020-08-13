@@ -59,5 +59,5 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
         : new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf?.lookbackInterval)
     );
   }
-  return new HybridComplete(null);
+  return new HybridComplete();
 }

@@ -25,7 +25,7 @@ import { CompleteStrategy } from './index';
 import { Subtree } from 'lezer-tree';
 import { EditorState } from '@codemirror/next/basic-setup';
 import { promQLSyntax } from 'lezer-promql';
-import { PrometheusClient } from '../client/prometheus';
+import { PrometheusClient } from '../client';
 
 interface AutoCompleteNode {
   labels: string[];
@@ -91,9 +91,9 @@ const parsedSnippets: Completion[] = snippets.map((s) => ({
 
 // HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
-  private readonly prometheusClient: PrometheusClient | null;
+  private readonly prometheusClient: PrometheusClient | undefined;
 
-  constructor(prometheusClient: PrometheusClient | null) {
+  constructor(prometheusClient?: PrometheusClient) {
     this.prometheusClient = prometheusClient;
   }
 
