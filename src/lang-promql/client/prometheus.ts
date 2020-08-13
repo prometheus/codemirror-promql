@@ -91,14 +91,21 @@ class Cache {
   }
 }
 
+export interface PrometheusClient {
+  labelNames(metricName?: string): Promise<string[]>;
+  // labelValues return a list of the value associated to the given labelName.
+  // In case a metric is provided, then the list of values is then associated to the couple <MetricName, LabelName>
+  labelValues(labelName: string, metricName?: string): Promise<string[]>;
+}
+
 interface APIResponse {
   status: string;
   data: any;
   warnings: string[];
 }
 
-// PrometheusClient is the HTTP client that should be used to get some information from the different endpoint provided by prometheus.
-export class PrometheusClient {
+// HTTPPrometheusClient is the HTTP client that should be used to get some information from the different endpoint provided by prometheus.
+export class HTTPPrometheusClient implements PrometheusClient {
   private readonly lookbackInterval = 60 * 60 * 1000 * 12; //12 hours
   private readonly url: string;
   private readonly cache: Cache;

@@ -64,10 +64,10 @@ export class PromQLExtension {
   private complete: CompleteStrategy;
 
   constructor() {
-    this.complete = newCompleteStrategy({ enableLSP: false, url: '', offline: true });
+    this.complete = newCompleteStrategy();
   }
 
-  setComplete(completeConfig: CompleteConfiguration) {
+  setComplete(completeConfig?: CompleteConfiguration) {
     this.complete = newCompleteStrategy(completeConfig);
   }
 

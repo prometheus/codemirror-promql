@@ -68,26 +68,22 @@ const promqlExtension = new PromQLExtension();
 
 function activateLSPAutocompletion(): void {
   promqlExtension.setComplete({
-    url: 'http://localhost:8080',
-    enableLSP: true,
-    offline: false,
+    lsp: {
+      url: 'http://localhost:8080',
+    },
   });
 }
 
 function activatePrometheusAutocompletion(): void {
   promqlExtension.setComplete({
-    url: 'http://localhost:9090',
-    enableLSP: false,
-    offline: false,
+    hybrid: {
+      url: 'http://localhost:9090',
+    },
   });
 }
 
 function activateOfflineAutocompletion(): void {
-  promqlExtension.setComplete({
-    url: '',
-    enableLSP: false,
-    offline: true,
-  });
+  promqlExtension.setComplete();
 }
 
 new EditorView({

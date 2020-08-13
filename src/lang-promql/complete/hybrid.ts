@@ -22,10 +22,10 @@
 
 import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from '@nexucis/codemirror-next-autocomplete';
 import { CompleteStrategy } from './index';
-import { PrometheusClient } from './prometheus/client';
 import { Subtree } from 'lezer-tree';
 import { EditorState } from '@codemirror/next/basic-setup';
 import { promQLSyntax } from 'lezer-promql';
+import { PrometheusClient } from '../client/prometheus';
 
 interface AutoCompleteNode {
   labels: string[];
