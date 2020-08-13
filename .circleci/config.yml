@@ -13,7 +13,13 @@ jobs:
           root: ~/project
           paths:
             - lib
-
+  build-app:
+    executor:
+      name: node/default
+    steps:
+      - checkout
+      - node/install-packages
+      - run: npm run build
   lint-lib:
     executor:
       name: node/default
@@ -41,6 +47,10 @@ workflows:
   test-deploy:
     jobs:
       - build-lib:
+          filters:
+            tags:
+              only: /.*/
+      - build-app:
           filters:
             tags:
               only: /.*/
