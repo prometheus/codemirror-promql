@@ -34,12 +34,12 @@ export interface CompleteStrategy {
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
   lsp?: {
-    url: string;
+    url?: string;
     lspClient?: LSPClient;
     httpErrorHandler?: (error: any) => void;
   };
   hybrid?: {
-    url: string;
+    url?: string;
     lookbackInterval?: number;
     httpErrorHandler?: (error: any) => void;
     prometheusClient?: PrometheusClient;
@@ -49,15 +49,23 @@ export interface CompleteConfiguration {
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
   if (conf?.lsp) {
     const lspConf = conf.lsp;
-    return new LSPComplete(lspConf.lspClient ? lspConf.lspClient : new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler));
+    if (lspConf.lspClient) {
+      return new LSPComplete(lspConf.lspClient);
+    }
+    if (lspConf.url) {
+      return new LSPComplete(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler));
+    }
+    throw new Error('the url or the lspClient must be set');
   }
   if (conf?.hybrid) {
     const hybridConf = conf.hybrid;
-    return new HybridComplete(
-      hybridConf.prometheusClient
-        ? hybridConf.prometheusClient
-        : new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf?.lookbackInterval)
-    );
+    if (hybridConf.prometheusClient) {
+      return new HybridComplete(hybridConf.prometheusClient);
+    }
+    if (hybridConf.url) {
+      new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf?.lookbackInterval);
+    }
+    throw new Error('the url or the prometheusClient must be set');
   }
   return new HybridComplete();
 }
