@@ -21,11 +21,10 @@
 // SOFTWARE.
 
 import { AutocompleteContext, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
-import { LSPClient } from './lsp/client';
 import { LSPComplete } from './lsp';
 import { HybridComplete } from './hybrid';
-import { PrometheusClient } from './prometheus/client';
-
+import { HTTPLSPClient, LSPClient } from '../client/lsp';
+import { HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
@@ -34,21 +33,39 @@ export interface CompleteStrategy {
 
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
-  enableLSP: boolean;
-  offline: boolean;
-  url: string;
-  httpErrorHandler?: (error: any) => void;
+  lsp?: {
+    url?: string;
+    lspClient?: LSPClient;
+    httpErrorHandler?: (error: any) => void;
+  };
   hybrid?: {
+    url?: string;
     lookbackInterval?: number;
+    httpErrorHandler?: (error: any) => void;
+    prometheusClient?: PrometheusClient;
   };
 }
 
-export function newCompleteStrategy(conf: CompleteConfiguration): CompleteStrategy {
-  if (conf.enableLSP) {
-    return new LSPComplete(new LSPClient(conf.url, conf.httpErrorHandler));
+export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
+  if (conf?.lsp) {
+    const lspConf = conf.lsp;
+    if (lspConf.lspClient) {
+      return new LSPComplete(lspConf.lspClient);
+    }
+    if (lspConf.url) {
+      return new LSPComplete(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler));
+    }
+    throw new Error('the url or the lspClient must be set');
   }
-  if (conf.offline) {
-    return new HybridComplete(null);
+  if (conf?.hybrid) {
+    const hybridConf = conf.hybrid;
+    if (hybridConf.prometheusClient) {
+      return new HybridComplete(hybridConf.prometheusClient);
+    }
+    if (hybridConf.url) {
+      new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf?.lookbackInterval);
+    }
+    throw new Error('the url or the prometheusClient must be set');
   }
-  return new HybridComplete(new PrometheusClient(conf.url, conf.httpErrorHandler, conf.hybrid?.lookbackInterval));
+  return new HybridComplete();
 }

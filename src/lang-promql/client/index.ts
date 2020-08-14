@@ -20,38 +20,5 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import axios from 'axios';
-import { CompletionItem } from 'vscode-languageserver-types';
-
-export interface LSPBody {
-  expr: string;
-  limit: number;
-  positionLine?: number;
-  positionChar?: number;
-}
-
-// LSPClient is the HTTP client that should be used to get some information from the different endpoint provided by langserver-promql.
-export class LSPClient {
-  private readonly url: string;
-  private readonly autocompleteEndpoint = '/completion';
-  private readonly errorHandler?: (error: any) => void;
-
-  constructor(url: string, errorHandler?: (error: any) => void) {
-    this.url = url;
-    this.errorHandler = errorHandler;
-  }
-
-  complete(body: LSPBody): Promise<CompletionItem[]> {
-    return axios
-      .post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
-      .then((response) => {
-        return response.data ? response.data : [];
-      })
-      .catch((error) => {
-        if (this.errorHandler) {
-          this.errorHandler(error);
-        }
-        return [];
-      });
-  }
-}
+export { LSPClient, LSPBody } from './lsp';
+export { PrometheusClient } from './prometheus';

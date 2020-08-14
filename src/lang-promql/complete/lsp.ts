@@ -20,10 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { LSPBody, LSPClient } from './lsp/client';
 import { AutocompleteContext, Completion, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
 import { CompletionItem, TextEdit } from 'vscode-languageserver-types';
 import { CompleteStrategy } from './index';
+import { LSPBody, LSPClient } from '../client';
 
 // LSPComplete will provide an autocompletion based on what the langserver-promql is providing when requested.
 export class LSPComplete implements CompleteStrategy {
