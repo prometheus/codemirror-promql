@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import axios from 'axios';
-import { CompletionItem } from 'vscode-languageserver-types';
+import { CompletionItem, Diagnostic } from 'vscode-languageserver-types';
 
 export interface LSPBody {
   expr: string;
@@ -32,12 +32,14 @@ export interface LSPBody {
 
 export interface LSPClient {
   complete(body: LSPBody): Promise<CompletionItem[]>;
+  diagnostic(body: LSPBody): Promise<Diagnostic[]>;
 }
 
 // HTTPLSPClient is the HTTP client that should be used to get some information from the different endpoint provided by langserver-promql.
 export class HTTPLSPClient implements LSPClient {
   private readonly url: string;
   private readonly autocompleteEndpoint = '/completion';
+  private readonly diagnosticEndpoint = '/diagnostics';
   private readonly errorHandler?: (error: any) => void;
 
   constructor(url: string, errorHandler?: (error: any) => void) {
@@ -48,6 +50,20 @@ export class HTTPLSPClient implements LSPClient {
   complete(body: LSPBody): Promise<CompletionItem[]> {
     return axios
       .post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
+      .then((response) => {
+        return response.data ? response.data : [];
+      })
+      .catch((error) => {
+        if (this.errorHandler) {
+          this.errorHandler(error);
+        }
+        return [];
+      });
+  }
+
+  diagnostic(body: LSPBody): Promise<Diagnostic[]> {
+    return axios
+      .post<Diagnostic[]>(this.url + this.diagnosticEndpoint, body)
       .then((response) => {
         return response.data ? response.data : [];
       })
