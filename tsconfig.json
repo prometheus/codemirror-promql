@@ -6,8 +6,7 @@
     "outDir": "./lib",
     "module": "commonjs",
     "sourceMap": true,
-    "strict": true,
-    "allowSyntheticDefaultImports": true
+    "strict": true
   },
   "include": [
     "src/lang-promql",

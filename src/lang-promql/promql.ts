@@ -27,7 +27,7 @@ import { Extension } from '@codemirror/next/state';
 import { CompleteStrategy, CompleteConfiguration, newCompleteStrategy } from './complete';
 import { AutocompleteContext } from '@nexucis/codemirror-next-autocomplete';
 
-export const promQLSyntax = new LezerSyntax(
+export const promQLSyntax = LezerSyntax.define(
   parser.withProps(
     styleTags({
       LineComment: 'comment',
