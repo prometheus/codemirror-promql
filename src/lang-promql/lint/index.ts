@@ -20,52 +20,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
-import { LSPComplete } from './lsp';
-import { HybridComplete } from './hybrid';
+import { EditorView } from '@codemirror/next/view';
+import { Diagnostic, linter } from '@codemirror/next/lint';
+import { LSPLint } from './lsp';
 import { HTTPLSPClient, LSPClient } from '../client/lsp';
-import { HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
-// Complete is the interface that defines the simple method that returns a CompletionResult.
-// Every different completion mode must implement this interface.
-export interface CompleteStrategy {
-  promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
+import { HybridLint } from './hybrid';
+
+type lintFunc = (view: EditorView) => readonly Diagnostic[] | Promise<readonly Diagnostic[]>;
+
+// LintStrategy is the interface that defines the simple method that returns a DiagnosticResult.
+// Every different lint mode must implement this interface.
+export interface LintStrategy {
+  promQL(this: LintStrategy): lintFunc;
 }
 
-// CompleteConfiguration should be used to customize the autocompletion.
-export interface CompleteConfiguration {
+// LintConfiguration should be used to customize the autocompletion.
+export interface LintConfiguration {
   lsp?: {
     url?: string;
     lspClient?: LSPClient;
     httpErrorHandler?: (error: any) => void;
   };
-  hybrid?: {
-    url?: string;
-    lookbackInterval?: number;
-    httpErrorHandler?: (error: any) => void;
-    prometheusClient?: PrometheusClient;
-  };
 }
 
-export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
+export function newLintStrategy(conf?: LintConfiguration): LintStrategy {
   if (conf?.lsp) {
     const lspConf = conf.lsp;
     if (lspConf.lspClient) {
-      return new LSPComplete(lspConf.lspClient);
+      return new LSPLint(lspConf.lspClient);
     }
     if (lspConf.url) {
-      return new LSPComplete(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler));
+      return new LSPLint(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler));
     }
     throw new Error('the url or the lspClient must be set');
   }
-  if (conf?.hybrid) {
-    const hybridConf = conf.hybrid;
-    if (hybridConf.prometheusClient) {
-      return new HybridComplete(hybridConf.prometheusClient);
-    }
-    if (hybridConf.url) {
-      return new HybridComplete(new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf?.lookbackInterval));
-    }
-    throw new Error('the url or the prometheusClient must be set');
-  }
-  return new HybridComplete();
+  return new HybridLint();
+}
+
+export function promQLLinter(callbackFunc: (this: LintStrategy) => lintFunc, thisArg: LintStrategy) {
+  return linter(callbackFunc.call(thisArg));
 }

@@ -65,47 +65,76 @@ const basicSetup: Extension = [
 ];
 
 const promqlExtension = new PromQLExtension();
+let editor: EditorView;
 
-function activateLSPAutocompletion(): void {
-  promqlExtension.setComplete({
-    lsp: {
-      url: 'http://localhost:8080',
-    },
+function setCompletion() {
+  const completionSelect = document.getElementById('completion') as HTMLSelectElement;
+  const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
+  switch (completionValue) {
+    case 'offline':
+      promqlExtension.setComplete();
+      break;
+    case 'lsp':
+      promqlExtension.setComplete({
+        lsp: {
+          url: 'http://localhost:8080',
+        },
+      });
+      break;
+    case 'prometheus':
+      promqlExtension.setComplete({
+        hybrid: {
+          url: 'http://localhost:9090',
+        },
+      });
+      break;
+    default:
+      promqlExtension.setComplete();
+  }
+}
+
+function setLinter() {
+  const completionSelect = document.getElementById('linter') as HTMLSelectElement;
+  const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
+  switch (completionValue) {
+    case 'offline':
+      promqlExtension.setLinter();
+      break;
+    case 'lsp':
+      promqlExtension.setLinter({
+        lsp: {
+          url: 'http://localhost:8080',
+        },
+      });
+      break;
+    default:
+      promqlExtension.setLinter();
+  }
+}
+
+function createEditor() {
+  if (editor) {
+    // When the linter is changed, it required to reload completely the editor.
+    // So the first thing to do, is to completely delete the previous editor and to recreate it from scratch
+    editor.destroy();
+  }
+  editor = new EditorView({
+    state: EditorState.create({ extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme] }),
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    parent: document.querySelector('#editor')!,
   });
 }
 
-function activatePrometheusAutocompletion(): void {
-  promqlExtension.setComplete({
-    hybrid: {
-      url: 'http://localhost:9090',
-    },
-  });
+function applyConfiguration(): void {
+  setCompletion();
+  setLinter();
+  createEditor();
 }
 
-function activateOfflineAutocompletion(): void {
-  promqlExtension.setComplete();
-}
-
-new EditorView({
-  state: EditorState.create({ extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme] }),
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  parent: document.querySelector('#editor')!,
-});
+createEditor();
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
 // @ts-ignore
-document.getElementById('lsp').addEventListener('click', function () {
-  activateLSPAutocompletion();
-});
-
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
-// @ts-ignore
-document.getElementById('offline').addEventListener('click', function () {
-  activateOfflineAutocompletion();
-});
-
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion,@typescript-eslint/ban-ts-ignore
-// @ts-ignore
-document.getElementById('prometheus').addEventListener('click', function () {
-  activatePrometheusAutocompletion();
+document.getElementById('apply').addEventListener('click', function () {
+  applyConfiguration();
 });

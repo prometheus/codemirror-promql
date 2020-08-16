@@ -23,3 +23,4 @@
 export { LSPClient, PrometheusClient } from './client';
 export { CompleteConfiguration } from './complete';
 export { PromQLExtension, promQLSyntax } from './promql';
+export { LintConfiguration } from './lint';
