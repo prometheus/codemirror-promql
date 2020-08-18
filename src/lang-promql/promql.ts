@@ -38,9 +38,9 @@ export const promQLSyntax = LezerSyntax.define(
       Duration: 'number',
       'abs absent absent_over_time avg_over_time ceil changes clamp_max clamp_min count_over_time days_in_month day_of_month day_of_week delta deriv exp floor histogram_quantile holt_winters hour idelta increase irate label_replace label_join ln log10 log2 max_over_time min_over_time minute month predict_linear quantile_over_time rate resets round scalar sort sort_desc sqrt stddev_over_time stdvar_over_time sum_over_time time timestamp vector year':
         'functionName',
-      'avg bottomk count count_values group max min quantile stddev stdvar sum topk': 'operatorKeyword',
-      'by without bool on ignoring group_left group_right offset': 'modifier',
-      'and unless or': 'logicOperator',
+      'Avg Bottomk Count Count_values Group Max Min Quantile Stddev Stdvar Sum Topk': 'operatorKeyword',
+      'By Without Bool On Ignoring GroupLeft GroupRight Offset': 'modifier',
+      'And Unless Or': 'logicOperator',
       BinOp: 'operator',
       MatchOp: 'compareOperator',
       UnaryOp: 'arithmeticOperator',
