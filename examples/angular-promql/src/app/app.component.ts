@@ -14,7 +14,7 @@ import { searchKeymap } from '@codemirror/next/search';
 import { commentKeymap } from '@codemirror/next/comment';
 import { gotoLineKeymap } from '@codemirror/next/goto-line';
 import { lintKeymap } from '@codemirror/next/lint';
-import { autocomplete, autocompleteKeymap, FilterType } from '@nexucis/codemirror-next-autocomplete';
+import { autocomplete, autocompleteKeymap } from '@nexucis/codemirror-next-autocomplete';
 import { highlighter } from '@codemirror/next/highlight';
 
 @Component({
@@ -30,7 +30,7 @@ export class AppComponent implements OnInit {
     multipleSelections(),
     bracketMatching(),
     closeBrackets(),
-    autocomplete({ filterType: FilterType.Fuzzy }),
+    autocomplete({ matchPre: '<b style="color: brown">', matchPost: '</b>' }),
     rectangularSelection(),
     highlightActiveLine(),
     highlightSelectionMatches(),
@@ -70,15 +70,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     const promqlExtension = new PromQLExtension();
-    promqlExtension.setComplete({
-      url: '',
-      enableLSP: false,
-      offline: true,
-      hybrid: {
-        fuzzyPre: '<b style="color: brown">',
-        fuzzyPost: '</b>',
-      },
-    });
     // tslint:disable-next-line:no-unused-expression
     const view = new EditorView({
       state: EditorState.create({

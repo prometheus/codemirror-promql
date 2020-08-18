@@ -35,7 +35,7 @@ import { searchKeymap } from '@codemirror/next/search';
 import { commentKeymap } from '@codemirror/next/comment';
 import { gotoLineKeymap } from '@codemirror/next/goto-line';
 import { lintKeymap } from '@codemirror/next/lint';
-import { autocomplete, autocompleteKeymap, FilterType } from '@nexucis/codemirror-next-autocomplete';
+import { autocomplete, autocompleteKeymap } from '@nexucis/codemirror-next-autocomplete';
 import { highlighter } from '@codemirror/next/highlight';
 
 @Component({
@@ -54,7 +54,8 @@ export class MyComponent implements OnInit {
     closeBrackets(),
     // /!\ This method is coming from @nexucis/codemirror-next-autocomplete
     // and not from @codemirror/next/autocomplete.
-    autocomplete({ filterType: FilterType.Fuzzy }),
+    // also here you enable the highlight of the matching string of the autocomplete list.
+    autocomplete({ matchPre: '<b style="color: brown">', matchPost: '</b>' }),
     rectangularSelection(),
     highlightActiveLine(),
     highlightSelectionMatches(),
@@ -84,18 +85,8 @@ import { PromQLExtension } from 'codemirror-promql';
 })
 export class MyComponent implements OnInit {
   ngOnInit(): void {
+   // For this example, you activate the autocomplete mode 'offline' 
     const promqlExtension = new PromQLExtension();
-    // For this example, you activate the autocomplete mode 'offline' 
-    // and enable the highlight of the matching string of the autocomplete list.
-    promqlExtension.setComplete({
-      url: '',
-      enableLSP: false,
-      offline: true,
-      hybrid: {
-        fuzzyPre: '<b style="color: brown">',
-        fuzzyPost: '</b>',
-      },
-    });
   }
 }
 ```
@@ -117,15 +108,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     const promqlExtension = new PromQLExtension();
-    promqlExtension.setComplete({
-      url: '',
-      enableLSP: false,
-      offline: true,
-      hybrid: {
-        fuzzyPre: '<b style="color: brown">',
-        fuzzyPost: '</b>',
-      },
-    });
     // tslint:disable-next-line:no-unused-expression
     const view = new EditorView({
       state: EditorState.create({
