@@ -42,7 +42,8 @@ import {
   MetricIdentifier,
   StringLiteral,
   VectorSelector,
-  AggregateModifier,
+  binOpModifierTerms,
+  aggregateOpModifierTerms,
 } from 'lezer-promql';
 
 interface AutoCompleteNode {
@@ -53,10 +54,10 @@ interface AutoCompleteNode {
 const autocompleteNode: { [key: string]: AutoCompleteNode } = {
   matchOp: { labels: matchOpTerms, type: '' },
   binOp: { labels: binOpTerms, type: '' },
-  binOpModifier: { labels: ['on', 'ignoring', 'group_left', 'group_right'], type: 'keyword' },
+  binOpModifier: { labels: binOpModifierTerms, type: 'keyword' },
   functionIdentifier: { labels: functionIdentifierTerms, type: 'function' },
   aggregateOp: { labels: aggregateOpTerms, type: 'keyword' },
-  aggregateOpModifier: { labels: ['by', 'without'], type: 'keyword' },
+  aggregateOpModifier: { labels: aggregateOpModifierTerms, type: 'keyword' },
 };
 
 const snippets: readonly SnippetSpec[] = [
@@ -98,7 +99,7 @@ export class HybridComplete implements CompleteStrategy {
 
       if (tree.parent?.parent?.parent?.parent?.type.id === BinaryExpr) {
         // This is for autocompleting binary operator modifiers (on / ignoring / group_x). When we get here, we have something like:
-        //       metric_name / igno
+        //       metric_name / ignor
         // And the tree components above the half-finished set operator will look like:
         //
         // Identifier -> MetricIdentifier -> VectorSelector -> Expr -> BinaryExpr.
@@ -132,17 +133,22 @@ export class HybridComplete implements CompleteStrategy {
       // So we can autocomplete the labelValue
       return this.autocompleteLabelValue(tree.parent, tree, pos, context, state);
     }
-    if (tree.type.id === LabelMatcher && tree.firstChild?.type.id === LabelName && tree.lastChild !== null) {
+    if (
+      tree.type.id === LabelMatcher &&
+      tree.firstChild?.type.id === LabelName &&
+      tree.lastChild?.type.id === 0 &&
+      tree.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
+    ) {
       // In this case the current token is not itself a valid match op yet:
       //      metric_name{labelName!}
       return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.lastChild.start, pos, context, state);
     }
-    if (tree.name === 'MatchOp') {
+    if (tree.name === 'MatchOp' && tree.parent?.type.id !== 0) {
       // In this case the current token is already a valid match op, but could be extended, e.g. "=" to "=~".
       return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.start, pos, context, state);
     }
     if (tree.parent?.type.id === BinaryExpr) {
-      return this.arrayToCompletionResult([autocompleteNode.binaryExpr], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.binOp], tree.start, pos, context, state);
     }
     if (tree.parent?.type.id === FunctionIdentifier) {
       return this.arrayToCompletionResult([autocompleteNode.functionIdentifier], tree.start, pos, context, state);
