@@ -42,20 +42,22 @@ import {
   MetricIdentifier,
   StringLiteral,
   VectorSelector,
+  binOpModifierTerms,
+  aggregateOpModifierTerms,
 } from 'lezer-promql';
-
-const matchOp = 9999;
 
 interface AutoCompleteNode {
   labels: string[];
   type: string;
 }
 
-const autocompleteNode: { [key: number]: AutoCompleteNode } = {
-  [matchOp]: { labels: matchOpTerms, type: '' },
-  [BinaryExpr]: { labels: binOpTerms, type: '' },
-  [FunctionIdentifier]: { labels: functionIdentifierTerms, type: 'function' },
-  [AggregateOp]: { labels: aggregateOpTerms, type: 'keyword' },
+const autocompleteNode: { [key: string]: AutoCompleteNode } = {
+  matchOp: { labels: matchOpTerms, type: '' },
+  binOp: { labels: binOpTerms, type: '' },
+  binOpModifier: { labels: binOpModifierTerms, type: 'keyword' },
+  functionIdentifier: { labels: functionIdentifierTerms, type: 'function' },
+  aggregateOp: { labels: aggregateOpTerms, type: 'keyword' },
+  aggregateOpModifier: { labels: aggregateOpModifierTerms, type: 'keyword' },
 };
 
 const snippets: readonly SnippetSpec[] = [
@@ -93,29 +95,26 @@ export class HybridComplete implements CompleteStrategy {
     const { state, pos } = context;
     const tree = state.tree.resolve(pos, -1);
     if (tree.parent?.type.id === MetricIdentifier && tree.type.id === Identifier) {
+      let nonMetricCompletions = [autocompleteNode.functionIdentifier, autocompleteNode.aggregateOp, autocompleteNode.binOp];
+
+      if (tree.parent?.parent?.parent?.parent?.type.id === BinaryExpr) {
+        // This is for autocompleting binary operator modifiers (on / ignoring / group_x). When we get here, we have something like:
+        //       metric_name / ignor
+        // And the tree components above the half-finished set operator will look like:
+        //
+        // Identifier -> MetricIdentifier -> VectorSelector -> Expr -> BinaryExpr.
+        nonMetricCompletions = nonMetricCompletions.concat(autocompleteNode.binOpModifier);
+      }
+
       // Here we cannot know if we have to autocomplete the metric_name, or the function or the aggregation.
       // So we will just autocomplete everything
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues('__name__').then((metricNames: string[]) => {
           const result: AutoCompleteNode[] = [{ labels: metricNames, type: 'constant' }];
-          return this.arrayToCompletionResult(
-            result.concat(autocompleteNode[FunctionIdentifier], autocompleteNode[AggregateOp]),
-            tree.start,
-            pos,
-            context,
-            state,
-            true
-          );
+          return this.arrayToCompletionResult(result.concat(nonMetricCompletions), tree.start, pos, context, state, true);
         });
       }
-      return this.arrayToCompletionResult(
-        [autocompleteNode[FunctionIdentifier]].concat(autocompleteNode[AggregateOp]),
-        tree.start,
-        pos,
-        context,
-        state,
-        true
-      );
+      return this.arrayToCompletionResult(nonMetricCompletions, tree.start, pos, context, state, true);
     }
     if (tree.type.id === GroupingLabels || (tree.parent?.type.id === GroupingLabel && tree.type.id === LabelName)) {
       // In this case we are in the given situation:
@@ -134,17 +133,38 @@ export class HybridComplete implements CompleteStrategy {
       // So we can autocomplete the labelValue
       return this.autocompleteLabelValue(tree.parent, tree, pos, context, state);
     }
-    if (tree.name === 'MatchOp') {
-      return this.arrayToCompletionResult([autocompleteNode[matchOp]], tree.start, pos, context, state);
+    if (
+      tree.type.id === LabelMatcher &&
+      tree.firstChild?.type.id === LabelName &&
+      tree.lastChild?.type.id === 0 &&
+      tree.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
+    ) {
+      // In this case the current token is not itself a valid match op yet:
+      //      metric_name{labelName!}
+      return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.lastChild.start, pos, context, state);
+    }
+    if (tree.name === 'MatchOp' && tree.parent?.type.id !== 0) {
+      // In this case the current token is already a valid match op, but could be extended, e.g. "=" to "=~".
+      return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.start, pos, context, state);
     }
     if (tree.parent?.type.id === BinaryExpr) {
-      return this.arrayToCompletionResult([autocompleteNode[BinaryExpr]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.binOp], tree.start, pos, context, state);
     }
     if (tree.parent?.type.id === FunctionIdentifier) {
-      return this.arrayToCompletionResult([autocompleteNode[FunctionIdentifier]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.functionIdentifier], tree.start, pos, context, state);
     }
     if (tree.parent?.type.id === AggregateOp) {
-      return this.arrayToCompletionResult([autocompleteNode[AggregateOp]], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.aggregateOp], tree.start, pos, context, state);
+    }
+    if ((tree.type.id === Identifier && tree.parent?.type.id === 0) || (tree.type.id === 0 && tree.parent?.type.id !== LabelMatchers)) {
+      // This matches identifier-ish keywords in certain places where a normal identifier would be invalid, like completing "b" into "by":
+      //        sum b
+      // ...or:
+      //        sum(metric_name) b
+      // ...or completing "unle" into "unless":
+      //        metric_name / unle
+      // TODO: This is imprecise and autocompletes in too many situations. Make this better.
+      return this.arrayToCompletionResult([autocompleteNode.aggregateOpModifier].concat(autocompleteNode.binOp), tree.start, pos, context, state);
     }
     return null;
   }
