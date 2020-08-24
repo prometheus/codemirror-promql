@@ -24,11 +24,16 @@ import { Diagnostic } from '@codemirror/next/lint';
 import { Subtree, Tree } from 'lezer-tree';
 import {
   AggregateExpr,
+  BinaryExpr,
+  BinModifier,
+  Bool,
+  BoolModifier,
   Bottomk,
   CountValues,
   Expr,
   FunctionCallArgs,
   FunctionCallBody,
+  GroupModifiers,
   MatrixSelector,
   NumberLiteral,
   ParenExpr,
@@ -81,12 +86,31 @@ export class Parser {
     if (!node) {
       return NodeTypeNone;
     }
-    console.log(node);
     switch (node.type.id) {
       case Expr:
         return this.checkAST(node.firstChild);
       case AggregateExpr:
         this.checkAggregationExpr(node);
+        break;
+      case BinaryExpr:
+        // Following the definition of the BinaryExpr, the left and the right and
+        // expression are respectively the first and last child
+        // https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L52
+        const lt = this.checkAST(node.firstChild);
+        const rt = this.checkAST(node.lastChild);
+        // BOOL modifier check
+        const boolModifierUsed = walkThrough(node, BinaryExpr, BinModifier, GroupModifiers, BoolModifier, Bool);
+        if (boolModifierUsed) {
+          // TODO check the binOp used is a comparator operator
+          if (lt !== NodeTypeScalar || rt !== NodeTypeScalar) {
+            this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
+          }
+        } else {
+          if (lt === NodeTypeScalar || rt === NodeTypeScalar) {
+            this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
+          }
+        }
+        // TODO add more check
         break;
       case ParenExpr:
         this.checkAST(walkThrough(node, ParenExpr, Expr));
@@ -164,8 +188,14 @@ export class Parser {
     });
   }
 
-  private getType(node: Subtree): NodeType {
+  // Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
+  private getType(node: Subtree | null | undefined): NodeType {
+    if (!node) {
+      return NodeTypeNone;
+    }
     switch (node.type.id) {
+      case Expr:
+        return this.getType(node.firstChild);
       case AggregateExpr:
         return NodeTypeVector;
       case VectorSelector:
@@ -178,7 +208,18 @@ export class Parser {
         return NodeTypeMatrix;
       case SubqueryExpr:
         return NodeTypeMatrix;
-      // TODO Missing recursive search nodeType for binary expr
+      case ParenExpr:
+        return this.getType(walkThrough(node, ParenExpr, Expr));
+      case UnaryExpr:
+        return this.getType(walkThrough(node, UnaryExpr, Expr));
+      case BinaryExpr:
+        const lt = this.getType(node.firstChild);
+        const rt = this.getType(node.lastChild);
+        if (lt === NodeTypeScalar && rt === NodeTypeScalar) {
+          return NodeTypeScalar;
+        }
+        // TODO what happen if you have a stringLiteral instead
+        return NodeTypeVector;
       default:
         return NodeTypeNone;
     }
