@@ -35,6 +35,7 @@ import {
   StringLiteral,
   SubqueryExpr,
   Topk,
+  UnaryExpr,
   VectorSelector
 } from 'lezer-promql';
 import { walkThrough } from './path-finder';
@@ -75,19 +76,22 @@ export class Parser {
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
   // https://github.com/prometheus/prometheus/blob/master/promql/parser/parse.go#L433
-  private checkAST(node: Subtree): NodeType {
-    const nodeType = this.getType(node);
+  private checkAST(node: Subtree | undefined | null): NodeType {
+    if (!node) {
+      return NodeTypeNone;
+    }
     console.log(node)
     switch (node.type.id) {
       case Expr:
-        const subNode = node.firstChild;
-        if (subNode !== null) {
-          return this.checkAST(subNode);
-        }
-        break;
+        return this.checkAST(node.firstChild);
       case AggregateExpr:
         this.checkAggregationExpr(node);
         break;
+      case UnaryExpr:
+        const t = this.checkAST(walkThrough(node, UnaryExpr, Expr));
+        if (t !== NodeTypeScalar && t != NodeTypeVector) {
+          this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', t);
+        }
     }
     if (node.name === '') {
       const child = node.firstChild;
@@ -95,7 +99,8 @@ export class Parser {
         return this.checkAST(child);
       }
     }
-    return nodeType;
+
+    return this.getType(node);
   }
 
   private checkAggregationExpr(node: Subtree) {
