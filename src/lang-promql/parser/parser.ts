@@ -31,12 +31,13 @@ import {
   FunctionCallBody,
   MatrixSelector,
   NumberLiteral,
+  ParenExpr,
   Quantile,
   StringLiteral,
   SubqueryExpr,
   Topk,
   UnaryExpr,
-  VectorSelector
+  VectorSelector,
 } from 'lezer-promql';
 import { walkThrough } from './path-finder';
 
@@ -80,18 +81,30 @@ export class Parser {
     if (!node) {
       return NodeTypeNone;
     }
-    console.log(node)
+    console.log(node);
     switch (node.type.id) {
       case Expr:
         return this.checkAST(node.firstChild);
       case AggregateExpr:
         this.checkAggregationExpr(node);
         break;
+      case ParenExpr:
+        this.checkAST(walkThrough(node, ParenExpr, Expr));
+        break;
       case UnaryExpr:
-        const t = this.checkAST(walkThrough(node, UnaryExpr, Expr));
-        if (t !== NodeTypeScalar && t != NodeTypeVector) {
-          this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', t);
+        const unaryExprType = this.checkAST(walkThrough(node, UnaryExpr, Expr));
+        if (unaryExprType !== NodeTypeScalar && unaryExprType != NodeTypeVector) {
+          this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', unaryExprType);
         }
+        break;
+      case SubqueryExpr:
+        const subQueryExprType = this.checkAST(walkThrough(node, SubqueryExpr, Expr));
+        if (subQueryExprType !== NodeTypeVector) {
+          this.addDiagnostic(node, 'subquery is only allowed on instant vector, got %s in %s instead', subQueryExprType, node.name);
+        }
+        break;
+      case MatrixSelector:
+        this.checkAST(walkThrough(node, MatrixSelector, Expr));
     }
     if (node.name === '') {
       const child = node.firstChild;
