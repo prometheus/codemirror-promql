@@ -31,6 +31,7 @@
     "@nexucis/codemirror-next-autocomplete": "^0.1.9",
     "axios": "^0.19.2",
     "lezer-promql": "^0.9.0",
+    "lezer-tree": "^0.10.0",
     "vscode-languageserver-types": "^3.15.1"
   },
   "devDependencies": {

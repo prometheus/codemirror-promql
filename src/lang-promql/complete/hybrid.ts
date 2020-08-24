@@ -45,6 +45,7 @@ import {
   binOpModifierTerms,
   aggregateOpModifierTerms,
 } from 'lezer-promql';
+import { walkBackward, walkThrough } from '../parser/path-finder';
 
 interface AutoCompleteNode {
   labels: string[];
@@ -213,30 +214,20 @@ export class HybridComplete implements CompleteStrategy {
     return this.labelNames(tree, pos, context, state, this.getMetricNameInVectorSelector(tree, state));
   }
 
+  // Note: Be aware that the the first path number you put here, should be the the node.type.id
+  // Note2: The last path number you put here, will be the subtree returned
   private getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
     // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
-    let currentNode: Subtree | null = tree;
-    while (currentNode && currentNode.type.id !== VectorSelector) {
-      currentNode = currentNode.parent;
-    }
+    let currentNode: Subtree | undefined | null = walkBackward(tree, VectorSelector);
     if (!currentNode) {
       // Weird case that shouldn't happen, because "VectorSelector" is by definition the parent of the LabelMatchers.
       return '';
     }
-    // By definition "MetricIdentifier" is necessary the first child if it exists
-    if (!currentNode.firstChild || currentNode.firstChild.type.id !== MetricIdentifier) {
-      // If it doesn't exist then we are in the given situation
-      //     {}
+    currentNode = walkThrough(currentNode, VectorSelector, MetricIdentifier, Identifier);
+    if (!currentNode) {
       return '';
     }
-    // Let's move forward to the next child.
-    currentNode = currentNode.firstChild;
-    // By definition the next child should be an "Identifier" which contains the metricName
-    if (!currentNode.firstChild || currentNode.firstChild.type.id !== Identifier) {
-      return '';
-    }
-    currentNode = currentNode.firstChild;
     return state.sliceDoc(currentNode.start, currentNode.end);
   }
 
