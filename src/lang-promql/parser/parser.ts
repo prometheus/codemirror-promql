@@ -57,6 +57,7 @@ import {
   VectorSelector,
 } from 'lezer-promql';
 import { childExist, walkThrough } from './path-finder';
+import exp = require('constants');
 
 function sprintf(format: string, args: string[]): string {
   let i = 0;
@@ -161,7 +162,7 @@ export class Parser {
         break;
       case UnaryExpr:
         const unaryExprType = this.checkAST(walkThrough(node, Expr));
-        if (unaryExprType !== NodeTypeScalar && unaryExprType != NodeTypeVector) {
+        if (unaryExprType !== NodeTypeScalar && unaryExprType !== NodeTypeVector) {
           this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', unaryExprType);
         }
         break;
@@ -173,6 +174,7 @@ export class Parser {
         break;
       case MatrixSelector:
         this.checkAST(walkThrough(node, Expr));
+      // TODO missing VectorSelector management
     }
     if (node.name === '') {
       const child = node.firstChild;
@@ -200,7 +202,7 @@ export class Parser {
     this.expectType(expr, NodeTypeVector, 'aggregation expression');
     // get the parameter of the aggregation operator
     const params = walkThrough(node, FunctionCallBody, FunctionCallArgs, FunctionCallArgs, Expr);
-    if (aggregateOp.type.id == Topk || aggregateOp.type.id == Bottomk || aggregateOp.type.id == Quantile) {
+    if (aggregateOp.type.id === Topk || aggregateOp.type.id === Bottomk || aggregateOp.type.id === Quantile) {
       if (!params) {
         this.addDiagnostic(node, 'no parameter found');
         return;
@@ -217,7 +219,7 @@ export class Parser {
   }
 
   private checkBinaryExpr(node: Subtree): void {
-    // Following the definition of the BinaryExpr, the left and the right and
+    // Following the definition of the BinaryExpr, the left and the right
     // expression are respectively the first and last child
     // https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L52
     const lExpr = node.firstChild;
