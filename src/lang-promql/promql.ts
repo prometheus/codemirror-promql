@@ -36,13 +36,12 @@ export const promQLSyntax = LezerSyntax.define(
       StringLiteral: 'string',
       NumberLiteral: 'number',
       Duration: 'number',
-      'abs absent absent_over_time avg_over_time ceil changes clamp_max clamp_min count_over_time days_in_month day_of_month day_of_week delta deriv exp floor histogram_quantile holt_winters hour idelta increase irate label_replace label_join ln log10 log2 max_over_time min_over_time minute month predict_linear quantile_over_time rate resets round scalar sort sort_desc sqrt stddev_over_time stdvar_over_time sum_over_time time timestamp vector year':
+      'Abs Absent AbsentOverTime AvgOverTime Ceil Changes ClampMax ClampMin CountOverTime DaysInMonth DayOfMonth DayOfWeek Delta Deriv Exp Floor HistogramQuantile HoltWinters Hour Idelta Increase Irate LabelReplace LabelJoin Ln Log10 Log2 MaxOverTime MinOverTime Minute Month PredictLinear QuantileOverTime Rate Resets Round Scalar Sort SortDesc Sqrt StddevOverTime StdvarOverTime SumOverTime Time Timestamp Vector Year':
         'functionName',
       'Avg Bottomk Count Count_values Group Max Min Quantile Stddev Stdvar Sum Topk': 'operatorKeyword',
       'By Without Bool On Ignoring GroupLeft GroupRight Offset': 'modifier',
       'And Unless Or': 'logicOperator',
-      BinOp: 'operator',
-      MatchOp: 'compareOperator',
+      'Sub Add Mul Mod Div Eql Neq Lte Lss Gte Gtr EqlRegex EqlSingle NeqRegex Pow': 'operator',
       UnaryOp: 'arithmeticOperator',
       '( )': 'paren',
       '[ ]': 'squareBracket',
