@@ -24,27 +24,37 @@ import { Diagnostic } from '@codemirror/next/lint';
 import { Subtree, Tree } from 'lezer-tree';
 import {
   AggregateExpr,
+  And,
   BinaryExpr,
   BinModifier,
   Bool,
   BoolModifier,
   Bottomk,
   CountValues,
+  Eql,
   Expr,
+  FunctionCall,
   FunctionCallArgs,
   FunctionCallBody,
   GroupModifiers,
+  Gte,
+  Gtr,
+  Lss,
+  Lte,
   MatrixSelector,
+  Neq,
   NumberLiteral,
+  Or,
   ParenExpr,
   Quantile,
   StringLiteral,
   SubqueryExpr,
   Topk,
   UnaryExpr,
+  Unless,
   VectorSelector,
 } from 'lezer-promql';
-import { walkThrough } from './path-finder';
+import { childExist, walkThrough } from './path-finder';
 
 function sprintf(format: string, args: string[]): string {
   let i = 0;
@@ -93,42 +103,28 @@ export class Parser {
         this.checkAggregationExpr(node);
         break;
       case BinaryExpr:
-        // Following the definition of the BinaryExpr, the left and the right and
-        // expression are respectively the first and last child
-        // https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L52
-        const lt = this.checkAST(node.firstChild);
-        const rt = this.checkAST(node.lastChild);
-        // BOOL modifier check
-        const boolModifierUsed = walkThrough(node, BinaryExpr, BinModifier, GroupModifiers, BoolModifier, Bool);
-        if (boolModifierUsed) {
-          // TODO check the binOp used is a comparator operator
-          if (lt !== NodeTypeScalar || rt !== NodeTypeScalar) {
-            this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
-          }
-        } else {
-          if (lt === NodeTypeScalar || rt === NodeTypeScalar) {
-            this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
-          }
-        }
-        // TODO add more check
+        this.checkBinaryExpr(node);
+        break;
+      // TODO add FunctionCall management
+      case FunctionCall:
         break;
       case ParenExpr:
-        this.checkAST(walkThrough(node, ParenExpr, Expr));
+        this.checkAST(walkThrough(node, Expr));
         break;
       case UnaryExpr:
-        const unaryExprType = this.checkAST(walkThrough(node, UnaryExpr, Expr));
+        const unaryExprType = this.checkAST(walkThrough(node, Expr));
         if (unaryExprType !== NodeTypeScalar && unaryExprType != NodeTypeVector) {
           this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', unaryExprType);
         }
         break;
       case SubqueryExpr:
-        const subQueryExprType = this.checkAST(walkThrough(node, SubqueryExpr, Expr));
+        const subQueryExprType = this.checkAST(walkThrough(node, Expr));
         if (subQueryExprType !== NodeTypeVector) {
           this.addDiagnostic(node, 'subquery is only allowed on instant vector, got %s in %s instead', subQueryExprType, node.name);
         }
         break;
       case MatrixSelector:
-        this.checkAST(walkThrough(node, MatrixSelector, Expr));
+        this.checkAST(walkThrough(node, Expr));
     }
     if (node.name === '') {
       const child = node.firstChild;
@@ -148,14 +144,14 @@ export class Parser {
       this.addDiagnostic(node, 'aggregation operator expected in aggregation expression but got nothing');
       return;
     }
-    const expr = walkThrough(node, AggregateExpr, FunctionCallBody, FunctionCallArgs, Expr);
+    const expr = walkThrough(node, FunctionCallBody, FunctionCallArgs, Expr);
     if (!expr) {
       this.addDiagnostic(node, 'unable to find the parameter for the expression');
       return;
     }
     this.expectType(expr, NodeTypeVector, 'aggregation expression');
     // get the parameter of the aggregation operator
-    const params = walkThrough(node, AggregateExpr, FunctionCallBody, FunctionCallArgs, FunctionCallArgs, Expr);
+    const params = walkThrough(node, FunctionCallBody, FunctionCallArgs, FunctionCallArgs, Expr);
     if (aggregateOp.type.id == Topk || aggregateOp.type.id == Bottomk || aggregateOp.type.id == Quantile) {
       if (!params) {
         this.addDiagnostic(node, 'no parameter found');
@@ -169,6 +165,48 @@ export class Parser {
         return;
       }
       this.expectType(params, NodeTypeString, 'aggregation parameter');
+    }
+  }
+
+  private checkBinaryExpr(node: Subtree): void {
+    // Following the definition of the BinaryExpr, the left and the right and
+    // expression are respectively the first and last child
+    // https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L52
+    const lExpr = node.firstChild;
+    const rExpr = node.lastChild;
+    if (!lExpr || !rExpr) {
+      this.addDiagnostic(node, 'left or right expression is missing in binary expression');
+      return;
+    }
+    const lt = this.checkAST(lExpr);
+    const rt = this.checkAST(rExpr);
+    const boolModifierUsed = walkThrough(node, BinModifier, GroupModifiers, BoolModifier, Bool);
+    const isComparisonOperator = childExist(node, Eql, Neq, Lte, Lss, Gte, Gtr);
+    const isSetOperator = childExist(node, And, Or, Unless);
+
+    // BOOL modifier check
+    if (boolModifierUsed) {
+      if (!isComparisonOperator) {
+        this.addDiagnostic(node, 'bool modifier can only be used on comparison operators');
+      }
+      if (lt !== NodeTypeScalar || rt !== NodeTypeScalar) {
+        this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
+      }
+    } else {
+      if (lt === NodeTypeScalar || rt === NodeTypeScalar) {
+        this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
+      }
+    }
+    // TODO missing check regarding cardManyToOne or cardOneToMany
+    // TODO missing check regarding the matching label
+    if (lt !== NodeTypeScalar && lt !== NodeTypeVector) {
+      this.addDiagnostic(lExpr, 'binary expression must contain only scalar and instant vector types');
+    }
+    if (lt !== NodeTypeScalar && lt !== NodeTypeVector) {
+      this.addDiagnostic(rExpr, 'binary expression must contain only scalar and instant vector types');
+    }
+    if ((lt === NodeTypeScalar || rt === NodeTypeScalar) && isSetOperator) {
+      this.addDiagnostic(node, 'set operator not allowed in binary scalar expression');
     }
   }
 
@@ -209,9 +247,9 @@ export class Parser {
       case SubqueryExpr:
         return NodeTypeMatrix;
       case ParenExpr:
-        return this.getType(walkThrough(node, ParenExpr, Expr));
+        return this.getType(walkThrough(node, Expr));
       case UnaryExpr:
-        return this.getType(walkThrough(node, UnaryExpr, Expr));
+        return this.getType(walkThrough(node, Expr));
       case BinaryExpr:
         const lt = this.getType(node.firstChild);
         const rt = this.getType(node.lastChild);

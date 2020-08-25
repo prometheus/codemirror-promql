@@ -80,8 +80,13 @@ export function childExist(node: Subtree, ...child: (number | string)[]): boolea
   // So we have to manually move forward before considering the given path.
   // A way to achieve that is to manually add the given node in the path
   child.unshift(node.type.id);
+  let depth = 0;
   const result = node.iterate<boolean>({
     enter: (type) => {
+      if (type.id === node.type.id && depth === 0) {
+        depth++;
+        return undefined;
+      }
       return contains(type, child);
     },
   });
