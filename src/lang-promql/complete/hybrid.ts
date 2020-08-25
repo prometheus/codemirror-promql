@@ -214,8 +214,6 @@ export class HybridComplete implements CompleteStrategy {
     return this.labelNames(tree, pos, context, state, this.getMetricNameInVectorSelector(tree, state));
   }
 
-  // Note: Be aware that the the first path number you put here, should be the the node.type.id
-  // Note2: The last path number you put here, will be the subtree returned
   private getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
     // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
     // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
