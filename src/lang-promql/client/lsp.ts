@@ -22,6 +22,7 @@
 
 import axios from 'axios';
 import { CompletionItem, Diagnostic } from 'vscode-languageserver-types';
+import { HTTPClient } from '.';
 
 export interface LSPBody {
   expr: string;
@@ -41,15 +42,19 @@ export class HTTPLSPClient implements LSPClient {
   private readonly autocompleteEndpoint = '/completion';
   private readonly diagnosticEndpoint = '/diagnostics';
   private readonly errorHandler?: (error: any) => void;
+  private readonly httpClient: HTTPClient = axios;
 
-  constructor(url: string, errorHandler?: (error: any) => void) {
+  constructor(url: string, errorHandler?: (error: any) => void, httpClient?: HTTPClient) {
     this.url = url;
     this.errorHandler = errorHandler;
+    if (httpClient) {
+      this.httpClient = httpClient;
+    }
   }
 
   complete(body: LSPBody): Promise<CompletionItem[]> {
-    return axios
-      .post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
+    return this.httpClient
+      .request<CompletionItem[]>({ url: this.url + this.autocompleteEndpoint, method: 'POST', data: body })
       .then((response) => {
         return response.data ? response.data : [];
       })
@@ -62,8 +67,8 @@ export class HTTPLSPClient implements LSPClient {
   }
 
   diagnostic(body: LSPBody): Promise<Diagnostic[]> {
-    return axios
-      .post<Diagnostic[]>(this.url + this.diagnosticEndpoint, body)
+    return this.httpClient
+      .request<Diagnostic[]>({ url: this.url + this.diagnosticEndpoint, method: 'POST', data: body })
       .then((response) => {
         return response.data ? response.data : [];
       })

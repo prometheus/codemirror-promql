@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 import axios from 'axios';
+import { HTTPClient } from '.';
 
 const apiPrefix = '/api/v1';
 const labelsEndpoint = apiPrefix + '/labels';
@@ -110,13 +111,17 @@ export class HTTPPrometheusClient implements PrometheusClient {
   private readonly url: string;
   private readonly cache: Cache;
   private readonly errorHandler?: (error: any) => void;
+  private readonly httpClient: HTTPClient = axios;
 
-  constructor(url: string, errorHandler?: (error: any) => void, lookbackInterval?: number) {
+  constructor(url: string, errorHandler?: (error: any) => void, lookbackInterval?: number, httpClient?: HTTPClient) {
     this.cache = new Cache();
     this.url = url;
     this.errorHandler = errorHandler;
     if (lookbackInterval) {
       this.lookbackInterval = lookbackInterval;
+    }
+    if (httpClient) {
+      this.httpClient = httpClient;
     }
   }
 
@@ -129,8 +134,9 @@ export class HTTPPrometheusClient implements PrometheusClient {
     const start = new Date(end.getTime() - this.lookbackInterval);
 
     if (!metricName || metricName.length === 0) {
-      return axios
-        .get<APIResponse>(this.url + labelsEndpoint, {
+      return this.httpClient
+        .request<APIResponse>({
+          url: this.url + labelsEndpoint,
           params: {
             start: start.toISOString(),
             end: end.toISOString(),
@@ -168,8 +174,9 @@ export class HTTPPrometheusClient implements PrometheusClient {
     const start = new Date(end.getTime() - this.lookbackInterval);
 
     if (!metricName || metricName.length === 0) {
-      return axios
-        .get<APIResponse>(this.url + labelValuesEndpoint.replace(/:name/gi, labelName), {
+      return this.httpClient
+        .request<APIResponse>({
+          url: this.url + labelValuesEndpoint.replace(/:name/gi, labelName),
           params: {
             start: start.toISOString(),
             end: end.toISOString(),
@@ -198,8 +205,9 @@ export class HTTPPrometheusClient implements PrometheusClient {
   }
 
   private series(metricName: string, start: Date, end: Date): Promise<Map<string, string>[]> {
-    return axios
-      .get<APIResponse>(this.url + seriesEndpoint, {
+    return this.httpClient
+      .request<APIResponse>({
+        url: this.url + seriesEndpoint,
         params: {
           start: start.toISOString(),
           end: end.toISOString(),
