@@ -224,7 +224,7 @@ export class HybridComplete implements CompleteStrategy {
       // Weird case that shouldn't happen, because "VectorSelector" is by definition the parent of the LabelMatchers.
       return '';
     }
-    currentNode = walkThrough(currentNode, VectorSelector, MetricIdentifier, Identifier);
+    currentNode = walkThrough(currentNode, MetricIdentifier, Identifier);
     if (!currentNode) {
       return '';
     }

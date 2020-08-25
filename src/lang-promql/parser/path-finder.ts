@@ -20,7 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { Subtree } from 'lezer-tree';
+import { NodeType, Subtree } from 'lezer-tree';
+
+function contains(nodeType: NodeType, nodes: (number | string)[]): boolean {
+  let result = false;
+  let i = 0;
+  while (i < nodes.length && !result) {
+    result = nodeType.id === nodes[i] || nodeType.name === nodes[i];
+    i++;
+  }
+  return result;
+}
 
 export function walkBackward(node: Subtree, exit: number) {
   let result: Subtree | null = node;
@@ -32,6 +42,10 @@ export function walkBackward(node: Subtree, exit: number) {
 
 export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtree | undefined | null {
   let i = 0;
+  // Somehow, the first type is always the given node.
+  // So we have to manually move forward before considering the given path.
+  // A way to achieve that is to manually add the given node in the path
+  path.unshift(node.type.id);
   return node.iterate<Subtree | null>({
     enter: (type, start) => {
       if (type.id === path[i] || type.name === path[i]) {
@@ -59,4 +73,17 @@ export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtre
       return false;
     },
   });
+}
+
+export function childExist(node: Subtree, ...child: (number | string)[]): boolean {
+  // Somehow, the first type is always the given node.
+  // So we have to manually move forward before considering the given path.
+  // A way to achieve that is to manually add the given node in the path
+  child.unshift(node.type.id);
+  const result = node.iterate<boolean>({
+    enter: (type) => {
+      return contains(type, child);
+    },
+  });
+  return result === undefined ? false : result;
 }
