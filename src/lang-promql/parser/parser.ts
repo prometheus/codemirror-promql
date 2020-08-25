@@ -47,8 +47,10 @@ import {
   Or,
   ParenExpr,
   Quantile,
+  Scalar,
   StringLiteral,
   SubqueryExpr,
+  Time,
   Topk,
   UnaryExpr,
   Unless,
@@ -71,6 +73,52 @@ const NodeTypeVector: NodeType = 'vector',
   NodeTypeString: NodeType = 'string',
   NodeTypeNone: NodeType = 'none';
 
+// Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
+function getType(node: Subtree | null | undefined): NodeType {
+  if (!node) {
+    return NodeTypeNone;
+  }
+  switch (node.type.id) {
+    case Expr:
+      return getType(node.firstChild);
+    case AggregateExpr:
+      return NodeTypeVector;
+    case VectorSelector:
+      return NodeTypeVector;
+    case StringLiteral:
+      return NodeTypeString;
+    case NumberLiteral:
+      return NodeTypeScalar;
+    case MatrixSelector:
+      return NodeTypeMatrix;
+    case SubqueryExpr:
+      return NodeTypeMatrix;
+    case ParenExpr:
+      return getType(walkThrough(node, Expr));
+    case UnaryExpr:
+      return getType(walkThrough(node, Expr));
+    case BinaryExpr:
+      const lt = getType(node.firstChild);
+      const rt = getType(node.lastChild);
+      if (lt === NodeTypeScalar && rt === NodeTypeScalar) {
+        return NodeTypeScalar;
+      }
+      // TODO what happen if you have a stringLiteral instead
+      return NodeTypeVector;
+    case FunctionCall:
+      const funcNode = node.firstChild?.firstChild;
+      if (!funcNode) {
+        return NodeTypeNone;
+      }
+      if (funcNode.type.id === Time || funcNode.type.id === Scalar) {
+        return NodeTypeScalar;
+      }
+      return NodeTypeVector;
+    default:
+      return NodeTypeNone;
+  }
+}
+
 export class Parser {
   private readonly tree: Tree;
   private readonly diagnostics: Diagnostic[];
@@ -87,7 +135,7 @@ export class Parser {
   }
 
   analyze() {
-    this.checkAST(this.tree.resolve(0, -1));
+    this.checkAST(this.tree);
   }
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
@@ -133,7 +181,7 @@ export class Parser {
       }
     }
 
-    return this.getType(node);
+    return getType(node);
   }
 
   private checkAggregationExpr(node: Subtree) {
@@ -193,7 +241,7 @@ export class Parser {
         this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
       }
     } else {
-      if (lt === NodeTypeScalar || rt === NodeTypeScalar) {
+      if (lt === NodeTypeScalar && rt === NodeTypeScalar) {
         this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
       }
     }
@@ -224,42 +272,5 @@ export class Parser {
       from: node.start,
       to: node.end,
     });
-  }
-
-  // Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
-  private getType(node: Subtree | null | undefined): NodeType {
-    if (!node) {
-      return NodeTypeNone;
-    }
-    switch (node.type.id) {
-      case Expr:
-        return this.getType(node.firstChild);
-      case AggregateExpr:
-        return NodeTypeVector;
-      case VectorSelector:
-        return NodeTypeVector;
-      case StringLiteral:
-        return NodeTypeString;
-      case NumberLiteral:
-        return NodeTypeScalar;
-      case MatrixSelector:
-        return NodeTypeMatrix;
-      case SubqueryExpr:
-        return NodeTypeMatrix;
-      case ParenExpr:
-        return this.getType(walkThrough(node, Expr));
-      case UnaryExpr:
-        return this.getType(walkThrough(node, Expr));
-      case BinaryExpr:
-        const lt = this.getType(node.firstChild);
-        const rt = this.getType(node.lastChild);
-        if (lt === NodeTypeScalar && rt === NodeTypeScalar) {
-          return NodeTypeScalar;
-        }
-        // TODO what happen if you have a stringLiteral instead
-        return NodeTypeVector;
-      default:
-        return NodeTypeNone;
-    }
   }
 }
