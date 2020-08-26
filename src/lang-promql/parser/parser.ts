@@ -51,15 +51,8 @@ import {
   UnaryExpr,
   Unless,
 } from 'lezer-promql';
-import { childExist, walkThrough } from './path-finder';
+import { containsChild, walkThrough } from './path-finder';
 import { getType, ValueType } from './type';
-
-function sprintf(format: string, args: string[]): string {
-  let i = 0;
-  return format.replace(/%s/g, () => {
-    return args[i++];
-  });
-}
 
 export class Parser {
   private readonly tree: Tree;
@@ -77,12 +70,13 @@ export class Parser {
   }
 
   analyze() {
-    this.checkAST(this.tree);
-    this.diagnosticAllErrorNode();
-    console.log(`${this.tree}`);
+    // when you are at the root of the tree, the first node is not `Expr` but a node with no name.
+    // So to be able to iterate other the node relative to the promql node, we have to get the first child at the beginning
+    this.checkAST(this.tree.firstChild);
+    this.diagnoseAllErrorNodes();
   }
 
-  private diagnosticAllErrorNode() {
+  private diagnoseAllErrorNodes() {
     this.tree.iterate({
       enter: (type, start, end) => {
         // usually there is an error node at the end of the expression when user is typing
@@ -126,24 +120,18 @@ export class Parser {
       case UnaryExpr:
         const unaryExprType = this.checkAST(walkThrough(node, Expr));
         if (unaryExprType !== ValueType.scalar && unaryExprType !== ValueType.vector) {
-          this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', unaryExprType);
+          this.addDiagnostic(node, `unary expression only allowed on expressions of type scalar or instant vector, got ${unaryExprType}`);
         }
         break;
       case SubqueryExpr:
         const subQueryExprType = this.checkAST(walkThrough(node, Expr));
         if (subQueryExprType !== ValueType.vector) {
-          this.addDiagnostic(node, 'subquery is only allowed on instant vector, got %s in %s instead', subQueryExprType, node.name);
+          this.addDiagnostic(node, `subquery is only allowed on instant vector, got ${subQueryExprType} in ${node.name} instead`);
         }
         break;
       case MatrixSelector:
         this.checkAST(walkThrough(node, Expr));
       // TODO missing VectorSelector management
-    }
-    if (node.name === '') {
-      const child = node.firstChild;
-      if (child !== null) {
-        return this.checkAST(child);
-      }
     }
 
     return getType(node);
@@ -194,8 +182,8 @@ export class Parser {
     const lt = this.checkAST(lExpr);
     const rt = this.checkAST(rExpr);
     const boolModifierUsed = walkThrough(node, BinModifier, GroupModifiers, BoolModifier, Bool);
-    const isComparisonOperator = childExist(node, Eql, Neq, Lte, Lss, Gte, Gtr);
-    const isSetOperator = childExist(node, And, Or, Unless);
+    const isComparisonOperator = containsChild(node, Eql, Neq, Lte, Lss, Gte, Gtr);
+    const isSetOperator = containsChild(node, And, Or, Unless);
 
     // BOOL modifier check
     if (boolModifierUsed) {
@@ -226,14 +214,14 @@ export class Parser {
   private expectType(node: Subtree, want: ValueType, context: string): void {
     const t = this.checkAST(node);
     if (t !== want) {
-      this.addDiagnostic(node, 'expected type %s in %s, got %s', want, context, t);
+      this.addDiagnostic(node, `expected type ${want} in ${context}, got ${t}`);
     }
   }
 
-  private addDiagnostic(node: Subtree, format: string, ...args: string[]): void {
+  private addDiagnostic(node: Subtree, msg: string): void {
     this.diagnostics.push({
       severity: 'error',
-      message: sprintf(format, args),
+      message: msg,
       from: node.start,
       to: node.end,
     });

@@ -20,19 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { NodeType, Subtree } from 'lezer-tree';
+import { Subtree } from 'lezer-tree';
 
-function contains(nodeType: NodeType, nodes: (number | string)[]): boolean {
-  let result = false;
-  let i = 0;
-  while (i < nodes.length && !result) {
-    result = nodeType.id === nodes[i] || nodeType.name === nodes[i];
-    i++;
-  }
-  return result;
-}
-
-export function walkBackward(node: Subtree, exit: number) {
+// walkBackward will iterate other the tree from the leaf to the root until it founds the given `exit` node.
+// It returns null if the exit is not found.
+export function walkBackward(node: Subtree, exit: number): Subtree | null {
   let result: Subtree | null = node;
   while (result && result.type.id !== exit) {
     result = result.parent;
@@ -40,6 +32,13 @@ export function walkBackward(node: Subtree, exit: number) {
   return result;
 }
 
+// walkThrough is going to follow the path passed in parameter.
+// If it succeeds to reach the last id/name of the path, then it will return the corresponding Subtree.
+// Otherwise if it's not possible to reach the last id/name of the path, it will return `undefined`
+// It will return `null` in case it's not possible to get the Subtree corresponding to the last id/name.
+// With other words, when it returns `null`, that means the path has been correctly followed to the end,
+// but somehow it's not possible to return the `SubTree`
+// Note: the way followed during the iteration of the tree to find the given path, is only from the root to the leaf.
 export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtree | undefined | null {
   let i = 0;
   // Somehow, the first type is always the given node.
@@ -75,7 +74,7 @@ export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtre
   });
 }
 
-export function childExist(node: Subtree, ...child: (number | string)[]): boolean {
+export function containsChild(node: Subtree, ...child: (number | string)[]): boolean {
   // Somehow, the first type is always the given node.
   // So we have to manually move forward before considering the given path.
   // A way to achieve that is to manually add the given node in the path
@@ -87,7 +86,7 @@ export function childExist(node: Subtree, ...child: (number | string)[]): boolea
         depth++;
         return undefined;
       }
-      return contains(type, child);
+      return child.some((n) => type.id === n || type.name === n);
     },
   });
   return result === undefined ? false : result;
