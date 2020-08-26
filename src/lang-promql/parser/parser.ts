@@ -57,7 +57,6 @@ import {
   VectorSelector,
 } from 'lezer-promql';
 import { childExist, walkThrough } from './path-finder';
-import exp = require('constants');
 
 function sprintf(format: string, args: string[]): string {
   let i = 0;
@@ -137,6 +136,27 @@ export class Parser {
 
   analyze() {
     this.checkAST(this.tree);
+    this.diagnosticAllErrorNode();
+  }
+
+  private diagnosticAllErrorNode() {
+    this.tree.iterate({
+      enter: (type, start, end) => {
+        // usually there is an error node at the end of the expression when user is typing
+        // so it's not really a useful information to say the expression is wrong.
+        // Hopefully if there is an error node at the end of the tree, checkAST should yell more precisely
+        if (type.id === 0 && end !== this.tree.end) {
+          // get the parent to highlight the expression where the errorNode has been placed
+          const node = this.tree.resolve(start, -1);
+          this.diagnostics.push({
+            severity: 'error',
+            message: 'unexpected expression',
+            from: node.start,
+            to: node.end,
+          });
+        }
+      },
+    });
   }
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
