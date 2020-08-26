@@ -94,7 +94,7 @@ export enum ValueType {
 interface PromQLFunction {
   name: string;
   argTypes: ValueType[];
-  variadic?: number;
+  variadic: number;
   returnType: ValueType;
 }
 
@@ -104,46 +104,55 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [Abs]: {
     name: 'abs',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Absent]: {
     name: 'absent',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [AbsentOverTime]: {
     name: 'absent_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [AvgOverTime]: {
     name: 'avg_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Ceil]: {
     name: 'ceil',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Changes]: {
     name: 'changes',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [ClampMax]: {
     name: 'clamp_max',
     argTypes: [ValueType.vector, ValueType.scalar],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [ClampMin]: {
     name: 'clamp_min',
     argTypes: [ValueType.vector, ValueType.scalar],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [CountOverTime]: {
     name: 'count_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [DaysOfMonth]: {
@@ -167,31 +176,37 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [Delta]: {
     name: 'delta',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Deriv]: {
     name: 'deriv',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Exp]: {
     name: 'exp',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Floor]: {
     name: 'floor',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [HistogramQuantile]: {
     name: 'histogram_quantile',
     argTypes: [ValueType.scalar, ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [HoltWinters]: {
     name: 'holt_winters',
     argTypes: [ValueType.matrix, ValueType.scalar, ValueType.scalar],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Hour]: {
@@ -203,21 +218,25 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [Idelta]: {
     name: 'idelta',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Increase]: {
     name: 'increase',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Irate]: {
     name: 'irate',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [LabelReplace]: {
     name: 'label_replace',
     argTypes: [ValueType.vector, ValueType.string, ValueType.string, ValueType.string, ValueType.string],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [LabelJoin]: {
@@ -229,26 +248,31 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [Ln]: {
     name: 'ln',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Log10]: {
     name: 'log10',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Log2]: {
     name: 'log2',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [MaxOverTime]: {
     name: 'max_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [MinOverTime]: {
     name: 'min_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Minute]: {
@@ -266,21 +290,25 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [PredictLinear]: {
     name: 'predict_linear',
     argTypes: [ValueType.matrix, ValueType.scalar],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [QuantileOverTime]: {
     name: 'quantile_over_time',
     argTypes: [ValueType.scalar, ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Rate]: {
     name: 'rate',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Resets]: {
     name: 'resets',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Round]: {
@@ -292,51 +320,61 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [Scalar]: {
     name: 'scalar',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.scalar,
   },
   [Sort]: {
     name: 'sort',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [SortDesc]: {
     name: 'sort_desc',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Sqrt]: {
     name: 'sqrt',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [StddevOverTime]: {
     name: 'stddev_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [StdvarOverTime]: {
     name: 'stdvar_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [SumOverTime]: {
     name: 'sum_over_time',
     argTypes: [ValueType.matrix],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Time]: {
     name: 'time',
     argTypes: [],
+    variadic: 0,
     returnType: ValueType.scalar,
   },
   [Timestamp]: {
     name: 'timestamp',
     argTypes: [ValueType.vector],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Vector]: {
     name: 'vector',
     argTypes: [ValueType.scalar],
+    variadic: 0,
     returnType: ValueType.vector,
   },
   [Year]: {
