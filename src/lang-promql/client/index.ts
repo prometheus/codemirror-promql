@@ -20,11 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AxiosResponse, AxiosRequestConfig } from 'axios';
-
 export { LSPClient, LSPBody } from './lsp';
 export { PrometheusClient } from './prometheus';
 
-export interface HTTPClient {
-  request<T = any, R = AxiosResponse<T>>(config: AxiosRequestConfig): Promise<R>;
-}
+export type FetchFn = (input: RequestInfo, init?: RequestInit) => Promise<Response>;

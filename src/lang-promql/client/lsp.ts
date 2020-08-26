@@ -20,9 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import axios from 'axios';
 import { CompletionItem, Diagnostic } from 'vscode-languageserver-types';
-import { HTTPClient } from '.';
+import { FetchFn } from '.';
 
 export interface LSPBody {
   expr: string;
@@ -42,22 +41,21 @@ export class HTTPLSPClient implements LSPClient {
   private readonly autocompleteEndpoint = '/completion';
   private readonly diagnosticEndpoint = '/diagnostics';
   private readonly errorHandler?: (error: any) => void;
-  private readonly httpClient: HTTPClient = axios;
+  // For some reason, just assigning via "= fetch" here does not end up executing fetch correctly
+  // when calling it, thus the indirection via another function wrapper.
+  private readonly fetchFn: FetchFn = (input: RequestInfo, init?: RequestInit): Promise<Response> => fetch(input, init);
 
-  constructor(url: string, errorHandler?: (error: any) => void, httpClient?: HTTPClient) {
+  constructor(url: string, errorHandler?: (error: any) => void, fetchFn?: FetchFn) {
     this.url = url;
     this.errorHandler = errorHandler;
-    if (httpClient) {
-      this.httpClient = httpClient;
+    if (fetchFn) {
+      this.fetchFn = fetchFn;
     }
   }
 
   complete(body: LSPBody): Promise<CompletionItem[]> {
-    return this.httpClient
-      .request<CompletionItem[]>({ url: this.url + this.autocompleteEndpoint, method: 'POST', data: body })
-      .then((response) => {
-        return response.data ? response.data : [];
-      })
+    return this.fetchFn(this.url + this.autocompleteEndpoint, { method: 'POST', body: JSON.stringify(body) })
+      .then((res) => res.json())
       .catch((error) => {
         if (this.errorHandler) {
           this.errorHandler(error);
@@ -67,11 +65,8 @@ export class HTTPLSPClient implements LSPClient {
   }
 
   diagnostic(body: LSPBody): Promise<Diagnostic[]> {
-    return this.httpClient
-      .request<Diagnostic[]>({ url: this.url + this.diagnosticEndpoint, method: 'POST', data: body })
-      .then((response) => {
-        return response.data ? response.data : [];
-      })
+    return this.fetchFn(this.url + this.diagnosticEndpoint, { method: 'POST', body: JSON.stringify(body) })
+      .then((res) => res.json())
       .catch((error) => {
         if (this.errorHandler) {
           this.errorHandler(error);

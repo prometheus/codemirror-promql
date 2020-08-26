@@ -20,8 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import axios from 'axios';
-import { HTTPClient } from '.';
+import { FetchFn } from '.';
 
 const apiPrefix = '/api/v1';
 const labelsEndpoint = apiPrefix + '/labels';
@@ -99,11 +98,18 @@ export interface PrometheusClient {
   labelValues(labelName: string, metricName?: string): Promise<string[]>;
 }
 
-interface APIResponse {
-  status: string;
-  data: any;
-  warnings: string[];
+interface APIResponse<T> {
+  status: 'success' | 'error';
+  data?: T;
+  error?: string;
+  warnings?: string[];
 }
+
+// These are status codes where the Prometheus API still returns a valid JSON body,
+// with an error encoded within the JSON.
+const badRequest = 400;
+const unprocessableEntity = 422;
+const serviceUnavailable = 503;
 
 // HTTPPrometheusClient is the HTTP client that should be used to get some information from the different endpoint provided by prometheus.
 export class HTTPPrometheusClient implements PrometheusClient {
@@ -111,18 +117,40 @@ export class HTTPPrometheusClient implements PrometheusClient {
   private readonly url: string;
   private readonly cache: Cache;
   private readonly errorHandler?: (error: any) => void;
-  private readonly httpClient: HTTPClient = axios;
+  // For some reason, just assigning via "= fetch" here does not end up executing fetch correctly
+  // when calling it, thus the indirection via another function wrapper.
+  private readonly fetchFn: FetchFn = (input: RequestInfo, init?: RequestInit): Promise<Response> => fetch(input, init);
 
-  constructor(url: string, errorHandler?: (error: any) => void, lookbackInterval?: number, httpClient?: HTTPClient) {
+  constructor(url: string, errorHandler?: (error: any) => void, lookbackInterval?: number, fetchFn?: FetchFn) {
     this.cache = new Cache();
     this.url = url;
     this.errorHandler = errorHandler;
     if (lookbackInterval) {
       this.lookbackInterval = lookbackInterval;
     }
-    if (httpClient) {
-      this.httpClient = httpClient;
+    if (fetchFn) {
+      this.fetchFn = fetchFn;
     }
+  }
+
+  private fetchAPI<T>(resource: string): Promise<T> {
+    return this.fetchFn(this.url + resource)
+      .then((res) => {
+        if (!res.ok && ![badRequest, unprocessableEntity, serviceUnavailable].includes(res.status)) {
+          throw new Error(res.statusText);
+        }
+        return res;
+      })
+      .then((res) => res.json())
+      .then((apiRes: APIResponse<T>) => {
+        if (apiRes.status === 'error') {
+          throw new Error(apiRes.error !== undefined ? apiRes.error : 'missing "error" field in response JSON');
+        }
+        if (apiRes.data === undefined) {
+          throw new Error('missing "data" field in response JSON');
+        }
+        return apiRes.data;
+      });
   }
 
   labelNames(metricName?: string): Promise<string[]> {
@@ -134,22 +162,15 @@ export class HTTPPrometheusClient implements PrometheusClient {
     const start = new Date(end.getTime() - this.lookbackInterval);
 
     if (!metricName || metricName.length === 0) {
-      return this.httpClient
-        .request<APIResponse>({
-          url: this.url + labelsEndpoint,
-          params: {
-            start: start.toISOString(),
-            end: end.toISOString(),
-          },
-        })
-        .then((response) => {
-          // In this case APIResponse.data already contains an array of string.
-          // See https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names
-          if (response.data) {
-            this.cache.setLabelNames(response.data.data);
-            return response.data.data;
-          }
-          return [];
+      const params: URLSearchParams = new URLSearchParams({
+        start: start.toISOString(),
+        end: end.toISOString(),
+      });
+      // See https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names
+      return this.fetchAPI<string[]>(`${labelsEndpoint}?${params}`)
+        .then((labelNames) => {
+          this.cache.setLabelNames(labelNames);
+          return labelNames;
         })
         .catch((error) => {
           if (this.errorHandler) {
@@ -174,22 +195,15 @@ export class HTTPPrometheusClient implements PrometheusClient {
     const start = new Date(end.getTime() - this.lookbackInterval);
 
     if (!metricName || metricName.length === 0) {
-      return this.httpClient
-        .request<APIResponse>({
-          url: this.url + labelValuesEndpoint.replace(/:name/gi, labelName),
-          params: {
-            start: start.toISOString(),
-            end: end.toISOString(),
-          },
-        })
-        .then((response) => {
-          // In this case APIResponse.data already contains an array of string.
-          // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
-          if (response.data) {
-            this.cache.setLabelValues(labelName, response.data.data);
-            return response.data.data;
-          }
-          return [];
+      const params: URLSearchParams = new URLSearchParams({
+        start: start.toISOString(),
+        end: end.toISOString(),
+      });
+      // See https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
+      return this.fetchAPI<string[]>(`${labelValuesEndpoint.replace(/:name/gi, labelName)}?${params}`)
+        .then((labelValues) => {
+          this.cache.setLabelValues(labelName, labelValues);
+          return labelValues;
         })
         .catch((error) => {
           if (this.errorHandler) {
@@ -205,26 +219,18 @@ export class HTTPPrometheusClient implements PrometheusClient {
   }
 
   private series(metricName: string, start: Date, end: Date): Promise<Map<string, string>[]> {
-    return this.httpClient
-      .request<APIResponse>({
-        url: this.url + seriesEndpoint,
-        params: {
-          start: start.toISOString(),
-          end: end.toISOString(),
-          'match[]': metricName,
-        },
-      })
-      .then((response) => {
-        if (!response.data) {
-          return [];
-        }
-        // In this case, APIResponse.data contains an array of map.
-        // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
-        const data = response.data.data as Map<string, string>[];
-        data.forEach((labelSet: Map<string, string>) => {
+    const params: URLSearchParams = new URLSearchParams({
+      start: start.toISOString(),
+      end: end.toISOString(),
+      'match[]': metricName,
+    });
+    // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
+    return this.fetchAPI<Map<string, string>[]>(`${seriesEndpoint}?${params}`)
+      .then((series) => {
+        series.forEach((labelSet: Map<string, string>) => {
           this.cache.setAssociation(metricName, labelSet);
         });
-        return data;
+        return series;
       })
       .catch((error) => {
         if (this.errorHandler) {

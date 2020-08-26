@@ -25,7 +25,7 @@ import { LSPComplete } from './lsp';
 import { HybridComplete } from './hybrid';
 import { HTTPLSPClient, LSPClient } from '../client/lsp';
 import { HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
-import { HTTPClient } from '../client';
+import { FetchFn } from '../client';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
@@ -38,7 +38,7 @@ export interface CompleteConfiguration {
     // Provide these settings when not using a custom LSPClient.
     url?: string;
     httpErrorHandler?: (error: any) => void;
-    httpClient?: HTTPClient;
+    fetchFn?: FetchFn;
 
     // When providing this custom LSPClient, the settings above will not be used.
     lspClient?: LSPClient;
@@ -48,7 +48,7 @@ export interface CompleteConfiguration {
     url?: string;
     lookbackInterval?: number;
     httpErrorHandler?: (error: any) => void;
-    httpClient?: HTTPClient;
+    fetchFn?: FetchFn;
 
     // When providing this custom PrometheusClient, the settings above will not be used.
     prometheusClient?: PrometheusClient;
@@ -62,7 +62,7 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
       return new LSPComplete(lspConf.lspClient);
     }
     if (lspConf.url) {
-      return new LSPComplete(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler, lspConf.httpClient));
+      return new LSPComplete(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler, lspConf.fetchFn));
     }
     throw new Error('the url or the lspClient must be set');
   }
@@ -73,7 +73,7 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
     }
     if (hybridConf.url) {
       return new HybridComplete(
-        new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf.lookbackInterval, hybridConf.httpClient)
+        new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf.lookbackInterval, hybridConf.fetchFn)
       );
     }
     throw new Error('the url or the prometheusClient must be set');
