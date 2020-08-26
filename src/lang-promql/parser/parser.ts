@@ -43,80 +43,22 @@ import {
   Lte,
   MatrixSelector,
   Neq,
-  NumberLiteral,
   Or,
   ParenExpr,
   Quantile,
-  Scalar,
-  StringLiteral,
   SubqueryExpr,
-  Time,
   Topk,
   UnaryExpr,
   Unless,
-  VectorSelector,
 } from 'lezer-promql';
 import { childExist, walkThrough } from './path-finder';
+import { getType, ValueType } from './type';
 
 function sprintf(format: string, args: string[]): string {
   let i = 0;
   return format.replace(/%s/g, () => {
     return args[i++];
   });
-}
-
-type NodeType = string;
-
-const NodeTypeVector: NodeType = 'vector',
-  NodeTypeMatrix: NodeType = 'matrix',
-  NodeTypeScalar: NodeType = 'scalar',
-  NodeTypeString: NodeType = 'string',
-  NodeTypeNone: NodeType = 'none';
-
-// Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
-function getType(node: Subtree | null | undefined): NodeType {
-  if (!node) {
-    return NodeTypeNone;
-  }
-  switch (node.type.id) {
-    case Expr:
-      return getType(node.firstChild);
-    case AggregateExpr:
-      return NodeTypeVector;
-    case VectorSelector:
-      return NodeTypeVector;
-    case StringLiteral:
-      return NodeTypeString;
-    case NumberLiteral:
-      return NodeTypeScalar;
-    case MatrixSelector:
-      return NodeTypeMatrix;
-    case SubqueryExpr:
-      return NodeTypeMatrix;
-    case ParenExpr:
-      return getType(walkThrough(node, Expr));
-    case UnaryExpr:
-      return getType(walkThrough(node, Expr));
-    case BinaryExpr:
-      const lt = getType(node.firstChild);
-      const rt = getType(node.lastChild);
-      if (lt === NodeTypeScalar && rt === NodeTypeScalar) {
-        return NodeTypeScalar;
-      }
-      // TODO what happen if you have a stringLiteral instead
-      return NodeTypeVector;
-    case FunctionCall:
-      const funcNode = node.firstChild?.firstChild;
-      if (!funcNode) {
-        return NodeTypeNone;
-      }
-      if (funcNode.type.id === Time || funcNode.type.id === Scalar) {
-        return NodeTypeScalar;
-      }
-      return NodeTypeVector;
-    default:
-      return NodeTypeNone;
-  }
 }
 
 export class Parser {
@@ -137,6 +79,7 @@ export class Parser {
   analyze() {
     this.checkAST(this.tree);
     this.diagnosticAllErrorNode();
+    console.log(`${this.tree}`);
   }
 
   private diagnosticAllErrorNode() {
@@ -161,9 +104,9 @@ export class Parser {
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
   // https://github.com/prometheus/prometheus/blob/master/promql/parser/parse.go#L433
-  private checkAST(node: Subtree | undefined | null): NodeType {
+  private checkAST(node: Subtree | undefined | null): ValueType {
     if (!node) {
-      return NodeTypeNone;
+      return ValueType.none;
     }
     switch (node.type.id) {
       case Expr:
@@ -182,13 +125,13 @@ export class Parser {
         break;
       case UnaryExpr:
         const unaryExprType = this.checkAST(walkThrough(node, Expr));
-        if (unaryExprType !== NodeTypeScalar && unaryExprType !== NodeTypeVector) {
+        if (unaryExprType !== ValueType.scalar && unaryExprType !== ValueType.vector) {
           this.addDiagnostic(node, 'unary expression only allowed on expressions of type scalar or instant vector, got %s', unaryExprType);
         }
         break;
       case SubqueryExpr:
         const subQueryExprType = this.checkAST(walkThrough(node, Expr));
-        if (subQueryExprType !== NodeTypeVector) {
+        if (subQueryExprType !== ValueType.vector) {
           this.addDiagnostic(node, 'subquery is only allowed on instant vector, got %s in %s instead', subQueryExprType, node.name);
         }
         break;
@@ -219,7 +162,7 @@ export class Parser {
       this.addDiagnostic(node, 'unable to find the parameter for the expression');
       return;
     }
-    this.expectType(expr, NodeTypeVector, 'aggregation expression');
+    this.expectType(expr, ValueType.vector, 'aggregation expression');
     // get the parameter of the aggregation operator
     const params = walkThrough(node, FunctionCallBody, FunctionCallArgs, FunctionCallArgs, Expr);
     if (aggregateOp.type.id === Topk || aggregateOp.type.id === Bottomk || aggregateOp.type.id === Quantile) {
@@ -227,14 +170,14 @@ export class Parser {
         this.addDiagnostic(node, 'no parameter found');
         return;
       }
-      this.expectType(params, NodeTypeScalar, 'aggregation parameter');
+      this.expectType(params, ValueType.scalar, 'aggregation parameter');
     }
     if (aggregateOp.type.id === CountValues) {
       if (!params) {
         this.addDiagnostic(node, 'no parameter found');
         return;
       }
-      this.expectType(params, NodeTypeString, 'aggregation parameter');
+      this.expectType(params, ValueType.string, 'aggregation parameter');
     }
   }
 
@@ -259,28 +202,28 @@ export class Parser {
       if (!isComparisonOperator) {
         this.addDiagnostic(node, 'bool modifier can only be used on comparison operators');
       }
-      if (lt !== NodeTypeScalar || rt !== NodeTypeScalar) {
+      if (lt !== ValueType.scalar || rt !== ValueType.scalar) {
         this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
       }
     } else {
-      if (lt === NodeTypeScalar && rt === NodeTypeScalar) {
+      if (lt === ValueType.scalar && rt === ValueType.scalar) {
         this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
       }
     }
     // TODO missing check regarding cardManyToOne or cardOneToMany
     // TODO missing check regarding the matching label
-    if (lt !== NodeTypeScalar && lt !== NodeTypeVector) {
+    if (lt !== ValueType.scalar && lt !== ValueType.vector) {
       this.addDiagnostic(lExpr, 'binary expression must contain only scalar and instant vector types');
     }
-    if (lt !== NodeTypeScalar && lt !== NodeTypeVector) {
+    if (lt !== ValueType.scalar && lt !== ValueType.vector) {
       this.addDiagnostic(rExpr, 'binary expression must contain only scalar and instant vector types');
     }
-    if ((lt === NodeTypeScalar || rt === NodeTypeScalar) && isSetOperator) {
+    if ((lt === ValueType.scalar || rt === ValueType.scalar) && isSetOperator) {
       this.addDiagnostic(node, 'set operator not allowed in binary scalar expression');
     }
   }
 
-  private expectType(node: Subtree, want: NodeType, context: string): void {
+  private expectType(node: Subtree, want: ValueType, context: string): void {
     const t = this.checkAST(node);
     if (t !== want) {
       this.addDiagnostic(node, 'expected type %s in %s, got %s', want, context, t);
