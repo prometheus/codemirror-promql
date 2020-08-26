@@ -52,7 +52,28 @@ import {
   Unless,
 } from 'lezer-promql';
 import { containsChild, walkThrough } from './path-finder';
-import { getType, ValueType } from './type';
+import { getFunction, getType, ValueType } from './type';
+
+function retrieveArgs(callBody: Subtree | undefined | null): Subtree[] {
+  const args: Subtree[] = [];
+
+  function recursiveRetrieveArgs(node: Subtree | undefined | null, args: Subtree[]) {
+    // according to the grammar https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L169
+    // the firstChild is FunctionCallArgs
+    // the lastChild is Expr if it exists
+    const callArgs = node?.firstChild;
+    const expr = node?.lastChild;
+    if (callArgs && callArgs.type.id === FunctionCallArgs) {
+      recursiveRetrieveArgs(callArgs, args);
+    }
+    if (expr && expr.type.id === Expr) {
+      args.push(expr);
+    }
+  }
+
+  recursiveRetrieveArgs(callBody, args);
+  return args;
+}
 
 export class Parser {
   private readonly tree: Tree;
@@ -111,8 +132,8 @@ export class Parser {
       case BinaryExpr:
         this.checkBinaryExpr(node);
         break;
-      // TODO add FunctionCall management
       case FunctionCall:
+        this.checkCallFunction(node);
         break;
       case ParenExpr:
         this.checkAST(walkThrough(node, Expr));
@@ -208,6 +229,47 @@ export class Parser {
     }
     if ((lt === ValueType.scalar || rt === ValueType.scalar) && isSetOperator) {
       this.addDiagnostic(node, 'set operator not allowed in binary scalar expression');
+    }
+  }
+
+  private checkCallFunction(node: Subtree): void {
+    const funcBody = walkThrough(node, FunctionCallBody);
+    const funcID = node.firstChild?.firstChild;
+    if (!funcID) {
+      this.addDiagnostic(node, 'function not defined');
+      return;
+    }
+    const args = retrieveArgs(funcBody);
+    const funcSignature = getFunction(funcID.type.id);
+    const nargs = funcSignature.argTypes.length;
+    if (funcSignature.variadic === 0) {
+      if (args.length !== nargs) {
+        this.addDiagnostic(node, `expected ${nargs} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
+      }
+    } else {
+      const na = nargs - 1;
+      if (na > args.length) {
+        this.addDiagnostic(node, `expected at least ${na} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
+      } else {
+        const nargsmax = na + funcSignature.variadic;
+        if (funcSignature.variadic > 0 && nargsmax < args.length) {
+          this.addDiagnostic(node, `expected at most ${nargsmax} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
+        }
+      }
+    }
+
+    let j = 0;
+    for (let i = 0; i < args.length; i++) {
+      j = i;
+      if (j >= funcSignature.argTypes.length) {
+        if (funcSignature.variadic === 0) {
+          // This is not a vararg function so we should not check the
+          // type of the extra arguments.
+          break;
+        }
+        j = funcSignature.argTypes.length - 1;
+      }
+      this.expectType(args[i], funcSignature.argTypes[j], `call to function ${funcSignature.name}`);
     }
   }
 
