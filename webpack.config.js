@@ -37,4 +37,12 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
+  devServer: {
+    proxy: {
+      '/lsp': {
+        target: 'http://localhost:8000',
+        pathRewrite: { '^/lsp': '' },
+      },
+    },
+  },
 };

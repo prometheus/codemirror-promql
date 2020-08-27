@@ -1,6 +1,6 @@
 CodeMirror-mode-promql
 ======================
-[![CircleCI](https://circleci.com/gh/prometheus-community/codemirror-promql.svg?style=shield)](https://circleci.com/gh/prometheus-community/codemirror-promql) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE) 
+[![CircleCI](https://circleci.com/gh/prometheus-community/codemirror-promql.svg?style=shield)](https://circleci.com/gh/prometheus-community/codemirror-promql) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![NPM version](https://img.shields.io/npm/v/codemirror-promql.svg)](https://www.npmjs.org/package/codemirror-promql)
 
 ## Overview
@@ -62,12 +62,12 @@ This should create a tab in your browser with the development app that contains 
  * **lsp**: This mode requires starting a Prometheus server and the [promql-langserver](https://github.com/prometheus-community/promql-langserver) with the following configuration:
  ```yaml
 prometheus_url: "http://localhost:9090"
-rest_api_port: 8080
+rest_api_port: 8000
 ```
  * **prometheus**: This mode requires starting a Prometheus server listening on port 9090.
  * **offline**: This mode doesn't require anything.
 
- **Note 2:** To avoid CORS issues when testing LSP-based completion, start your browser with web security disabled.
+ **Note 2:** To avoid CORS issues when testing LSP-based completion, the development web server running on port 8080 proxies LSP requests to the language server backend running on port 8000. Alternatively, if you decide to remove this proxying and want the browser to be able to speak to your LSP backend directly, start your browser with web security disabled.
  * Example for Google Chrome on Windows:
     * `<Win>` + `r`  and copy and paste `chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security`
 

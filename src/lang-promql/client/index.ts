@@ -22,3 +22,5 @@
 
 export { LSPClient, LSPBody } from './lsp';
 export { PrometheusClient } from './prometheus';
+
+export type FetchFn = (input: RequestInfo, init?: RequestInit) => Promise<Response>;

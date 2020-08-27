@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import axios from 'axios';
 import { CompletionItem, Diagnostic } from 'vscode-languageserver-types';
+import { FetchFn } from '.';
 
 export interface LSPBody {
   expr: string;
@@ -41,37 +41,40 @@ export class HTTPLSPClient implements LSPClient {
   private readonly autocompleteEndpoint = '/completion';
   private readonly diagnosticEndpoint = '/diagnostics';
   private readonly errorHandler?: (error: any) => void;
+  // For some reason, just assigning via "= fetch" here does not end up executing fetch correctly
+  // when calling it, thus the indirection via another function wrapper.
+  private readonly fetchFn: FetchFn = (input: RequestInfo, init?: RequestInit): Promise<Response> => fetch(input, init);
 
-  constructor(url: string, errorHandler?: (error: any) => void) {
+  constructor(url: string, errorHandler?: (error: any) => void, fetchFn?: FetchFn) {
     this.url = url;
     this.errorHandler = errorHandler;
+    if (fetchFn) {
+      this.fetchFn = fetchFn;
+    }
+  }
+
+  private fetchLSP<T>(endpoint: string, body: LSPBody): Promise<T> {
+    return this.fetchFn(this.url + endpoint, { method: 'POST', body: JSON.stringify(body) })
+      .then((res) => {
+        if (res.status !== 200) {
+          throw new Error(res.statusText);
+        }
+        return res;
+      })
+      .then((res) => res.json())
+      .catch((error) => {
+        if (this.errorHandler) {
+          this.errorHandler(error);
+        }
+        return [];
+      });
   }
 
   complete(body: LSPBody): Promise<CompletionItem[]> {
-    return axios
-      .post<CompletionItem[]>(this.url + this.autocompleteEndpoint, body)
-      .then((response) => {
-        return response.data ? response.data : [];
-      })
-      .catch((error) => {
-        if (this.errorHandler) {
-          this.errorHandler(error);
-        }
-        return [];
-      });
+    return this.fetchLSP(this.autocompleteEndpoint, body);
   }
 
   diagnostic(body: LSPBody): Promise<Diagnostic[]> {
-    return axios
-      .post<Diagnostic[]>(this.url + this.diagnosticEndpoint, body)
-      .then((response) => {
-        return response.data ? response.data : [];
-      })
-      .catch((error) => {
-        if (this.errorHandler) {
-          this.errorHandler(error);
-        }
-        return [];
-      });
+    return this.fetchLSP(this.diagnosticEndpoint, body);
   }
 }

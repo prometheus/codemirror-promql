@@ -77,7 +77,7 @@ function setCompletion() {
     case 'lsp':
       promqlExtension.setComplete({
         lsp: {
-          url: 'http://localhost:8080',
+          url: 'http://localhost:8080/lsp',
         },
       });
       break;
@@ -103,7 +103,7 @@ function setLinter() {
     case 'lsp':
       promqlExtension.setLinter({
         lsp: {
-          url: 'http://localhost:8080',
+          url: 'http://localhost:8080/lsp',
         },
       });
       break;
