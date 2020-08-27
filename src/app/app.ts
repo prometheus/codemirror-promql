@@ -103,7 +103,7 @@ function setLinter() {
     case 'lsp':
       promqlExtension.setLinter({
         lsp: {
-          url: 'http://localhost:8080',
+          url: 'http://localhost:8080/lsp',
         },
       });
       break;
