@@ -63,26 +63,49 @@ export const promQLSyntax = LezerSyntax.define(
 export class PromQLExtension {
   private complete: CompleteStrategy;
   private lint: LintStrategy;
+  private enableCompletion: boolean;
+  private enableLinter: boolean;
 
   constructor() {
     this.complete = newCompleteStrategy();
     this.lint = newLintStrategy();
+    this.enableLinter = true;
+    this.enableCompletion = true;
   }
 
-  setComplete(conf?: CompleteConfiguration) {
+  setComplete(conf?: CompleteConfiguration): PromQLExtension {
     this.complete = newCompleteStrategy(conf);
+    return this;
   }
 
-  setLinter(conf?: LintConfiguration) {
+  setLinter(conf?: LintConfiguration): PromQLExtension {
     this.lint = newLintStrategy(conf);
+    return this;
+  }
+
+  activateCompletion(activate: boolean): PromQLExtension {
+    this.enableCompletion = activate;
+    return this;
+  }
+
+  activateLinter(activate: boolean): PromQLExtension {
+    this.enableLinter = activate;
+    return this;
   }
 
   asExtension(): Extension {
-    const completion = promQLSyntax.languageData.of({
-      autocomplete: (context: AutocompleteContext) => {
-        return this.complete.promQL(context);
-      },
-    });
-    return [promQLSyntax, completion, promQLLinter(this.lint.promQL, this.lint)];
+    let extension: Extension = [promQLSyntax];
+    if (this.enableCompletion) {
+      const completion = promQLSyntax.languageData.of({
+        autocomplete: (context: AutocompleteContext) => {
+          return this.complete.promQL(context);
+        },
+      });
+      extension = extension.concat(completion);
+    }
+    if (this.enableLinter) {
+      extension = extension.concat(promQLLinter(this.lint.promQL, this.lint));
+    }
+    return extension;
   }
 }
