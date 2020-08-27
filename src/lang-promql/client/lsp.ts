@@ -55,6 +55,12 @@ export class HTTPLSPClient implements LSPClient {
 
   complete(body: LSPBody): Promise<CompletionItem[]> {
     return this.fetchFn(this.url + this.autocompleteEndpoint, { method: 'POST', body: JSON.stringify(body) })
+      .then((res) => {
+        if (res.status !== 200) {
+          throw new Error(res.statusText);
+        }
+        return res;
+      })
       .then((res) => res.json())
       .catch((error) => {
         if (this.errorHandler) {
@@ -66,6 +72,12 @@ export class HTTPLSPClient implements LSPClient {
 
   diagnostic(body: LSPBody): Promise<Diagnostic[]> {
     return this.fetchFn(this.url + this.diagnosticEndpoint, { method: 'POST', body: JSON.stringify(body) })
+      .then((res) => {
+        if (res.status !== 200) {
+          throw new Error(res.statusText);
+        }
+        return res;
+      })
       .then((res) => res.json())
       .catch((error) => {
         if (this.errorHandler) {
