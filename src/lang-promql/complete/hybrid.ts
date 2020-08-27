@@ -44,6 +44,7 @@ import {
   VectorSelector,
   binOpModifierTerms,
   aggregateOpModifierTerms,
+  MatchOp,
 } from 'lezer-promql';
 import { walkBackward, walkThrough } from '../parser/path-finder';
 
@@ -144,7 +145,7 @@ export class HybridComplete implements CompleteStrategy {
       //      metric_name{labelName!}
       return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.lastChild.start, pos, context, state);
     }
-    if (tree.name === 'MatchOp' && tree.parent?.type.id !== 0) {
+    if (tree.type.id === MatchOp || tree.parent?.type.id === MatchOp) {
       // In this case the current token is already a valid match op, but could be extended, e.g. "=" to "=~".
       return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.start, pos, context, state);
     }
