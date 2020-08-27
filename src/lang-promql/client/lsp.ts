@@ -54,7 +54,6 @@ export class HTTPLSPClient implements LSPClient {
   }
 
   private fetchLSP<T>(endpoint: string, body: LSPBody): Promise<T> {
-    console.log('FETCHING FROM', this.url + endpoint);
     return this.fetchFn(this.url + endpoint, { method: 'POST', body: JSON.stringify(body) })
       .then((res) => {
         if (res.status !== 200) {
