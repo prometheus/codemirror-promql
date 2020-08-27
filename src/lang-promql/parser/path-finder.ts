@@ -46,21 +46,21 @@ export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtre
   // A way to achieve that is to manually add the given node in the path
   path.unshift(node.type.id);
   return node.iterate<Subtree | null>({
-    enter: (type, start) => {
+    enter: (type, start, end) => {
       if (type.id === path[i] || type.name === path[i]) {
         i++;
         if (i >= path.length) {
           // We reached the last node. We should return it then.
           // First get the first node resolved at the `start` position.
           let result: Subtree | null = node.resolve(start, -1);
-          if (result.type.id === type.id && result.start === start) {
+          if (result.type.id === type.id && result.start === start && result.end === end) {
             return result;
           }
           // In case the first node returned is not the one expected,
           // then go to the deepest node at the `start` position and walk backward.
           // Note: workaround suggested here: https://github.com/codemirror/codemirror.next/issues/270#issuecomment-674855519
           result = node.resolve(start, 1);
-          while (result && result.type.id !== type.id) {
+          while (result && (result.type.id !== type.id || result.start !== start || result.end !== end)) {
             result = result.parent;
           }
           return result;
