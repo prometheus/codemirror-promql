@@ -66,8 +66,7 @@ function createMatcher(labelMatcher: Subtree, state: EditorState): Matcher {
           matcher.type = type.id;
           break;
         case StringLiteral:
-          const value = state.sliceDoc(start, end);
-          matcher.value = value === "''" || value === '""' || value === '``' ? '' : value;
+          matcher.value = state.sliceDoc(start, end).slice(1, -1);
           break;
       }
       return false;

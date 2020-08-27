@@ -40,12 +40,14 @@ import {
   GroupModifiers,
   Gte,
   Gtr,
+  Identifier,
   LabelMatcher,
   LabelMatchers,
   LabelMatchList,
   Lss,
   Lte,
   MatrixSelector,
+  MetricIdentifier,
   Neq,
   Or,
   ParenExpr,
@@ -273,35 +275,28 @@ export class Parser {
     let vectorSelectorName = '';
     // VectorSelector ( MetricIdentifier ( Identifier ) )
     // https://github.com/promlabs/lezer-promql/blob/71e2f9fa5ae6f5c5547d5738966cd2512e6b99a8/src/promql.grammar#L200
-    const vectorSelectorNodeName = node.firstChild?.firstChild;
+    const vectorSelectorNodeName = walkThrough(node, MetricIdentifier, Identifier);
     if (vectorSelectorNodeName) {
       vectorSelectorName = this.state.sliceDoc(vectorSelectorNodeName.start, vectorSelectorNodeName.end);
     }
     if (vectorSelectorName !== '') {
+      // In this case the last LabelMatcher is checking for the metric name
+      // set outside the braces. This checks if the name has already been set
+      // previously
+      const labelMatcherMetricName = labelMatchers.find((lm) => lm.name === '__name__');
+      if (labelMatcherMetricName) {
+        this.addDiagnostic(node, `metric name must not be set twice: ${vectorSelectorName} or ${labelMatcherMetricName.value}`);
+      }
+      // adding the metric name as a Matcher to avoid a false positive for this kind of expression:
+      // foo{bare=''}
       labelMatchers.push(new Matcher(EqlSingle, '__name__', vectorSelectorName));
     }
-    console.log(`${this.tree}`);
-    console.log(labelMatchers);
+
     // A Vector selector must contain at least one non-empty matcher to prevent
     // implicit selection of all metrics (e.g. by a typo).
     const empty = labelMatchers.every((lm) => lm.matchesEmpty());
     if (empty) {
       this.addDiagnostic(node, 'vector selector must contain at least one non-empty matcher');
-    }
-
-    if (vectorSelectorName !== '') {
-      // In this case the last LabelMatcher is checking for the metric name
-      // set outside the braces. This checks if the name has already been set
-      // previously
-      let i = 0;
-      let metricNameSet = false;
-      while (i < labelMatchers.length - 1 && !metricNameSet) {
-        metricNameSet = labelMatchers[i].name === '__name__';
-        i++;
-      }
-      if (metricNameSet) {
-        this.addDiagnostic(node, `metric name must not be set twice: ${vectorSelectorName} or ${labelMatchers[i - 1].value}`);
-      }
     }
   }
 
