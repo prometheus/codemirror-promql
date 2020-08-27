@@ -29,7 +29,7 @@ import { Parser } from '../parser/parser';
 export class HybridLint implements LintStrategy {
   public promQL(this: HybridLint): (view: EditorView) => readonly Diagnostic[] {
     return (view: EditorView) => {
-      const parser = new Parser(view.state.tree);
+      const parser = new Parser(view.state);
       parser.analyze();
       return parser.getDiagnostics();
     };

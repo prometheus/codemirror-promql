@@ -32,6 +32,7 @@ import {
   Bottomk,
   CountValues,
   Eql,
+  EqlSingle,
   Expr,
   FunctionCall,
   FunctionCallArgs,
@@ -39,9 +40,14 @@ import {
   GroupModifiers,
   Gte,
   Gtr,
+  Identifier,
+  LabelMatcher,
+  LabelMatchers,
+  LabelMatchList,
   Lss,
   Lte,
   MatrixSelector,
+  MetricIdentifier,
   Neq,
   Or,
   ParenExpr,
@@ -50,37 +56,21 @@ import {
   Topk,
   UnaryExpr,
   Unless,
+  VectorSelector,
 } from 'lezer-promql';
-import { containsChild, walkThrough } from './path-finder';
+import { containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 import { getFunction, getType, ValueType } from './type';
-
-function retrieveArgs(callBody: Subtree | undefined | null): Subtree[] {
-  const args: Subtree[] = [];
-
-  function recursiveRetrieveArgs(node: Subtree | undefined | null, args: Subtree[]) {
-    // according to the grammar https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L169
-    // the firstChild is FunctionCallArgs
-    // the lastChild is Expr if it exists
-    const callArgs = node?.firstChild;
-    const expr = node?.lastChild;
-    if (callArgs && callArgs.type.id === FunctionCallArgs) {
-      recursiveRetrieveArgs(callArgs, args);
-    }
-    if (expr && expr.type.id === Expr) {
-      args.push(expr);
-    }
-  }
-
-  recursiveRetrieveArgs(callBody, args);
-  return args;
-}
+import { buildLabelMatchers, Matcher } from './matcher';
+import { EditorState } from '@codemirror/next/basic-setup';
 
 export class Parser {
   private readonly tree: Tree;
+  private readonly state: EditorState;
   private readonly diagnostics: Diagnostic[];
 
-  constructor(tree: Tree) {
-    this.tree = tree;
+  constructor(state: EditorState) {
+    this.tree = state.tree;
+    this.state = state;
     this.diagnostics = [];
   }
 
@@ -152,13 +142,16 @@ export class Parser {
         break;
       case MatrixSelector:
         this.checkAST(walkThrough(node, Expr));
-      // TODO missing VectorSelector management
+        break;
+      case VectorSelector:
+        this.checkVectorSelector(node);
+        break;
     }
 
     return getType(node);
   }
 
-  private checkAggregationExpr(node: Subtree) {
+  private checkAggregationExpr(node: Subtree): void {
     // according to https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L26
     // the name of the aggregator function is stored in the first child
     const aggregateOp = node.firstChild?.firstChild;
@@ -233,15 +226,16 @@ export class Parser {
   }
 
   private checkCallFunction(node: Subtree): void {
-    const funcBody = walkThrough(node, FunctionCallBody);
     const funcID = node.firstChild?.firstChild;
     if (!funcID) {
       this.addDiagnostic(node, 'function not defined');
       return;
     }
-    const args = retrieveArgs(funcBody);
+
+    const args = retrieveAllRecursiveNodes(walkThrough(node, FunctionCallBody), FunctionCallArgs, Expr);
     const funcSignature = getFunction(funcID.type.id);
     const nargs = funcSignature.argTypes.length;
+
     if (funcSignature.variadic === 0) {
       if (args.length !== nargs) {
         this.addDiagnostic(node, `expected ${nargs} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
@@ -270,6 +264,39 @@ export class Parser {
         j = funcSignature.argTypes.length - 1;
       }
       this.expectType(args[i], funcSignature.argTypes[j], `call to function ${funcSignature.name}`);
+    }
+  }
+
+  private checkVectorSelector(node: Subtree): void {
+    const labelMatchers = buildLabelMatchers(
+      retrieveAllRecursiveNodes(walkThrough(node, LabelMatchers, LabelMatchList), LabelMatchList, LabelMatcher),
+      this.state
+    );
+    let vectorSelectorName = '';
+    // VectorSelector ( MetricIdentifier ( Identifier ) )
+    // https://github.com/promlabs/lezer-promql/blob/71e2f9fa5ae6f5c5547d5738966cd2512e6b99a8/src/promql.grammar#L200
+    const vectorSelectorNodeName = walkThrough(node, MetricIdentifier, Identifier);
+    if (vectorSelectorNodeName) {
+      vectorSelectorName = this.state.sliceDoc(vectorSelectorNodeName.start, vectorSelectorNodeName.end);
+    }
+    if (vectorSelectorName !== '') {
+      // In this case the last LabelMatcher is checking for the metric name
+      // set outside the braces. This checks if the name has already been set
+      // previously
+      const labelMatcherMetricName = labelMatchers.find((lm) => lm.name === '__name__');
+      if (labelMatcherMetricName) {
+        this.addDiagnostic(node, `metric name must not be set twice: ${vectorSelectorName} or ${labelMatcherMetricName.value}`);
+      }
+      // adding the metric name as a Matcher to avoid a false positive for this kind of expression:
+      // foo{bare=''}
+      labelMatchers.push(new Matcher(EqlSingle, '__name__', vectorSelectorName));
+    }
+
+    // A Vector selector must contain at least one non-empty matcher to prevent
+    // implicit selection of all metrics (e.g. by a typo).
+    const empty = labelMatchers.every((lm) => lm.matchesEmpty());
+    if (empty) {
+      this.addDiagnostic(node, 'vector selector must contain at least one non-empty matcher');
     }
   }
 
