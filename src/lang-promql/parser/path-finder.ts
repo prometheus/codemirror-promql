@@ -91,3 +91,21 @@ export function containsChild(node: Subtree, ...child: (number | string)[]): boo
   });
   return result === undefined ? false : result;
 }
+
+export function retrieveAllRecursiveNodes(parentNode: Subtree | undefined | null, recursiveNode: number, leaf: number): Subtree[] {
+  const nodes: Subtree[] = [];
+
+  function recursiveRetrieveNode(node: Subtree | undefined | null, nodes: Subtree[]) {
+    const subNode = node?.firstChild;
+    const le = node?.lastChild;
+    if (subNode && subNode.type.id === recursiveNode) {
+      recursiveRetrieveNode(subNode, nodes);
+    }
+    if (le && le.type.id === leaf) {
+      nodes.push(le);
+    }
+  }
+
+  recursiveRetrieveNode(parentNode, nodes);
+  return nodes;
+}
