@@ -32,6 +32,7 @@ import {
   Bottomk,
   CountValues,
   Eql,
+  EqlSingle,
   Expr,
   FunctionCall,
   FunctionCallArgs,
@@ -57,7 +58,7 @@ import {
 } from 'lezer-promql';
 import { containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 import { getFunction, getType, ValueType } from './type';
-import { buildLabelMatchers } from './matcher';
+import { buildLabelMatchers, Matcher } from './matcher';
 import { EditorState } from '@codemirror/next/basic-setup';
 
 export class Parser {
@@ -269,17 +270,6 @@ export class Parser {
       retrieveAllRecursiveNodes(walkThrough(node, LabelMatchers, LabelMatchList), LabelMatchList, LabelMatcher),
       this.state
     );
-    // A Vector selector must contain at least one non-empty matcher to prevent
-    // implicit selection of all metrics (e.g. by a typo).
-    let empty = true;
-    let i = 0;
-    while (i < labelMatchers.length && empty) {
-      empty = labelMatchers[i].matchesEmpty();
-      i++;
-    }
-    if (labelMatchers.length > 0 && empty) {
-      this.addDiagnostic(node, 'vector selector must contain at least one non-empty matcher');
-    }
     let vectorSelectorName = '';
     // VectorSelector ( MetricIdentifier ( Identifier ) )
     // https://github.com/promlabs/lezer-promql/blob/71e2f9fa5ae6f5c5547d5738966cd2512e6b99a8/src/promql.grammar#L200
@@ -288,12 +278,24 @@ export class Parser {
       vectorSelectorName = this.state.sliceDoc(vectorSelectorNodeName.start, vectorSelectorNodeName.end);
     }
     if (vectorSelectorName !== '') {
+      labelMatchers.push(new Matcher(EqlSingle, '__name__', vectorSelectorName));
+    }
+    console.log(`${this.tree}`);
+    console.log(labelMatchers);
+    // A Vector selector must contain at least one non-empty matcher to prevent
+    // implicit selection of all metrics (e.g. by a typo).
+    const empty = labelMatchers.every((lm) => lm.matchesEmpty());
+    if (empty) {
+      this.addDiagnostic(node, 'vector selector must contain at least one non-empty matcher');
+    }
+
+    if (vectorSelectorName !== '') {
       // In this case the last LabelMatcher is checking for the metric name
       // set outside the braces. This checks if the name has already been set
       // previously
       let i = 0;
       let metricNameSet = false;
-      while (i < labelMatchers.length && !metricNameSet) {
+      while (i < labelMatchers.length - 1 && !metricNameSet) {
         metricNameSet = labelMatchers[i].name === '__name__';
         i++;
       }

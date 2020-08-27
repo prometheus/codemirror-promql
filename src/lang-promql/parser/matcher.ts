@@ -24,7 +24,7 @@ import { Subtree } from 'lezer-tree';
 import { EqlRegex, EqlSingle, LabelMatcher, LabelName, MatchOp, Neq, NeqRegex, StringLiteral } from 'lezer-promql';
 import { EditorState } from '@codemirror/next/basic-setup';
 
-class Matcher {
+export class Matcher {
   type: number;
   name: string;
   value: string;
@@ -38,10 +38,8 @@ class Matcher {
   matchesEmpty(): boolean {
     switch (this.type) {
       case EqlSingle:
-      case EqlRegex:
         return this.value === '';
       case Neq:
-      case NeqRegex:
         return this.value !== '';
       default:
         return false;
