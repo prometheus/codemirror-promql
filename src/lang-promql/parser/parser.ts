@@ -61,7 +61,7 @@ import {
 import { containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 import { getFunction, getType, ValueType } from './type';
 import { buildLabelMatchers, Matcher } from './matcher';
-import { EditorState } from '@codemirror/next/basic-setup';
+import { EditorState } from '@codemirror/next/state';
 
 export class Parser {
   private readonly tree: Tree;
@@ -109,7 +109,7 @@ export class Parser {
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
   // https://github.com/prometheus/prometheus/blob/master/promql/parser/parse.go#L433
-  private checkAST(node: Subtree | undefined | null): ValueType {
+  checkAST(node: Subtree | undefined | null): ValueType {
     if (!node) {
       return ValueType.none;
     }

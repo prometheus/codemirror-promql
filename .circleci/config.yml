@@ -20,6 +20,7 @@ jobs:
       - checkout
       - node/install-packages
       - run: npm run build
+
   lint-lib:
     executor:
       name: node/default
@@ -27,6 +28,14 @@ jobs:
       - checkout
       - node/install-packages
       - run: npm run lint
+
+  test-lib:
+    executor:
+      name: node/default
+    steps:
+      - checkout
+      - node/install-packages
+      - run: npm test
 
   publish:
     executor:
@@ -53,8 +62,14 @@ workflows:
       - build-app:
           filters:
             tags:
-              only: /.*/
+              ignore: /.*/
       - lint-lib:
+          requires:
+            - build-lib
+          filters:
+            tags:
+              ignore: /.*/
+      - test-lib:
           requires:
             - build-lib
           filters:
