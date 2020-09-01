@@ -29,13 +29,13 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
-    "@nexucis/codemirror-next-autocomplete": "^0.1.9",
     "lezer-promql": "^0.11.1",
     "lezer-tree": "^0.10.0",
     "vscode-languageserver-types": "^3.15.1"
   },
   "devDependencies": {
     "@codemirror/next": "^0.10.0",
+    "@nexucis/codemirror-next-autocomplete": "^0.2.0",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
     "@types/node": "^14.0.13",
@@ -59,7 +59,8 @@
     "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
-    "@codemirror/next": "^0.10.0"
+    "@codemirror/next": "^0.10.0",
+    "@nexucis/codemirror-next-autocomplete": "^0.2.0"
   },
   "prettier": {
     "singleQuote": true,
