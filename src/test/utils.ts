@@ -20,26 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import chai from 'chai';
-import { Parser } from './parser';
-import { ValueType } from './type';
-import { Diagnostic } from '@codemirror/next/lint';
-import { createEditorState } from '../../test/utils';
+import { LezerSyntax } from '@codemirror/next/syntax';
+import { parser } from 'lezer-promql';
+import { EditorState } from '@codemirror/next/state';
 
-describe('Scalars and scalar-to-scalar operations', () => {
-  const testSuites = [
-    {
-      expr: '1',
-      expectedValueType: ValueType.scalar,
-      expectedDiag: [] as Diagnostic[],
-    },
-  ];
-  testSuites.forEach((value) => {
-    const state = createEditorState(value.expr);
-    const parser = new Parser(state);
-    it(value.expr, () => {
-      chai.expect(parser.checkAST(state.tree.firstChild)).to.equal(value.expectedValueType);
-      chai.expect(parser.getDiagnostics()).to.deep.equal(value.expectedDiag);
-    });
+const lightPromQLSyntax = LezerSyntax.define(parser);
+
+export function createEditorState(expr: string): EditorState {
+  return EditorState.create({
+    doc: expr,
+    extensions: lightPromQLSyntax,
   });
-});
+}
