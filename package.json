@@ -36,6 +36,7 @@
   "devDependencies": {
     "@codemirror/next": "^0.10.0",
     "@nexucis/codemirror-next-autocomplete": "^0.2.0",
+    "@nexucis/fuzzy": "^0.2.2",
     "@types/chai": "^4.2.12",
     "@types/mocha": "^8.0.3",
     "@types/node": "^14.0.13",
@@ -60,7 +61,8 @@
   },
   "peerDependencies": {
     "@codemirror/next": "^0.10.0",
-    "@nexucis/codemirror-next-autocomplete": "^0.2.0"
+    "@nexucis/codemirror-next-autocomplete": "^0.2.0",
+    "@nexucis/fuzzy": "^0.2.2"
   },
   "prettier": {
     "singleQuote": true,
