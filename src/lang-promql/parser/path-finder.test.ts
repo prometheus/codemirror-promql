@@ -41,7 +41,7 @@ import {
   Sub,
 } from 'lezer-promql';
 import { createEditorState } from '../../test/utils';
-import { containsChild, walkThrough } from './path-finder';
+import { containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 
 describe('walkThrough test', () => {
   const testSuites = [
@@ -137,5 +137,16 @@ describe('containsChild test', () => {
         chai.expect(value.expectedResult).to.equal(containsChild(node, ...value.child));
       }
     });
+  });
+});
+
+describe('retrieveAllRecursiveNodes test', () => {
+  it('should find every occurrence', () => {
+    const state = createEditorState('rate(1,2,3)');
+    const tree = state.tree.firstChild;
+    chai.expect(tree).to.not.null;
+    if (tree) {
+      chai.expect(3).to.equal(retrieveAllRecursiveNodes(walkThrough(tree, FunctionCall, FunctionCallBody), FunctionCallArgs, Expr).length);
+    }
   });
 });
