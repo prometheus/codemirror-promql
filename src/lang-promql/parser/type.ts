@@ -35,7 +35,7 @@ import {
   CountOverTime,
   DayOfMonth,
   DayOfWeek,
-  DaysOfMonth,
+  DaysInMonth,
   Delta,
   Deriv,
   Exp,
@@ -155,7 +155,7 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
     variadic: 0,
     returnType: ValueType.vector,
   },
-  [DaysOfMonth]: {
+  [DaysInMonth]: {
     name: 'days_in_month',
     argTypes: [ValueType.vector],
     variadic: 1,

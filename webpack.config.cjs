@@ -13,9 +13,6 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   devtool: 'inline-source-map',
-  devServer: {
-    contentBase: './dist',
-  },
   module: {
     rules: [
       {
@@ -38,6 +35,7 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js'],
   },
   devServer: {
+    contentBase: './dist',
     proxy: {
       '/lsp': {
         target: 'http://localhost:8000',

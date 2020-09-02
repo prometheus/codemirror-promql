@@ -1,20 +1,25 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "target": "es2015",
+    "target": "ES2015",
+    "module": "ES2015",
+    "lib": [
+      "es6",
+      "dom"
+    ],
     "declaration": true,
-    "outDir": "./lib",
-    "module": "commonjs",
+    "outDir": "lib",
+    "strict": true,
     "sourceMap": true,
-    "strict": true
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true
   },
   "include": [
-    "src/lang-promql",
-    "@types/**/*.d.ts"
+    "src/lang-promql"
   ],
   "exclude": [
     "node_modules",
-    "**/__tests__/*"
+    "src/**/*.test.ts"
   ]
 }
 
