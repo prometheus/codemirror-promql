@@ -23,7 +23,7 @@
 import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from '@nexucis/codemirror-next-autocomplete';
 import { CompleteStrategy } from './index';
 import { Subtree } from 'lezer-tree';
-import { EditorState } from '@codemirror/next/basic-setup';
+import { EditorState } from '@codemirror/next/state';
 import { PrometheusClient } from '../client';
 import {
   AggregateOp,
