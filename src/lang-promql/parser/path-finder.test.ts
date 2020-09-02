@@ -21,9 +21,27 @@
 // SOFTWARE.
 
 import chai from 'chai';
-import { BinaryExpr, Expr, FunctionCall, FunctionCallArgs, FunctionCallBody, NumberLiteral } from 'lezer-promql';
+import {
+  Add,
+  BinaryExpr,
+  Div,
+  Eql,
+  Expr,
+  FunctionCall,
+  FunctionCallArgs,
+  FunctionCallBody,
+  Gte,
+  Gtr,
+  Lss,
+  Lte,
+  Mod,
+  Mul,
+  Neq,
+  NumberLiteral,
+  Sub,
+} from 'lezer-promql';
 import { createEditorState } from '../../test/utils';
-import { walkThrough } from './path-finder';
+import { containsChild, walkThrough } from './path-finder';
 
 describe('walkThrough test', () => {
   const testSuites = [
@@ -76,6 +94,47 @@ describe('walkThrough test', () => {
       chai.expect(value.expectedNode).to.equal(node?.type.id);
       if (node) {
         chai.expect(value.expectedDoc).to.equal(state.sliceDoc(node.start, node.end));
+      }
+    });
+  });
+});
+
+describe('containsChild test', () => {
+  const testSuites = [
+    {
+      title: 'should not find a node if none is defined',
+      expr: '1 > 2',
+      pos: 3,
+      expectedResult: false,
+      walkThrough: [],
+      child: [],
+    },
+    {
+      title: 'should find a node in the given list',
+      expr: '1 > 2',
+      pos: 0,
+      walkThrough: [Expr, BinaryExpr],
+      child: [Eql, Neq, Lte, Lss, Gte, Gtr],
+      expectedResult: true,
+    },
+    {
+      title: 'should not find a node in the given list',
+      expr: '1 > 2',
+      pos: 0,
+      walkThrough: [Expr, BinaryExpr],
+      child: [Mul, Div, Mod, Add, Sub],
+      expectedResult: false,
+    },
+  ];
+  testSuites.forEach((value) => {
+    it(value.title, () => {
+      const state = createEditorState(value.expr);
+      const subTree = state.tree.resolve(value.pos, -1);
+      const tree = subTree.name === '' && subTree.firstChild ? subTree.firstChild : subTree;
+      const node = walkThrough(tree, ...value.walkThrough);
+      chai.expect(node).to.not.null;
+      if (node) {
+        chai.expect(value.expectedResult).to.equal(containsChild(node, ...value.child));
       }
     });
   });
