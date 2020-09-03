@@ -27,26 +27,21 @@ import { EditorState } from '@codemirror/next/state';
 import { PrometheusClient } from '../client';
 import {
   AggregateOp,
-  aggregateOpTerms,
   BinaryExpr,
-  binOpTerms,
   FunctionIdentifier,
-  functionIdentifierTerms,
   GroupingLabel,
   GroupingLabels,
   Identifier,
   LabelMatcher,
   LabelMatchers,
   LabelName,
-  matchOpTerms,
   MetricIdentifier,
   StringLiteral,
   VectorSelector,
-  binOpModifierTerms,
-  aggregateOpModifierTerms,
   MatchOp,
 } from 'lezer-promql';
 import { walkBackward, walkThrough } from '../parser/path-finder';
+import { aggregateOpModifierTerms, aggregateOpTerms, binOpModifierTerms, binOpTerms, functionIdentifierTerms, matchOpTerms } from './promql.terms';
 
 interface AutoCompleteNode {
   labels: string[];
