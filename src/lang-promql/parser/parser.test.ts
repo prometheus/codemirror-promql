@@ -33,6 +33,23 @@ describe('Scalars and scalar-to-scalar operations', () => {
       expectedValueType: ValueType.scalar,
       expectedDiag: [] as Diagnostic[],
     },
+    {
+      expr: '2 * 3',
+      expectedValueType: ValueType.scalar,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'metric_name * "string"',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          message: 'binary expression must contain only scalar and instant vector types',
+          severity: 'error',
+          to: 11,
+        },
+      ] as Diagnostic[],
+    },
   ];
   testSuites.forEach((value) => {
     const state = createEditorState(value.expr);
