@@ -208,17 +208,14 @@ export class Parser {
         this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
       }
     } else {
-      if (lt === ValueType.scalar && rt === ValueType.scalar) {
+      if (isComparisonOperator && lt === ValueType.scalar && rt === ValueType.scalar) {
         this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
       }
     }
     // TODO missing check regarding cardManyToOne or cardOneToMany
     // TODO missing check regarding the matching label
-    if (lt !== ValueType.scalar && lt !== ValueType.vector) {
+    if ([lt, rt].some((t) => t !== ValueType.scalar && t !== ValueType.vector)) {
       this.addDiagnostic(lExpr, 'binary expression must contain only scalar and instant vector types');
-    }
-    if (lt !== ValueType.scalar && lt !== ValueType.vector) {
-      this.addDiagnostic(rExpr, 'binary expression must contain only scalar and instant vector types');
     }
     if ((lt === ValueType.scalar || rt === ValueType.scalar) && isSetOperator) {
       this.addDiagnostic(node, 'set operator not allowed in binary scalar expression');
