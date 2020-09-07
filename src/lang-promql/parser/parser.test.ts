@@ -43,10 +43,10 @@ describe('Scalars and scalar-to-scalar operations', () => {
       expectedValueType: ValueType.vector,
       expectedDiag: [
         {
-          from: 0,
+          from: 14,
           message: 'binary expression must contain only scalar and instant vector types',
           severity: 'error',
-          to: 11,
+          to: 22,
         },
       ] as Diagnostic[],
     },
