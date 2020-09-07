@@ -214,8 +214,11 @@ export class Parser {
     }
     // TODO missing check regarding cardManyToOne or cardOneToMany
     // TODO missing check regarding the matching label
-    if ([lt, rt].some((t) => t !== ValueType.scalar && t !== ValueType.vector)) {
+    if (lt !== ValueType.scalar && lt !== ValueType.vector) {
       this.addDiagnostic(lExpr, 'binary expression must contain only scalar and instant vector types');
+    }
+    if (rt !== ValueType.scalar && rt !== ValueType.vector) {
+      this.addDiagnostic(rExpr, 'binary expression must contain only scalar and instant vector types');
     }
     if ((lt === ValueType.scalar || rt === ValueType.scalar) && isSetOperator) {
       this.addDiagnostic(node, 'set operator not allowed in binary scalar expression');
