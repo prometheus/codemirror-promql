@@ -1,6 +1,6 @@
 {
   "name": "codemirror-promql",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "a CodeMirror mode for the PromQL language",
   "main": "index.js",
   "type": "module",
