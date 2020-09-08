@@ -59,16 +59,16 @@ const autocompleteNode: { [key: string]: AutoCompleteNode } = {
 
 const snippets: readonly SnippetSpec[] = [
   {
-    keyword: 'sum(rate(<input vector>[5m]))',
-    snippet: 'sum(rate(${<input vector>}[5m]))',
+    keyword: 'sum(rate(__input_vector__[5m]))',
+    snippet: 'sum(rate(${__input_vector__}[5m]))',
   },
   {
-    keyword: 'histogram_quantile(<quantile>, sum by(le) (rate(<histogram metric>[5m])))',
-    snippet: 'histogram_quantile(${<quantile>}, sum by(le) (rate(${<histogram metric>}[5m])))',
+    keyword: 'histogram_quantile(__quantile__, sum by(le) (rate(__histogram_metric__[5m])))',
+    snippet: 'histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))',
   },
   {
-    keyword: 'label_replace(<input vector>, "<dst>", "<replacement>", "<src>", "<regex>")',
-    snippet: 'label_replace(${<input vector>}, "${<dst>}", "${<replacement>}", "${<src>}", "${<regex>}")',
+    keyword: 'label_replace(__input_vector__, "__dst__", "__replacement__", "__src__", "__regex__")',
+    snippet: 'label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")',
   },
 ];
 
