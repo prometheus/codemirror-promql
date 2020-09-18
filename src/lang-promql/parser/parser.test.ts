@@ -44,9 +44,26 @@ describe('Scalars and scalar-to-scalar operations', () => {
       expectedDiag: [
         {
           from: 14,
+          to: 22,
           message: 'binary expression must contain only scalar and instant vector types',
           severity: 'error',
-          to: 22,
+        },
+      ] as Diagnostic[],
+    },
+    {
+      expr: 'metric_name_1 > bool metric_name_2',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'metric_name_1 + bool metric_name_2',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 34,
+          message: 'bool modifier can only be used on comparison operators',
+          severity: 'error',
         },
       ] as Diagnostic[],
     },
