@@ -204,9 +204,6 @@ export class Parser {
       if (!isComparisonOperator) {
         this.addDiagnostic(node, 'bool modifier can only be used on comparison operators');
       }
-      if (lt !== ValueType.scalar || rt !== ValueType.scalar) {
-        this.addDiagnostic(node, 'comparisons between other things than scalar cannot use BOOL modifier');
-      }
     } else {
       if (isComparisonOperator && lt === ValueType.scalar && rt === ValueType.scalar) {
         this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
