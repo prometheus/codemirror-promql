@@ -20,16 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
 import { LSPComplete } from './lsp';
 import { HybridComplete } from './hybrid';
 import { HTTPLSPClient, LSPClient } from '../client/lsp';
 import { HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
 import { FetchFn } from '../client';
+import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
-  promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null;
+  promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null;
 }
 
 // CompleteConfiguration should be used to customize the autocompletion.
