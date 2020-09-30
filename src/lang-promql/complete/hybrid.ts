@@ -41,7 +41,7 @@ import {
 } from 'lezer-promql';
 import { walkBackward, walkThrough } from '../parser/path-finder';
 import { aggregateOpModifierTerms, aggregateOpTerms, binOpModifierTerms, binOpTerms, functionIdentifierTerms, matchOpTerms } from './promql.terms';
-import { Completion, CompletionContext, CompletionResult, snippet, SnippetSpec } from '@codemirror/next/autocomplete';
+import { Completion, CompletionContext, CompletionResult, snippet } from '@codemirror/next/autocomplete';
 
 interface AutoCompleteNode {
   labels: string[];
@@ -57,29 +57,23 @@ const autocompleteNode: { [key: string]: AutoCompleteNode } = {
   aggregateOpModifier: { labels: aggregateOpModifierTerms, type: 'keyword' },
 };
 
-const snippets: readonly SnippetSpec[] = [
+const snippets: readonly Completion[] = [
   {
     label: 'sum(rate(__input_vector__[5m]))',
     type: 'function',
-    snippet: 'sum(rate(${__input_vector__}[5m]))',
+    apply: snippet('sum(rate(${__input_vector__}[5m]))'),
   },
   {
     label: 'histogram_quantile(__quantile__, sum by(le) (rate(__histogram_metric__[5m])))',
     type: 'function',
-    snippet: 'histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))',
+    apply: snippet('histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))'),
   },
   {
     label: 'label_replace(__input_vector__, "__dst__", "__replacement__", "__src__", "__regex__")',
     type: 'function',
-    snippet: 'label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")',
+    apply: snippet('label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")'),
   },
 ];
-
-// parsedSnippets shouldn't be modified. It's only there to not parse everytime the above list of snippet
-const parsedSnippets: Completion[] = snippets.map((s) => ({
-  label: s.label,
-  apply: snippet(s.snippet),
-}));
 
 // HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
@@ -243,9 +237,7 @@ export class HybridComplete implements CompleteStrategy {
       }
     }
     if (includeSnippet) {
-      for (const s of parsedSnippets) {
-        options.push(s);
-      }
+      options.push(...snippets);
     }
     return {
       from: from,
