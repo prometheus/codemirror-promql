@@ -26,15 +26,24 @@ const apiPrefix = '/api/v1';
 const labelsEndpoint = apiPrefix + '/labels';
 const labelValuesEndpoint = apiPrefix + '/label/:name/values';
 const seriesEndpoint = apiPrefix + '/series';
+const metricMetadataEndpoint = apiPrefix + '/metadata';
+
+export interface MetricMetadata {
+  type: string;
+  help: string;
+}
 
 class Cache {
   // completeAssociation is the association between a metric name, a label name and the possible label values
   private completeAssociation: Map<string, Map<string, string[]>>;
+  // metricMetadata is the association between a metric name and the associated metadata
+  private readonly metricMetadata: Map<string, MetricMetadata[]>;
   private labelValues: Map<string, string[]>;
   private labelNames: string[];
 
   constructor() {
     this.completeAssociation = new Map<string, Map<string, string[]>>();
+    this.metricMetadata = new Map<string, MetricMetadata[]>();
     this.labelValues = new Map<string, string[]>();
     this.labelNames = [];
   }
@@ -58,6 +67,14 @@ class Cache {
       }
       currentAssociation.set(key, labelValues);
     }
+  }
+
+  setMetricMetadata(metricName: string, metadata: MetricMetadata[]): void {
+    this.metricMetadata.set(metricName, metadata);
+  }
+
+  getMetricMetadata(): Map<string, MetricMetadata[]> {
+    return this.metricMetadata;
   }
 
   setLabelNames(labelNames: string[]): void {
@@ -96,6 +113,7 @@ export interface PrometheusClient {
   // labelValues return a list of the value associated to the given labelName.
   // In case a metric is provided, then the list of values is then associated to the couple <MetricName, LabelName>
   labelValues(labelName: string, metricName?: string): Promise<string[]>;
+  metricMetadata(): Promise<Map<string, MetricMetadata[]>>;
 }
 
 interface APIResponse<T> {
@@ -131,26 +149,6 @@ export class HTTPPrometheusClient implements PrometheusClient {
     if (fetchFn) {
       this.fetchFn = fetchFn;
     }
-  }
-
-  private fetchAPI<T>(resource: string): Promise<T> {
-    return this.fetchFn(this.url + resource)
-      .then((res) => {
-        if (!res.ok && ![badRequest, unprocessableEntity, serviceUnavailable].includes(res.status)) {
-          throw new Error(res.statusText);
-        }
-        return res;
-      })
-      .then((res) => res.json())
-      .then((apiRes: APIResponse<T>) => {
-        if (apiRes.status === 'error') {
-          throw new Error(apiRes.error !== undefined ? apiRes.error : 'missing "error" field in response JSON');
-        }
-        if (apiRes.data === undefined) {
-          throw new Error('missing "data" field in response JSON');
-        }
-        return apiRes.data;
-      });
   }
 
   labelNames(metricName?: string): Promise<string[]> {
@@ -218,6 +216,26 @@ export class HTTPPrometheusClient implements PrometheusClient {
     });
   }
 
+  metricMetadata(): Promise<Map<string, MetricMetadata[]>> {
+    if (this.cache.getMetricMetadata() && this.cache.getMetricMetadata().size > 0) {
+      return Promise.resolve(this.cache.getMetricMetadata());
+    }
+
+    return this.fetchAPI<Map<string, MetricMetadata[]>>(metricMetadataEndpoint)
+      .then((metadata) => {
+        for (const [key, value] of Object.entries(metadata)) {
+          this.cache.setMetricMetadata(key, value);
+        }
+        return this.cache.getMetricMetadata();
+      })
+      .catch((error) => {
+        if (this.errorHandler) {
+          this.errorHandler(error);
+        }
+        return new Map<string, MetricMetadata[]>();
+      });
+  }
+
   private series(metricName: string, start: Date, end: Date): Promise<Map<string, string>[]> {
     const params: URLSearchParams = new URLSearchParams({
       start: start.toISOString(),
@@ -237,6 +255,26 @@ export class HTTPPrometheusClient implements PrometheusClient {
           this.errorHandler(error);
         }
         return [];
+      });
+  }
+
+  private fetchAPI<T>(resource: string): Promise<T> {
+    return this.fetchFn(this.url + resource)
+      .then((res) => {
+        if (!res.ok && ![badRequest, unprocessableEntity, serviceUnavailable].includes(res.status)) {
+          throw new Error(res.statusText);
+        }
+        return res;
+      })
+      .then((res) => res.json())
+      .then((apiRes: APIResponse<T>) => {
+        if (apiRes.status === 'error') {
+          throw new Error(apiRes.error !== undefined ? apiRes.error : 'missing "error" field in response JSON');
+        }
+        if (apiRes.data === undefined) {
+          throw new Error('missing "data" field in response JSON');
+        }
+        return apiRes.data;
       });
   }
 }
