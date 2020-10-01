@@ -44,17 +44,23 @@ import { aggregateOpModifierTerms, aggregateOpTerms, binOpModifierTerms, binOpTe
 import { Completion, CompletionContext, CompletionResult, snippet } from '@codemirror/next/autocomplete';
 
 interface AutoCompleteNode {
-  labels: string[];
-  type: string;
+  label: string;
+  detail?: string;
+  info?: string;
 }
 
-const autocompleteNode: { [key: string]: AutoCompleteNode } = {
-  matchOp: { labels: matchOpTerms, type: '' },
-  binOp: { labels: binOpTerms, type: '' },
-  binOpModifier: { labels: binOpModifierTerms, type: 'keyword' },
-  functionIdentifier: { labels: functionIdentifierTerms, type: 'function' },
-  aggregateOp: { labels: aggregateOpTerms, type: 'keyword' },
-  aggregateOpModifier: { labels: aggregateOpModifierTerms, type: 'keyword' },
+interface AutoCompleteNodes {
+  nodes: AutoCompleteNode[];
+  type?: string;
+}
+
+const autocompleteNode: { [key: string]: AutoCompleteNodes } = {
+  matchOp: { nodes: matchOpTerms },
+  binOp: { nodes: binOpTerms },
+  binOpModifier: { nodes: binOpModifierTerms, type: 'keyword' },
+  functionIdentifier: { nodes: functionIdentifierTerms, type: 'function' },
+  aggregateOp: { nodes: aggregateOpTerms, type: 'keyword' },
+  aggregateOpModifier: { nodes: aggregateOpModifierTerms, type: 'keyword' },
 };
 
 const snippets: readonly Completion[] = [
@@ -101,10 +107,39 @@ export class HybridComplete implements CompleteStrategy {
       // Here we cannot know if we have to autocomplete the metric_name, or the function or the aggregation.
       // So we will just autocomplete everything
       if (this.prometheusClient) {
-        return this.prometheusClient.labelValues('__name__').then((metricNames: string[]) => {
-          const result: AutoCompleteNode[] = [{ labels: metricNames, type: 'constant' }];
-          return this.arrayToCompletionResult(result.concat(nonMetricCompletions), tree.start, pos, true);
-        });
+        const metricCompletion = new Map<string, AutoCompleteNode>();
+        return this.prometheusClient
+          .labelValues('__name__')
+          .then((metricNames: string[]) => {
+            for (const metricName of metricNames) {
+              metricCompletion.set(metricName, { label: metricName });
+            }
+
+            // avoid to get all metric metadata if the prometheus server is too big
+            if (metricNames.length <= 10000) {
+              // in order to enrich the completion list of the metric,
+              // we are trying to find the associated metadata
+              return this.prometheusClient?.metricMetadata();
+            }
+          })
+          .then((metricMetadata) => {
+            if (metricMetadata) {
+              for (const [metricName, node] of metricCompletion) {
+                const metadata = metricMetadata.get(metricName);
+                if (metadata) {
+                  if (metadata.length > 1) {
+                    // it means the metricName has different possible helper and type
+                    node.detail = 'unknown';
+                  } else if (metadata.length === 1) {
+                    node.detail = metadata[0].type;
+                    node.info = metadata[0].help;
+                  }
+                }
+              }
+            }
+            const result: AutoCompleteNodes[] = [{ nodes: Array.from(metricCompletion.values()), type: 'constant' }];
+            return this.arrayToCompletionResult(result.concat(nonMetricCompletions), tree.start, pos, true);
+          });
       }
       return this.arrayToCompletionResult(nonMetricCompletions, tree.start, pos, true);
     }
@@ -178,7 +213,7 @@ export class HybridComplete implements CompleteStrategy {
       return this.arrayToCompletionResult(
         [
           {
-            labels: labelValues,
+            nodes: labelValues.map((value) => ({ label: value })),
             type: 'text',
           },
         ],
@@ -215,7 +250,7 @@ export class HybridComplete implements CompleteStrategy {
           return this.arrayToCompletionResult(
             [
               {
-                labels: labelNames,
+                nodes: labelNames.map((value) => ({ label: value })),
                 type: 'constant',
               },
             ],
@@ -225,14 +260,16 @@ export class HybridComplete implements CompleteStrategy {
         });
   }
 
-  private arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, includeSnippet = false): CompletionResult {
+  private arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: number, includeSnippet = false): CompletionResult {
     const options: Completion[] = [];
 
     for (const completionList of data) {
-      for (const label of completionList.labels) {
+      for (const node of completionList.nodes) {
         options.push({
-          label: label,
+          label: node.label,
           type: completionList.type,
+          detail: node.detail,
+          info: node.info,
         });
       }
     }
