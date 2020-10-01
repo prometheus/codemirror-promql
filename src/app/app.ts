@@ -73,13 +73,19 @@ function setLinter() {
 }
 
 function createEditor() {
+  let doc = '';
   if (editor) {
     // When the linter is changed, it required to reload completely the editor.
     // So the first thing to do, is to completely delete the previous editor and to recreate it from scratch
+    // We should preserve the current text entered as well.
+    doc = editor.state.sliceDoc(0, editor.state.doc.length);
     editor.destroy();
   }
   editor = new EditorView({
-    state: EditorState.create({ extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme] }),
+    state: EditorState.create({
+      extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme],
+      doc: doc,
+    }),
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     parent: document.querySelector('#editor')!,
   });
