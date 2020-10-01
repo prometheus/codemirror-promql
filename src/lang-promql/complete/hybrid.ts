@@ -114,22 +114,26 @@ export class HybridComplete implements CompleteStrategy {
             for (const metricName of metricNames) {
               metricCompletion.set(metricName, { label: metricName });
             }
-            // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-            // @ts-ignore
-            // in order to enrich the completion list of the metric,
-            // we are trying to find the associated metadata
-            return this.prometheusClient.metricMetadata();
+
+            // avoid to get all metric metadata if the prometheus server is too big
+            if (metricNames.length <= 10000) {
+              // in order to enrich the completion list of the metric,
+              // we are trying to find the associated metadata
+              return this.prometheusClient?.metricMetadata();
+            }
           })
           .then((metricMetadata) => {
-            for (const [metricName, node] of metricCompletion) {
-              const metadata = metricMetadata.get(metricName);
-              if (metadata) {
-                if (metadata.length > 1) {
-                  // it means the metricName has different possible helper and type
-                  node.detail = 'unknown';
-                } else if (metadata.length === 1) {
-                  node.detail = metadata[0].type;
-                  node.info = metadata[0].help;
+            if (metricMetadata) {
+              for (const [metricName, node] of metricCompletion) {
+                const metadata = metricMetadata.get(metricName);
+                if (metadata) {
+                  if (metadata.length > 1) {
+                    // it means the metricName has different possible helper and type
+                    node.detail = 'unknown';
+                  } else if (metadata.length === 1) {
+                    node.detail = metadata[0].type;
+                    node.info = metadata[0].help;
+                  }
                 }
               }
             }
