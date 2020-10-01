@@ -20,10 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, Completion, CompletionResult } from '@nexucis/codemirror-next-autocomplete';
 import { CompletionItem, TextEdit } from 'vscode-languageserver-types';
 import { CompleteStrategy } from './index';
 import { LSPBody, LSPClient } from '../client';
+import { Completion, CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
 
 // LSPComplete will provide an autocompletion based on what the langserver-promql is providing when requested.
 export class LSPComplete implements CompleteStrategy {
@@ -33,7 +33,7 @@ export class LSPComplete implements CompleteStrategy {
     this.lspClient = lspClient;
   }
 
-  promQL(context: AutocompleteContext): Promise<CompletionResult> {
+  promQL(context: CompletionContext): Promise<CompletionResult> {
     const { state, pos } = context;
     const line = state.doc.lineAt(pos);
     const body: LSPBody = {
@@ -71,7 +71,7 @@ export class LSPComplete implements CompleteStrategy {
           apply = res.textEdit.newText;
           textEdit = res.textEdit;
         }
-        options.push({ label: res.label, original: res.label, apply: apply, type: type, score: 0 });
+        options.push({ label: res.label, apply: apply, type: type });
       }
 
       // `from` and `to` are the absolute value in term of character and doesn't consider the line number.

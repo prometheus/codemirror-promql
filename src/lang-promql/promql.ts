@@ -25,8 +25,8 @@ import { parser } from 'lezer-promql';
 import { styleTags } from '@codemirror/next/highlight';
 import { Extension } from '@codemirror/next/state';
 import { CompleteConfiguration, CompleteStrategy, newCompleteStrategy } from './complete';
-import { AutocompleteContext } from '@nexucis/codemirror-next-autocomplete';
 import { LintConfiguration, LintStrategy, newLintStrategy, promQLLinter } from './lint';
+import { CompletionContext } from '@codemirror/next/autocomplete';
 
 export const promQLSyntax = LezerSyntax.define(
   parser.withProps(
@@ -97,7 +97,7 @@ export class PromQLExtension {
     let extension: Extension = [promQLSyntax];
     if (this.enableCompletion) {
       const completion = promQLSyntax.languageData.of({
-        autocomplete: (context: AutocompleteContext) => {
+        autocomplete: (context: CompletionContext) => {
           return this.complete.promQL(context);
         },
       });

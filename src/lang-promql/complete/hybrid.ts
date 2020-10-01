@@ -20,7 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { AutocompleteContext, Completion, CompletionResult, snippet, SnippetSpec } from '@nexucis/codemirror-next-autocomplete';
 import { CompleteStrategy } from './index';
 import { Subtree } from 'lezer-tree';
 import { EditorState } from '@codemirror/next/state';
@@ -35,13 +34,14 @@ import {
   LabelMatcher,
   LabelMatchers,
   LabelName,
+  MatchOp,
   MetricIdentifier,
   StringLiteral,
   VectorSelector,
-  MatchOp,
 } from 'lezer-promql';
 import { walkBackward, walkThrough } from '../parser/path-finder';
 import { aggregateOpModifierTerms, aggregateOpTerms, binOpModifierTerms, binOpTerms, functionIdentifierTerms, matchOpTerms } from './promql.terms';
+import { Completion, CompletionContext, CompletionResult, snippet } from '@codemirror/next/autocomplete';
 
 interface AutoCompleteNode {
   labels: string[];
@@ -57,28 +57,23 @@ const autocompleteNode: { [key: string]: AutoCompleteNode } = {
   aggregateOpModifier: { labels: aggregateOpModifierTerms, type: 'keyword' },
 };
 
-const snippets: readonly SnippetSpec[] = [
+const snippets: readonly Completion[] = [
   {
-    keyword: 'sum(rate(__input_vector__[5m]))',
-    snippet: 'sum(rate(${__input_vector__}[5m]))',
+    label: 'sum(rate(__input_vector__[5m]))',
+    type: 'function',
+    apply: snippet('sum(rate(${__input_vector__}[5m]))'),
   },
   {
-    keyword: 'histogram_quantile(__quantile__, sum by(le) (rate(__histogram_metric__[5m])))',
-    snippet: 'histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))',
+    label: 'histogram_quantile(__quantile__, sum by(le) (rate(__histogram_metric__[5m])))',
+    type: 'function',
+    apply: snippet('histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))'),
   },
   {
-    keyword: 'label_replace(__input_vector__, "__dst__", "__replacement__", "__src__", "__regex__")',
-    snippet: 'label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")',
+    label: 'label_replace(__input_vector__, "__dst__", "__replacement__", "__src__", "__regex__")',
+    type: 'function',
+    apply: snippet('label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")'),
   },
 ];
-
-// parsedSnippets shouldn't be modified. It's only there to not parse everytime the above list of snippet
-const parsedSnippets: Completion[] = snippets.map((s) => ({
-  label: s.name || s.keyword,
-  original: s.name || s.keyword,
-  apply: snippet(s.snippet),
-  score: 0,
-}));
 
 // HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
@@ -88,7 +83,7 @@ export class HybridComplete implements CompleteStrategy {
     this.prometheusClient = prometheusClient;
   }
 
-  promQL(context: AutocompleteContext): Promise<CompletionResult> | CompletionResult | null {
+  promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null {
     const { state, pos } = context;
     const tree = state.tree.resolve(pos, -1);
     if (tree.parent?.type.id === MetricIdentifier && tree.type.id === Identifier) {
@@ -108,27 +103,27 @@ export class HybridComplete implements CompleteStrategy {
       if (this.prometheusClient) {
         return this.prometheusClient.labelValues('__name__').then((metricNames: string[]) => {
           const result: AutoCompleteNode[] = [{ labels: metricNames, type: 'constant' }];
-          return this.arrayToCompletionResult(result.concat(nonMetricCompletions), tree.start, pos, context, state, true);
+          return this.arrayToCompletionResult(result.concat(nonMetricCompletions), tree.start, pos, true);
         });
       }
-      return this.arrayToCompletionResult(nonMetricCompletions, tree.start, pos, context, state, true);
+      return this.arrayToCompletionResult(nonMetricCompletions, tree.start, pos, true);
     }
     if (tree.type.id === GroupingLabels || (tree.parent?.type.id === GroupingLabel && tree.type.id === LabelName)) {
       // In this case we are in the given situation:
       //      sum by ()
       // So we have to autocomplete any labelName
-      return this.labelNames(tree, pos, context, state);
+      return this.labelNames(tree, pos);
     }
     if (tree.type.id === LabelMatchers || (tree.parent?.type.id === LabelMatcher && tree.type.id === LabelName)) {
       // In that case we are in the given situation:
       //       metric_name{} or {}
-      return this.autocompleteLabelNamesByMetric(tree, pos, context, state);
+      return this.autocompleteLabelNamesByMetric(tree, pos, state);
     }
     if (tree.parent?.type.id === LabelMatcher && tree.type.id === StringLiteral) {
       // In this case we are in the given situation:
       //      metric_name{labelName=""}
       // So we can autocomplete the labelValue
-      return this.autocompleteLabelValue(tree.parent, tree, pos, context, state);
+      return this.autocompleteLabelValue(tree.parent, tree, pos, state);
     }
     if (
       tree.type.id === LabelMatcher &&
@@ -138,20 +133,20 @@ export class HybridComplete implements CompleteStrategy {
     ) {
       // In this case the current token is not itself a valid match op yet:
       //      metric_name{labelName!}
-      return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.lastChild.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.lastChild.start, pos);
     }
     if (tree.type.id === MatchOp || tree.parent?.type.id === MatchOp) {
       // In this case the current token is already a valid match op, but could be extended, e.g. "=" to "=~".
-      return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.matchOp], tree.start, pos);
     }
     if (tree.parent?.type.id === BinaryExpr) {
-      return this.arrayToCompletionResult([autocompleteNode.binOp], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.binOp], tree.start, pos);
     }
     if (tree.parent?.type.id === FunctionIdentifier) {
-      return this.arrayToCompletionResult([autocompleteNode.functionIdentifier], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.functionIdentifier], tree.start, pos);
     }
     if (tree.parent?.type.id === AggregateOp) {
-      return this.arrayToCompletionResult([autocompleteNode.aggregateOp], tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.aggregateOp], tree.start, pos);
     }
     if ((tree.type.id === Identifier && tree.parent?.type.id === 0) || (tree.type.id === 0 && tree.parent?.type.id !== LabelMatchers)) {
       // This matches identifier-ish keywords in certain places where a normal identifier would be invalid, like completing "b" into "by":
@@ -161,18 +156,12 @@ export class HybridComplete implements CompleteStrategy {
       // ...or completing "unle" into "unless":
       //        metric_name / unle
       // TODO: This is imprecise and autocompletes in too many situations. Make this better.
-      return this.arrayToCompletionResult([autocompleteNode.aggregateOpModifier].concat(autocompleteNode.binOp), tree.start, pos, context, state);
+      return this.arrayToCompletionResult([autocompleteNode.aggregateOpModifier].concat(autocompleteNode.binOp), tree.start, pos);
     }
     return null;
   }
 
-  private autocompleteLabelValue(
-    parent: Subtree,
-    current: Subtree,
-    pos: number,
-    context: AutocompleteContext,
-    state: EditorState
-  ): Promise<CompletionResult> | null {
+  private autocompleteLabelValue(parent: Subtree, current: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
     if (!this.prometheusClient) {
       return null;
     }
@@ -194,20 +183,13 @@ export class HybridComplete implements CompleteStrategy {
           },
         ],
         current.start + 1,
-        pos,
-        context,
-        state
+        pos
       );
     });
   }
 
-  private autocompleteLabelNamesByMetric(
-    tree: Subtree,
-    pos: number,
-    context: AutocompleteContext,
-    state: EditorState
-  ): Promise<CompletionResult> | null {
-    return this.labelNames(tree, pos, context, state, this.getMetricNameInVectorSelector(tree, state));
+  private autocompleteLabelNamesByMetric(tree: Subtree, pos: number, state: EditorState): Promise<CompletionResult> | null {
+    return this.labelNames(tree, pos, this.getMetricNameInVectorSelector(tree, state));
   }
 
   private getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
@@ -225,13 +207,7 @@ export class HybridComplete implements CompleteStrategy {
     return state.sliceDoc(currentNode.start, currentNode.end);
   }
 
-  private labelNames(
-    tree: Subtree,
-    pos: number,
-    context: AutocompleteContext,
-    state: EditorState,
-    metricName?: string
-  ): Promise<CompletionResult> | null {
+  private labelNames(tree: Subtree, pos: number, metricName?: string): Promise<CompletionResult> | null {
     return !this.prometheusClient
       ? null
       : this.prometheusClient.labelNames(metricName).then((labelNames: string[]) => {
@@ -244,54 +220,30 @@ export class HybridComplete implements CompleteStrategy {
               },
             ],
             tree.type.id === GroupingLabels || tree.type.id === LabelMatchers ? tree.start + 1 : tree.start,
-            pos,
-            context,
-            state
+            pos
           );
         });
   }
 
-  private arrayToCompletionResult(
-    data: AutoCompleteNode[],
-    from: number,
-    to: number,
-    context: AutocompleteContext,
-    state: EditorState,
-    includeSnippet = false
-  ): CompletionResult {
-    const text = state.sliceDoc(from, to);
+  private arrayToCompletionResult(data: AutoCompleteNode[], from: number, to: number, includeSnippet = false): CompletionResult {
     const options: Completion[] = [];
 
     for (const completionList of data) {
       for (const label of completionList.labels) {
-        const completionResult = context.filter(
-          {
-            label: label,
-            original: label,
-            apply: label,
-            type: completionList.type,
-            score: 0,
-          },
-          text
-        );
-        if (completionResult !== null) {
-          options.push(completionResult);
-        }
+        options.push({
+          label: label,
+          type: completionList.type,
+        });
       }
     }
     if (includeSnippet) {
-      for (const s of parsedSnippets) {
-        const completionResult = context.filter(s, text);
-        if (completionResult !== null) {
-          options.push(completionResult);
-        }
-      }
+      options.push(...snippets);
     }
     return {
       from: from,
       to: to,
       options: options,
-      filterDownOn: /^[a-zA-Z0-9_:]+$/,
+      span: /^[a-zA-Z0-9_:]+$/,
     } as CompletionResult;
   }
 }
