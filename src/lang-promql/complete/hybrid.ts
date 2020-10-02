@@ -32,6 +32,7 @@ import {
   LabelMatchers,
   LabelName,
   MetricIdentifier,
+  StringLiteral,
   VectorSelector,
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
@@ -164,10 +165,24 @@ export class HybridComplete implements CompleteStrategy {
             return this.autocompleteLabelName(result, context.metricName);
           });
           break;
+        case ContextKind.LabelValue:
+          asyncResult = asyncResult.then((result) => {
+            return this.autocompleteLabelValue(result, context.labelName, context.metricName);
+          });
       }
     }
     return asyncResult.then((result) => {
-      return arrayToCompletionResult(result, tree.start, pos);
+      let start = tree.start;
+      if (
+        tree.type.id === GroupingLabels ||
+        tree.type.id === LabelMatchers ||
+        (tree.parent?.type.id === LabelMatcher && tree.type.id === StringLiteral)
+      ) {
+        // When the cursor is between empty bracket, empty quote, we need to increment the starting position.
+        // Note: forgetting to do it, leads to not having the autocompletion of the data.
+        start++;
+      }
+      return arrayToCompletionResult(result, start, pos);
     });
   }
 
@@ -215,6 +230,23 @@ export class HybridComplete implements CompleteStrategy {
           // so we have or to continue to autocomplete any kind of labelName or
           // to continue to autocomplete only the labelName associated to the metric
           result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
+        }
+        break;
+      case StringLiteral:
+        if (node.parent?.type.id === LabelMatcher) {
+          // In this case we are in the given situation:
+          //      metric_name{labelName=""}
+          // So we can autocomplete the labelValue
+
+          // Get the labelName.
+          // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
+          let labelName = '';
+          if (node.parent.firstChild && node.parent.firstChild.type.id === LabelName) {
+            labelName = state.sliceDoc(node.parent.firstChild.start, node.parent.firstChild.end);
+          }
+          // then find the metricName if it exists
+          const metricName = getMetricNameInVectorSelector(node, state);
+          result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName });
         }
         break;
     }
@@ -268,6 +300,20 @@ export class HybridComplete implements CompleteStrategy {
         {
           nodes: labelNames.map((value) => ({ label: value })),
           type: 'constant',
+        },
+      ]);
+    });
+  }
+
+  private autocompleteLabelValue(result: AutoCompleteNodes[], labelName?: string, metricName?: string) {
+    if (!this.prometheusClient || !labelName) {
+      return result;
+    }
+    return this.prometheusClient.labelValues(labelName, metricName).then((labelValues: string[]) => {
+      return result.concat([
+        {
+          nodes: labelValues.map((value) => ({ label: value })),
+          type: 'text',
         },
       ]);
     });

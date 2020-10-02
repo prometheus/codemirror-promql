@@ -85,6 +85,12 @@ describe('analyzeCompletion test', () => {
       pos: 4, // cursor is between the bracket after the string myL
       expectedContext: [{ kind: ContextKind.LabelName, metricName: '' }],
     },
+    {
+      title: 'autocomplete the labelValue with metricName + labelName',
+      expr: 'metric_name{labelName=""}',
+      pos: 23, // cursor is between the quotes
+      expectedContext: [{ kind: ContextKind.LabelValue, metricName: 'metric_name', labelName: 'labelName' }],
+    },
   ];
   testSuites.forEach((value) => {
     it(value.title, () => {
