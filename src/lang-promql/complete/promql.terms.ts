@@ -243,6 +243,7 @@ export const aggregateOpTerms: AutoCompleteNode[] = [
   },
   {
     label: 'group',
+    info: 'All values in the resulting vector are 1',
   },
   {
     label: 'max',
