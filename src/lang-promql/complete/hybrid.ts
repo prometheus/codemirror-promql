@@ -24,6 +24,7 @@ import { CompleteStrategy } from './index';
 import { Subtree } from 'lezer-tree';
 import { PrometheusClient } from '../client';
 import {
+  AggregateExpr,
   BinaryExpr,
   GroupingLabel,
   GroupingLabels,
@@ -78,6 +79,7 @@ export enum ContextKind {
   Function,
   Aggregation,
   BinOpModifier,
+  AggregateOpModifier,
 }
 
 export interface Context {
@@ -155,6 +157,11 @@ export class HybridComplete implements CompleteStrategy {
             return result.concat(autocompleteNode.binOpModifier);
           });
           break;
+        case ContextKind.AggregateOpModifier:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat(autocompleteNode.aggregateOpModifier);
+          });
+          break;
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
             return this.autocompleteMetricName(result);
@@ -193,6 +200,30 @@ export class HybridComplete implements CompleteStrategy {
     const result: Context[] = [];
     switch (node.type.id) {
       case Identifier:
+        // sometimes an Identifier has an error has parent. This should be treated in priority
+        if (node.parent?.type.id === 0) {
+          if (node.parent.parent?.type.id === AggregateExpr) {
+            // it matches 'sum() b'. So here we only have to autocomplete the aggregate operation modifier
+            result.push({ kind: ContextKind.AggregateOpModifier });
+            break;
+          }
+          if (node.parent.parent?.type.id === VectorSelector) {
+            // it matches 'sum b'. So here we also have to autocomplete the aggregate operation modifier only
+            // if the associated metricIdentifier is matching an aggregation operation.
+            // Note: here is the corresponding tree in order to understand the situation:
+            // Expr(
+            // 	VectorSelector(
+            // 		MetricIdentifier(Identifier),
+            // 		⚠(Identifier)
+            // 	)
+            // )
+            const operator = getMetricNameInVectorSelector(node, state);
+            if (aggregateOpTerms.filter((term) => term.label === operator).length > 0) {
+              result.push({ kind: ContextKind.AggregateOpModifier });
+              break;
+            }
+          }
+        }
         // according to the grammar, identifier is by definition a leaf of the node MetricIdentifier
         // it could also possible to be a function or an aggregation.
         result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });

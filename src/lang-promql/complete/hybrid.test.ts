@@ -91,6 +91,18 @@ describe('analyzeCompletion test', () => {
       pos: 23, // cursor is between the quotes
       expectedContext: [{ kind: ContextKind.LabelValue, metricName: 'metric_name', labelName: 'labelName' }],
     },
+    {
+      title: 'autocomplete aggregate operation modifier',
+      expr: 'sum() b',
+      pos: 7, // cursor is between the quotes
+      expectedContext: [{ kind: ContextKind.AggregateOpModifier }],
+    },
+    {
+      title: 'autocomplete aggregate operation modifier 2',
+      expr: 'sum b',
+      pos: 5, // cursor is after 'b'
+      expectedContext: [{ kind: ContextKind.AggregateOpModifier }],
+    },
   ];
   testSuites.forEach((value) => {
     it(value.title, () => {
