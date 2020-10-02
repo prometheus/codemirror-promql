@@ -161,6 +161,7 @@ export class HybridComplete implements CompleteStrategy {
     const tree = state.tree.resolve(pos, -1);
     const contexts = this.analyzeCompletion(state, tree);
     let asyncResult: Promise<AutoCompleteNodes[]> = Promise.resolve([]);
+    let completeSnippet = false;
     for (const context of contexts) {
       switch (context.kind) {
         case ContextKind.Aggregation:
@@ -195,6 +196,7 @@ export class HybridComplete implements CompleteStrategy {
           break;
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
+            completeSnippet = true;
             return this.autocompleteMetricName(result);
           });
           break;
@@ -220,7 +222,7 @@ export class HybridComplete implements CompleteStrategy {
         // Note: forgetting to do it, leads to not having the autocompletion of the data.
         start++;
       }
-      return arrayToCompletionResult(result, start, pos);
+      return arrayToCompletionResult(result, start, pos, completeSnippet);
     });
   }
 
