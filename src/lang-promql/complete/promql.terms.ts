@@ -278,7 +278,7 @@ export const aggregateOpTerms = [
   {
     label: 'group',
     detail: 'aggregation',
-    info: 'Group series, while setting the sample value to 1'',
+    info: 'Group series, while setting the sample value to 1',
   },
   {
     label: 'max',
