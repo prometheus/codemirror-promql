@@ -1,3 +1,5 @@
+import { Completion, snippet } from '@codemirror/next/autocomplete';
+
 export const matchOpTerms = [{ label: '=' }, { label: '!=' }, { label: '=~' }, { label: '!~' }];
 export const binOpTerms = [
   { label: '^' },
@@ -318,3 +320,24 @@ export const aggregateOpTerms = [
 ];
 
 export const aggregateOpModifierTerms = [{ label: 'by' }, { label: 'without' }];
+
+export const snippets: readonly Completion[] = [
+  {
+    label: 'sum(rate(__input_vector__[5m]))',
+    type: 'function',
+    detail: 'snippet',
+    apply: snippet('sum(rate(${__input_vector__}[5m]))'),
+  },
+  {
+    label: 'histogram_quantile(__quantile__, sum by(le) (rate(__histogram_metric__[5m])))',
+    type: 'function',
+    detail: 'snippet',
+    apply: snippet('histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))'),
+  },
+  {
+    label: 'label_replace(__input_vector__, "__dst__", "__replacement__", "__src__", "__regex__")',
+    type: 'function',
+    detail: 'snippet',
+    apply: snippet('label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")'),
+  },
+];
