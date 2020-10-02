@@ -1,3 +1,5 @@
+import { AutoCompleteNode } from './hybrid';
+
 export const matchOpTerms = [{ label: '=' }, { label: '!=' }, { label: '=~' }, { label: '!~' }];
 export const binOpTerms = [
   { label: '^' },
@@ -17,7 +19,7 @@ export const binOpTerms = [
   { label: 'unless' },
 ];
 export const binOpModifierTerms = [{ label: 'on' }, { label: 'ignoring' }, { label: 'group_left' }, { label: 'group_right' }];
-export const functionIdentifierTerms = [
+export const functionIdentifierTerms: AutoCompleteNode[] = [
   {
     label: 'abs',
     info: 'Returns the input vector with all sample values converted to their absolute value.',
@@ -219,7 +221,10 @@ export const functionIdentifierTerms = [
     info: 'Returns the year for each of the given times in UTC.',
   },
 ];
-export const aggregateOpTerms = [
+functionIdentifierTerms.forEach((term) => {
+  term.detail = 'function';
+});
+export const aggregateOpTerms: AutoCompleteNode[] = [
   {
     label: 'avg',
     info: 'Calculate the average over dimensions',
@@ -268,4 +273,8 @@ export const aggregateOpTerms = [
     info: 'Largest k elements by sample value',
   },
 ];
+aggregateOpTerms.forEach((term) => {
+  term.detail = 'aggregation';
+});
+
 export const aggregateOpModifierTerms = [{ label: 'by' }, { label: 'without' }];

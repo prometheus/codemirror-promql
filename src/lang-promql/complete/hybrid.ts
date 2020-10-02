@@ -43,7 +43,7 @@ import { walkBackward, walkThrough } from '../parser/path-finder';
 import { aggregateOpModifierTerms, aggregateOpTerms, binOpModifierTerms, binOpTerms, functionIdentifierTerms, matchOpTerms } from './promql.terms';
 import { Completion, CompletionContext, CompletionResult, snippet } from '@codemirror/next/autocomplete';
 
-interface AutoCompleteNode {
+export interface AutoCompleteNode {
   label: string;
   detail?: string;
   info?: string;
