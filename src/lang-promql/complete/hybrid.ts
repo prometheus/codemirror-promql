@@ -24,16 +24,35 @@ import { CompleteStrategy } from './index';
 import { Subtree } from 'lezer-tree';
 import { PrometheusClient } from '../client';
 import {
+  Add,
   AggregateExpr,
+  And,
   BinaryExpr,
+  Div,
+  Eql,
+  EqlRegex,
+  EqlSingle,
   GroupingLabel,
   GroupingLabels,
+  Gte,
+  Gtr,
   Identifier,
   LabelMatcher,
   LabelMatchers,
   LabelName,
+  Lss,
+  Lte,
+  MatchOp,
   MetricIdentifier,
+  Mod,
+  Mul,
+  Neq,
+  NeqRegex,
+  Or,
+  Pow,
   StringLiteral,
+  Sub,
+  Unless,
   VectorSelector,
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
@@ -79,6 +98,8 @@ export enum ContextKind {
   Function,
   Aggregation,
   BinOpModifier,
+  BinOp,
+  MatchOp,
   AggregateOpModifier,
 }
 
@@ -157,6 +178,16 @@ export class HybridComplete implements CompleteStrategy {
             return result.concat(autocompleteNode.binOpModifier);
           });
           break;
+        case ContextKind.BinOp:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat(autocompleteNode.binOp);
+          });
+          break;
+        case ContextKind.MatchOp:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat(autocompleteNode.matchOp);
+          });
+          break;
         case ContextKind.AggregateOpModifier:
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNode.aggregateOpModifier);
@@ -220,8 +251,12 @@ export class HybridComplete implements CompleteStrategy {
             const operator = getMetricNameInVectorSelector(node, state);
             if (aggregateOpTerms.filter((term) => term.label === operator).length > 0) {
               result.push({ kind: ContextKind.AggregateOpModifier });
-              break;
             }
+            // It's possible it also match the expr 'metric_name unle'.
+            // It's also possible that the operator is also a metric even if it matches the list of aggregation function.
+            // So we also have to autocomplete the binary operator.
+            result.push({ kind: ContextKind.BinOp });
+            break;
           }
         }
         // according to the grammar, identifier is by definition a leaf of the node MetricIdentifier
@@ -263,6 +298,17 @@ export class HybridComplete implements CompleteStrategy {
           result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
         }
         break;
+      case LabelMatcher:
+        if (
+          node.firstChild?.type.id === LabelName &&
+          node.lastChild?.type.id === 0 &&
+          node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
+        ) {
+          // In this case the current token is not itself a valid match op yet:
+          //      metric_name{labelName!}
+          result.push({ kind: ContextKind.MatchOp });
+        }
+        break;
       case StringLiteral:
         if (node.parent?.type.id === LabelMatcher) {
           // In this case we are in the given situation:
@@ -279,6 +325,36 @@ export class HybridComplete implements CompleteStrategy {
           const metricName = getMetricNameInVectorSelector(node, state);
           result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName });
         }
+        break;
+      case Neq:
+        if (node.parent?.type.id === MatchOp) {
+          result.push({ kind: ContextKind.MatchOp });
+        } else if (node.parent?.type.id === BinaryExpr) {
+          result.push({ kind: ContextKind.BinOp });
+        }
+        break;
+      case EqlSingle:
+      case EqlRegex:
+      case NeqRegex:
+      case MatchOp:
+        result.push({ kind: ContextKind.MatchOp });
+        break;
+      case Pow:
+      case Mul:
+      case Div:
+      case Mod:
+      case Add:
+      case Sub:
+      case Eql:
+      case Gte:
+      case Gtr:
+      case Lte:
+      case Lss:
+      case And:
+      case Unless:
+      case Or:
+      case BinaryExpr:
+        result.push({ kind: ContextKind.BinOp });
         break;
     }
     return result;

@@ -101,7 +101,25 @@ describe('analyzeCompletion test', () => {
       title: 'autocomplete aggregate operation modifier 2',
       expr: 'sum b',
       pos: 5, // cursor is after 'b'
-      expectedContext: [{ kind: ContextKind.AggregateOpModifier }],
+      expectedContext: [{ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp }],
+    },
+    {
+      title: 'autocomplete binOp',
+      expr: 'metric_name unle',
+      pos: 16,
+      expectedContext: [{ kind: ContextKind.BinOp }],
+    },
+    {
+      title: 'autocomplete matchOp',
+      expr: 'go{instance=""}',
+      pos: 12, // cursor is after the 'equal'
+      expectedContext: [{ kind: ContextKind.MatchOp }],
+    },
+    {
+      title: 'autocomplete matchOp 2',
+      expr: 'metric_name{labelName!}',
+      pos: 22, // cursor is after '!'
+      expectedContext: [{ kind: ContextKind.MatchOp }],
     },
   ];
   testSuites.forEach((value) => {
