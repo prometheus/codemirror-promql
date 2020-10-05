@@ -80,6 +80,7 @@ import {
   Vector,
   VectorSelector,
   Year,
+  OffsetExpr,
 } from 'lezer-promql';
 import { walkThrough } from './path-finder';
 
@@ -401,6 +402,8 @@ export function getType(node: Subtree | null | undefined): ValueType {
       return ValueType.vector;
     case VectorSelector:
       return ValueType.vector;
+    case OffsetExpr:
+      return getType(node.firstChild);
     case StringLiteral:
       return ValueType.string;
     case NumberLiteral:
