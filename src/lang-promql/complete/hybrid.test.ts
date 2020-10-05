@@ -21,11 +21,11 @@
 // SOFTWARE.
 
 import chai from 'chai';
-import { ContextKind, HybridComplete } from './hybrid';
+import { computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
 import { createEditorState } from '../../test/utils';
 
 describe('analyzeCompletion test', () => {
-  const testSuites = [
+  const testCases = [
     {
       title: 'simple metric autocompletion',
       expr: 'go_',
@@ -134,13 +134,74 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.MatchOp }],
     },
   ];
-  testSuites.forEach((value) => {
+  testCases.forEach((value) => {
     it(value.title, () => {
       const hybridComplete = new HybridComplete();
       const state = createEditorState(value.expr);
       const node = state.tree.resolve(value.pos, -1);
       const result = hybridComplete.analyzeCompletion(state, node);
       chai.expect(value.expectedContext).to.deep.equal(result);
+    });
+  });
+});
+
+describe('computeStartCompletePosition test', () => {
+  const testCases = [
+    {
+      title: 'empty bracket',
+      expr: '{}',
+      pos: 1, // cursor is between the bracket
+      expectedStart: 1,
+    },
+    {
+      title: 'empty bracket 2',
+      expr: 'metricName{}',
+      pos: 11, // cursor is between the bracket
+      expectedStart: 11,
+    },
+    {
+      title: 'empty bracket 3',
+      expr: 'sum by()',
+      pos: 7, // cursor is between the bracket
+      expectedStart: 7,
+    },
+    {
+      title: 'bracket containing a substring',
+      expr: '{myL}',
+      pos: 4, // cursor is between the bracket
+      expectedStart: 1,
+    },
+    {
+      title: 'bracket containing a substring 2',
+      expr: 'metricName{myL}',
+      pos: 14, // cursor is between the bracket
+      expectedStart: 11,
+    },
+    {
+      title: 'bracket containing a substring 3',
+      expr: 'sum by(myL)',
+      pos: 10, // cursor is between the bracket
+      expectedStart: 7,
+    },
+    {
+      title: 'start should not be at the beginning of the substring',
+      expr: 'metric_name{labelName!}',
+      pos: 22,
+      expectedStart: 21,
+    },
+    {
+      title: 'start should not be at the beginning of the substring 2',
+      expr: 'metric_name{labelName!="labelValue"}',
+      pos: 22,
+      expectedStart: 21,
+    },
+  ];
+  testCases.forEach((value) => {
+    it(value.title, () => {
+      const state = createEditorState(value.expr);
+      const node = state.tree.resolve(value.pos, -1);
+      const result = computeStartCompletePosition(node);
+      chai.expect(value.expectedStart).to.equal(result);
     });
   });
 });

@@ -109,6 +109,34 @@ export interface Context {
   labelName?: string;
 }
 
+// computeStartCompletePosition calculates the start position of the autocompletion.
+// It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
+// A wrong `start` position will lead to have the completion not working.
+// Note: this method is exported only for testing purpose.
+export function computeStartCompletePosition(node: Subtree): number {
+  let start = node.start;
+  if (
+    node.type.id === GroupingLabels ||
+    node.type.id === LabelMatchers ||
+    (node.parent?.type.id === LabelMatcher && node.type.id === StringLiteral)
+  ) {
+    // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
+    start++;
+  } else if (
+    node.type.id === LabelMatcher &&
+    node.firstChild?.type.id === LabelName &&
+    node.lastChild?.type.id === 0 &&
+    node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
+  ) {
+    // We are in the following situation :
+    //      metric_name{labelName!}
+    // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
+    // `!` is contain in the error node so in the lastChild in this situation
+    start = node.lastChild.start;
+  }
+  return start;
+}
+
 function getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
   // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
   // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
@@ -212,17 +240,7 @@ export class HybridComplete implements CompleteStrategy {
       }
     }
     return asyncResult.then((result) => {
-      let start = tree.start;
-      if (
-        tree.type.id === GroupingLabels ||
-        tree.type.id === LabelMatchers ||
-        (tree.parent?.type.id === LabelMatcher && tree.type.id === StringLiteral)
-      ) {
-        // When the cursor is between empty bracket, empty quote, we need to increment the starting position.
-        // Note: forgetting to do it, leads to not having the autocompletion of the data.
-        start++;
-      }
-      return arrayToCompletionResult(result, start, pos, completeSnippet);
+      return arrayToCompletionResult(result, computeStartCompletePosition(tree), pos, completeSnippet);
     });
   }
 
