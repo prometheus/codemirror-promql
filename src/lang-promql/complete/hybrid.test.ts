@@ -33,9 +33,20 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
-      title: 'autocomplete binOp modifier',
+      title: 'autocomplete binOp modifier or metric',
       expr: 'metric_name / ignor',
       pos: 19,
+      expectedContext: [
+        { kind: ContextKind.MetricName },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+        { kind: ContextKind.BinOpModifier },
+      ],
+    },
+    {
+      title: 'autocomplete binOp modifier or metric 2',
+      expr: 'sum(http_requests_total{method="GET"} / o)',
+      pos: 41,
       expectedContext: [
         { kind: ContextKind.MetricName },
         { kind: ContextKind.Function },
@@ -105,26 +116,14 @@ describe('analyzeCompletion test', () => {
     },
     {
       title: 'autocomplete binOp',
-      expr: 'metric_name unle',
-      pos: 16,
-      expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
-    },
-    {
-      title: 'autocomplete binOp 2',
       expr: 'metric_name !',
       pos: 13,
       expectedContext: [{ kind: ContextKind.BinOp }],
     },
     {
-      title: 'autocomplete binOp 3',
+      title: 'autocomplete binOp 2',
       expr: 'metric_name =',
       pos: 13,
-      expectedContext: [{ kind: ContextKind.BinOp }],
-    },
-    {
-      title: 'autocomplete binOp 4',
-      expr: 'rate(foo[5m]) un',
-      pos: 16,
       expectedContext: [{ kind: ContextKind.BinOp }],
     },
     {
@@ -152,9 +151,27 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.Duration }],
     },
     {
-      title: 'autocomplete offset',
+      title: 'autocomplete offset or binOp',
       expr: 'http_requests_total off',
       pos: 23,
+      expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
+    },
+    {
+      title: 'autocomplete offset or binOp 2',
+      expr: 'metric_name unle',
+      pos: 16,
+      expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
+    },
+    {
+      title: 'autocomplete offset or binOp 3',
+      expr: 'http_requests_total{method="GET"} off',
+      pos: 37,
+      expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
+    },
+    {
+      title: 'autocomplete offset or binOp 4',
+      expr: 'rate(foo[5m]) un',
+      pos: 16,
       expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
     },
   ];

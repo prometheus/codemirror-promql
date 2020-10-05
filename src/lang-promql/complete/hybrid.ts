@@ -28,10 +28,12 @@ import {
   AggregateExpr,
   And,
   BinaryExpr,
-  Div, Duration,
+  Div,
+  Duration,
   Eql,
   EqlRegex,
   EqlSingle,
+  Expr,
   GroupingLabel,
   GroupingLabels,
   Gte,
@@ -58,7 +60,7 @@ import {
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
 import { EditorState } from '@codemirror/next/state';
-import { walkBackward, walkThrough } from '../parser/path-finder';
+import { containsAtLeastOneChild, containsChild, walkBackward, walkThrough } from '../parser/path-finder';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -238,17 +240,47 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
           break;
         }
       }
-      // according to the grammar, identifier is by definition a leaf of the node MetricIdentifier
-      // it could also possible to be a function or an aggregation.
-      result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+      // As the leaf Identifier is coming for a lot of different case, we have to take a bit time analyze the tree
+      // in order to know what we have to autocomplete exactly.
+      // Here is some cases:
+      // 1. metric_name / ignor --> we should autocomplete the BinOpModifier + metric/function/aggregation
+      // 2. http_requests_total{method="GET"} off --> offset or binOp should be autocompleted here
+      // 3. rate(foo[5m]) un --> offset or binOp should be autocompleted
+      // 4. sum(http_requests_total{method="GET"} off) --> offset or binOp should be autocompleted
+      // 5. sum(http_requests_total{method="GET"} / o) --> BinOpModifier + metric/function/aggregation
+      // All examples above gives a different tree each time but ends up to be treated in this case.
+      // But they all have the following common tree pattern:
+      // Parent( Expr(...),
+      //         ... ,
+      //         Expr(VectorSelector(MetricIdentifier(Identifier)))
+      //       )
+      //
+      // So the first things to do is to get the `Parent` and to determinate if we are in this configuration.
+      // Otherwise we would just have to autocomplete the metric / function / aggregation.
 
-      if (node.parent?.parent?.parent?.parent?.type.id === BinaryExpr) {
-        // This is for autocompleting binary operator modifiers (on / ignoring / group_x). When we get here, we have something like:
-        //       metric_name / ignor
-        // And the tree components above the half-finished set operator will look like:
-        //
-        // Identifier -> MetricIdentifier -> VectorSelector -> Expr -> BinaryExpr.
-        result.push({ kind: ContextKind.BinOpModifier });
+      const parent = node.parent?.parent?.parent?.parent;
+      if (!parent) {
+        // this case is normally impossible since by definition, the identifier has 3 parents,
+        // and in Lexer, there is always a default parent in top of everything.
+        result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+        break;
+      }
+      // now we have to know if we have to Expr in the direct children of the `parent`
+      const containExprTwice = containsChild(parent, Expr, Expr);
+      if (containExprTwice) {
+        if (parent.type.id === BinaryExpr && !containsAtLeastOneChild(parent, 0)) {
+          // We are likely in the case 1 or 5
+          result.push(
+            { kind: ContextKind.MetricName },
+            { kind: ContextKind.Function },
+            { kind: ContextKind.Aggregation },
+            { kind: ContextKind.BinOpModifier }
+          );
+        } else if (parent.type.id !== BinaryExpr || (parent.type.id === BinaryExpr && containsAtLeastOneChild(parent, 0))) {
+          result.push({ kind: ContextKind.BinOp }, { kind: ContextKind.Offset });
+        }
+      } else {
+        result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       }
       break;
     case GroupingLabels:
