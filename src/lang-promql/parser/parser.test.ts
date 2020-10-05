@@ -67,6 +67,36 @@ describe('Scalars and scalar-to-scalar operations', () => {
         },
       ] as Diagnostic[],
     },
+    {
+      expr: 'metric_name offset 1d',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'metric_name[5m] offset 1d',
+      expectedValueType: ValueType.matrix,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'rate(metric_name[5m])[1h:] offset 1m',
+      expectedValueType: ValueType.matrix,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'sum(metric_name offset 1m)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'rate(metric_name[5m] offset 1d)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'max_over_time(rate(metric_name[5m])[1h:] offset 1m)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
   ];
   testSuites.forEach((value) => {
     const state = createEditorState(value.expr);
