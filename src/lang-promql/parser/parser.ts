@@ -58,7 +58,7 @@ import {
   Unless,
   VectorSelector,
 } from 'lezer-promql';
-import { containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
+import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 import { getFunction, getType, ValueType } from './type';
 import { buildLabelMatchers, Matcher } from './matcher';
 import { EditorState } from '@codemirror/next/state';
@@ -196,8 +196,8 @@ export class Parser {
     const lt = this.checkAST(lExpr);
     const rt = this.checkAST(rExpr);
     const boolModifierUsed = walkThrough(node, BinModifier, GroupModifiers, BoolModifier, Bool);
-    const isComparisonOperator = containsChild(node, Eql, Neq, Lte, Lss, Gte, Gtr);
-    const isSetOperator = containsChild(node, And, Or, Unless);
+    const isComparisonOperator = containsAtLeastOneChild(node, Eql, Neq, Lte, Lss, Gte, Gtr);
+    const isSetOperator = containsAtLeastOneChild(node, And, Or, Unless);
 
     // BOOL modifier check
     if (boolModifierUsed) {

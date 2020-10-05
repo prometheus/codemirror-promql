@@ -158,8 +158,7 @@ export class HTTPPrometheusClient implements PrometheusClient {
 
     const end = new Date();
     const start = new Date(end.getTime() - this.lookbackInterval);
-
-    if (!metricName || metricName.length === 0) {
+    if (metricName === undefined || metricName === '') {
       const params: URLSearchParams = new URLSearchParams({
         start: start.toISOString(),
         end: end.toISOString(),
