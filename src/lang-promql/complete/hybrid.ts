@@ -109,34 +109,6 @@ export interface Context {
   labelName?: string;
 }
 
-// computeStartCompletePosition calculates the start position of the autocompletion.
-// It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
-// A wrong `start` position will lead to have the completion not working.
-// Note: this method is exported only for testing purpose.
-export function computeStartCompletePosition(node: Subtree): number {
-  let start = node.start;
-  if (
-    node.type.id === GroupingLabels ||
-    node.type.id === LabelMatchers ||
-    (node.parent?.type.id === LabelMatcher && node.type.id === StringLiteral)
-  ) {
-    // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
-    start++;
-  } else if (
-    node.type.id === LabelMatcher &&
-    node.firstChild?.type.id === LabelName &&
-    node.lastChild?.type.id === 0 &&
-    node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
-  ) {
-    // We are in the following situation :
-    //      metric_name{labelName!}
-    // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
-    // `!` is contain in the error node so in the lastChild in this situation
-    start = node.lastChild.start;
-  }
-  return start;
-}
-
 function getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
   // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
   // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
@@ -176,6 +148,180 @@ function arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: nu
   } as CompletionResult;
 }
 
+// computeStartCompletePosition calculates the start position of the autocompletion.
+// It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
+// A wrong `start` position will lead to have the completion not working.
+// Note: this method is exported only for testing purpose.
+export function computeStartCompletePosition(node: Subtree): number {
+  let start = node.start;
+  if (
+    node.type.id === GroupingLabels ||
+    node.type.id === LabelMatchers ||
+    (node.parent?.type.id === LabelMatcher && node.type.id === StringLiteral)
+  ) {
+    // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
+    start++;
+  } else if (
+    node.type.id === LabelMatcher &&
+    node.firstChild?.type.id === LabelName &&
+    node.lastChild?.type.id === 0 &&
+    node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
+  ) {
+    // We are in the following situation :
+    //      metric_name{labelName!}
+    // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
+    // `!` is contain in the error node so in the lastChild in this situation
+    start = node.lastChild.start;
+  }
+  return start;
+}
+
+// analyzeCompletion is going to determinate what should be autocompleted.
+// The value of the autocompletion is then calculate by the function buildCompletion.
+// Note: this method is exported for testing purpose only. Do not use it directly.
+export function analyzeCompletion(state: EditorState, node: Subtree): Context[] {
+  const result: Context[] = [];
+  switch (node.type.id) {
+    case 0: // 0 is the id of the error node
+      // when we are in the situation 'metric_name !', we have the following tree
+      // Expr(VectorSelector(MetricIdentifier(Identifier),⚠))
+      // We should try to know if the char '!' is part of a binOp.
+      // Note: as it is quite experimental, maybe it requires more condition and to check the current tree (parent, other child at the same level ..etc.).
+      const operator = state.sliceDoc(node.start, node.end);
+      if (binOpTerms.filter((term) => term.label.includes(operator)).length > 0) {
+        result.push({ kind: ContextKind.BinOp });
+      }
+      break;
+    case Identifier:
+      // sometimes an Identifier has an error has parent. This should be treated in priority
+      if (node.parent?.type.id === 0) {
+        if (node.parent.parent?.type.id === AggregateExpr) {
+          // it matches 'sum() b'. So here we only have to autocomplete the aggregate operation modifier
+          result.push({ kind: ContextKind.AggregateOpModifier });
+          break;
+        }
+        if (node.parent.parent?.type.id === VectorSelector) {
+          // it matches 'sum b'. So here we also have to autocomplete the aggregate operation modifier only
+          // if the associated metricIdentifier is matching an aggregation operation.
+          // Note: here is the corresponding tree in order to understand the situation:
+          // Expr(
+          // 	VectorSelector(
+          // 		MetricIdentifier(Identifier),
+          // 		⚠(Identifier)
+          // 	)
+          // )
+          const operator = getMetricNameInVectorSelector(node, state);
+          if (aggregateOpTerms.filter((term) => term.label === operator).length > 0) {
+            result.push({ kind: ContextKind.AggregateOpModifier });
+          }
+          // It's possible it also match the expr 'metric_name unle'.
+          // It's also possible that the operator is also a metric even if it matches the list of aggregation function.
+          // So we also have to autocomplete the binary operator.
+          result.push({ kind: ContextKind.BinOp });
+          break;
+        }
+      }
+      // according to the grammar, identifier is by definition a leaf of the node MetricIdentifier
+      // it could also possible to be a function or an aggregation.
+      result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+
+      if (node.parent?.parent?.parent?.parent?.type.id === BinaryExpr) {
+        // This is for autocompleting binary operator modifiers (on / ignoring / group_x). When we get here, we have something like:
+        //       metric_name / ignor
+        // And the tree components above the half-finished set operator will look like:
+        //
+        // Identifier -> MetricIdentifier -> VectorSelector -> Expr -> BinaryExpr.
+        result.push({ kind: ContextKind.BinOpModifier });
+      }
+      break;
+    case GroupingLabels:
+      // In this case we are in the given situation:
+      //      sum by ()
+      // So we have to autocomplete any labelName
+      result.push({ kind: ContextKind.LabelName });
+      break;
+    case LabelMatchers:
+      // In that case we are in the given situation:
+      //       metric_name{} or {}
+      // so we have or to autocomplete any kind of labelName or to autocomplete only the labelName associated to the metric
+      result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
+      break;
+    case LabelName:
+      if (node.parent?.type.id === GroupingLabel) {
+        // In this case we are in the given situation:
+        //      sum by (myL)
+        // So we have to continue to autocomplete any kind of labelName
+        result.push({ kind: ContextKind.LabelName });
+      } else if (node.parent?.type.id === LabelMatcher) {
+        // In that case we are in the given situation:
+        //       metric_name{myL} or {myL}
+        // so we have or to continue to autocomplete any kind of labelName or
+        // to continue to autocomplete only the labelName associated to the metric
+        result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
+      }
+      break;
+    case LabelMatcher:
+      if (
+        node.firstChild?.type.id === LabelName &&
+        node.lastChild?.type.id === 0 &&
+        node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
+      ) {
+        // In this case the current token is not itself a valid match op yet:
+        //      metric_name{labelName!}
+        result.push({ kind: ContextKind.MatchOp });
+      }
+      break;
+    case StringLiteral:
+      if (node.parent?.type.id === LabelMatcher) {
+        // In this case we are in the given situation:
+        //      metric_name{labelName=""}
+        // So we can autocomplete the labelValue
+
+        // Get the labelName.
+        // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
+        let labelName = '';
+        if (node.parent.firstChild && node.parent.firstChild.type.id === LabelName) {
+          labelName = state.sliceDoc(node.parent.firstChild.start, node.parent.firstChild.end);
+        }
+        // then find the metricName if it exists
+        const metricName = getMetricNameInVectorSelector(node, state);
+        result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName });
+      }
+      break;
+    case Neq:
+      if (node.parent?.type.id === MatchOp) {
+        result.push({ kind: ContextKind.MatchOp });
+      } else if (node.parent?.type.id === BinaryExpr) {
+        result.push({ kind: ContextKind.BinOp });
+      }
+      break;
+    case EqlSingle:
+    case EqlRegex:
+    case NeqRegex:
+    case MatchOp:
+      result.push({ kind: ContextKind.MatchOp });
+      break;
+    case Pow:
+    case Mul:
+    case Div:
+    case Mod:
+    case Add:
+    case Sub:
+    case Eql:
+    case Gte:
+    case Gtr:
+    case Lte:
+    case Lss:
+    case And:
+    case Unless:
+    case Or:
+    case BinaryExpr:
+      result.push({ kind: ContextKind.BinOp });
+      break;
+  }
+  return result;
+}
+
 // HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | undefined;
@@ -187,7 +333,7 @@ export class HybridComplete implements CompleteStrategy {
   promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null {
     const { state, pos } = context;
     const tree = state.tree.resolve(pos, -1);
-    const contexts = this.analyzeCompletion(state, tree);
+    const contexts = analyzeCompletion(state, tree);
     let asyncResult: Promise<AutoCompleteNodes[]> = Promise.resolve([]);
     let completeSnippet = false;
     for (const context of contexts) {
@@ -242,152 +388,6 @@ export class HybridComplete implements CompleteStrategy {
     return asyncResult.then((result) => {
       return arrayToCompletionResult(result, computeStartCompletePosition(tree), pos, completeSnippet);
     });
-  }
-
-  // analyzeCompletion is going to determinate what should be autocompleted.
-  // The value of the autocompletion is then calculate by the function buildCompletion.
-  // Note: this method is public for testing purpose only. Do not use it directly.
-  analyzeCompletion(state: EditorState, node: Subtree): Context[] {
-    const result: Context[] = [];
-    switch (node.type.id) {
-      case 0: // 0 is the id of the error node
-        // when we are in the situation 'metric_name !', we have the following tree
-        // Expr(VectorSelector(MetricIdentifier(Identifier),⚠))
-        // We should try to know if the char '!' is part of a binOp.
-        // Note: as it is quite experimental, maybe it requires more condition and to check the current tree (parent, other child at the same level ..etc.).
-        const operator = state.sliceDoc(node.start, node.end);
-        if (binOpTerms.filter((term) => term.label.includes(operator)).length > 0) {
-          result.push({ kind: ContextKind.BinOp });
-        }
-        break;
-      case Identifier:
-        // sometimes an Identifier has an error has parent. This should be treated in priority
-        if (node.parent?.type.id === 0) {
-          if (node.parent.parent?.type.id === AggregateExpr) {
-            // it matches 'sum() b'. So here we only have to autocomplete the aggregate operation modifier
-            result.push({ kind: ContextKind.AggregateOpModifier });
-            break;
-          }
-          if (node.parent.parent?.type.id === VectorSelector) {
-            // it matches 'sum b'. So here we also have to autocomplete the aggregate operation modifier only
-            // if the associated metricIdentifier is matching an aggregation operation.
-            // Note: here is the corresponding tree in order to understand the situation:
-            // Expr(
-            // 	VectorSelector(
-            // 		MetricIdentifier(Identifier),
-            // 		⚠(Identifier)
-            // 	)
-            // )
-            const operator = getMetricNameInVectorSelector(node, state);
-            if (aggregateOpTerms.filter((term) => term.label === operator).length > 0) {
-              result.push({ kind: ContextKind.AggregateOpModifier });
-            }
-            // It's possible it also match the expr 'metric_name unle'.
-            // It's also possible that the operator is also a metric even if it matches the list of aggregation function.
-            // So we also have to autocomplete the binary operator.
-            result.push({ kind: ContextKind.BinOp });
-            break;
-          }
-        }
-        // according to the grammar, identifier is by definition a leaf of the node MetricIdentifier
-        // it could also possible to be a function or an aggregation.
-        result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
-
-        if (node.parent?.parent?.parent?.parent?.type.id === BinaryExpr) {
-          // This is for autocompleting binary operator modifiers (on / ignoring / group_x). When we get here, we have something like:
-          //       metric_name / ignor
-          // And the tree components above the half-finished set operator will look like:
-          //
-          // Identifier -> MetricIdentifier -> VectorSelector -> Expr -> BinaryExpr.
-          result.push({ kind: ContextKind.BinOpModifier });
-        }
-        break;
-      case GroupingLabels:
-        // In this case we are in the given situation:
-        //      sum by ()
-        // So we have to autocomplete any labelName
-        result.push({ kind: ContextKind.LabelName });
-        break;
-      case LabelMatchers:
-        // In that case we are in the given situation:
-        //       metric_name{} or {}
-        // so we have or to autocomplete any kind of labelName or to autocomplete only the labelName associated to the metric
-        result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
-        break;
-      case LabelName:
-        if (node.parent?.type.id === GroupingLabel) {
-          // In this case we are in the given situation:
-          //      sum by (myL)
-          // So we have to continue to autocomplete any kind of labelName
-          result.push({ kind: ContextKind.LabelName });
-        } else if (node.parent?.type.id === LabelMatcher) {
-          // In that case we are in the given situation:
-          //       metric_name{myL} or {myL}
-          // so we have or to continue to autocomplete any kind of labelName or
-          // to continue to autocomplete only the labelName associated to the metric
-          result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
-        }
-        break;
-      case LabelMatcher:
-        if (
-          node.firstChild?.type.id === LabelName &&
-          node.lastChild?.type.id === 0 &&
-          node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
-        ) {
-          // In this case the current token is not itself a valid match op yet:
-          //      metric_name{labelName!}
-          result.push({ kind: ContextKind.MatchOp });
-        }
-        break;
-      case StringLiteral:
-        if (node.parent?.type.id === LabelMatcher) {
-          // In this case we are in the given situation:
-          //      metric_name{labelName=""}
-          // So we can autocomplete the labelValue
-
-          // Get the labelName.
-          // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
-          let labelName = '';
-          if (node.parent.firstChild && node.parent.firstChild.type.id === LabelName) {
-            labelName = state.sliceDoc(node.parent.firstChild.start, node.parent.firstChild.end);
-          }
-          // then find the metricName if it exists
-          const metricName = getMetricNameInVectorSelector(node, state);
-          result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName });
-        }
-        break;
-      case Neq:
-        if (node.parent?.type.id === MatchOp) {
-          result.push({ kind: ContextKind.MatchOp });
-        } else if (node.parent?.type.id === BinaryExpr) {
-          result.push({ kind: ContextKind.BinOp });
-        }
-        break;
-      case EqlSingle:
-      case EqlRegex:
-      case NeqRegex:
-      case MatchOp:
-        result.push({ kind: ContextKind.MatchOp });
-        break;
-      case Pow:
-      case Mul:
-      case Div:
-      case Mod:
-      case Add:
-      case Sub:
-      case Eql:
-      case Gte:
-      case Gtr:
-      case Lte:
-      case Lss:
-      case And:
-      case Unless:
-      case Or:
-      case BinaryExpr:
-        result.push({ kind: ContextKind.BinOp });
-        break;
-    }
-    return result;
   }
 
   private autocompleteMetricName(result: AutoCompleteNodes[]) {

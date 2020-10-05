@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import chai from 'chai';
-import { computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
+import { analyzeCompletion, computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
 import { createEditorState } from '../../test/utils';
 
 describe('analyzeCompletion test', () => {
@@ -136,10 +136,9 @@ describe('analyzeCompletion test', () => {
   ];
   testCases.forEach((value) => {
     it(value.title, () => {
-      const hybridComplete = new HybridComplete();
       const state = createEditorState(value.expr);
       const node = state.tree.resolve(value.pos, -1);
-      const result = hybridComplete.analyzeCompletion(state, node);
+      const result = analyzeCompletion(state, node);
       chai.expect(value.expectedContext).to.deep.equal(result);
     });
   });
