@@ -105,6 +105,7 @@ export enum ContextKind {
   MatchOp,
   AggregateOpModifier,
   Duration,
+  Offset,
 }
 
 export interface Context {
@@ -231,7 +232,9 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
           // It's possible it also match the expr 'metric_name unle'.
           // It's also possible that the operator is also a metric even if it matches the list of aggregation function.
           // So we also have to autocomplete the binary operator.
-          result.push({ kind: ContextKind.BinOp });
+          //
+          // The expr `metric_name off` leads to the same tree. So we have to provide the offset keyword too here.
+          result.push({ kind: ContextKind.BinOp }, { kind: ContextKind.Offset });
           break;
         }
       }
@@ -385,6 +388,11 @@ export class HybridComplete implements CompleteStrategy {
         case ContextKind.Duration:
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNode.duration);
+          });
+          break;
+        case ContextKind.Offset:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat([{ nodes: [{ label: 'offset' }] }]);
           });
           break;
         case ContextKind.MetricName:

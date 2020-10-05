@@ -101,13 +101,13 @@ describe('analyzeCompletion test', () => {
       title: 'autocomplete aggregate operation modifier 2',
       expr: 'sum b',
       pos: 5, // cursor is after 'b'
-      expectedContext: [{ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp }],
+      expectedContext: [{ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
     },
     {
       title: 'autocomplete binOp',
       expr: 'metric_name unle',
       pos: 16,
-      expectedContext: [{ kind: ContextKind.BinOp }],
+      expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
     },
     {
       title: 'autocomplete binOp 2',
@@ -138,6 +138,12 @@ describe('analyzeCompletion test', () => {
       expr: 'http_requests_total offset 5',
       pos: 28,
       expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete offset',
+      expr: 'http_requests_total off',
+      pos: 23,
+      expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
     },
   ];
   testCases.forEach((value) => {
