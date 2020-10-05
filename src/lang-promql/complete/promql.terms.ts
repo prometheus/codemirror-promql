@@ -1,5 +1,6 @@
 import { Completion, snippet } from '@codemirror/next/autocomplete';
 
+export const durationTerms = [{ label: 'y' }, { label: 'w' }, { label: 'd' }, { label: 'h' }, { label: 'm' }, { label: 's' }, { label: 'ms' }];
 export const matchOpTerms = [{ label: '=' }, { label: '!=' }, { label: '=~' }, { label: '!~' }];
 export const binOpTerms = [
   { label: '^' },

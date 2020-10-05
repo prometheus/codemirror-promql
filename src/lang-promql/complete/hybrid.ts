@@ -48,6 +48,7 @@ import {
   Mul,
   Neq,
   NeqRegex,
+  OffsetExpr,
   Or,
   Pow,
   StringLiteral,
@@ -63,6 +64,7 @@ import {
   aggregateOpTerms,
   binOpModifierTerms,
   binOpTerms,
+  durationTerms,
   functionIdentifierTerms,
   matchOpTerms,
   snippets,
@@ -82,6 +84,7 @@ interface AutoCompleteNodes {
 const autocompleteNode: { [key: string]: AutoCompleteNodes } = {
   matchOp: { nodes: matchOpTerms },
   binOp: { nodes: binOpTerms },
+  duration: { nodes: durationTerms },
   binOpModifier: { nodes: binOpModifierTerms, type: 'keyword' },
   functionIdentifier: { nodes: functionIdentifierTerms, type: 'function' },
   aggregateOp: { nodes: aggregateOpTerms, type: 'keyword' },
@@ -101,6 +104,7 @@ export enum ContextKind {
   BinOp,
   MatchOp,
   AggregateOpModifier,
+  Duration,
 }
 
 export interface Context {
@@ -152,12 +156,12 @@ function arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: nu
 // It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
 // A wrong `start` position will lead to have the completion not working.
 // Note: this method is exported only for testing purpose.
-export function computeStartCompletePosition(node: Subtree): number {
+export function computeStartCompletePosition(node: Subtree, pos: number): number {
   let start = node.start;
   if (
     node.type.id === GroupingLabels ||
     node.type.id === LabelMatchers ||
-    (node.parent?.type.id === LabelMatcher && node.type.id === StringLiteral)
+    (node.type.id === StringLiteral && node.parent?.type.id === LabelMatcher)
   ) {
     // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
     start++;
@@ -172,6 +176,8 @@ export function computeStartCompletePosition(node: Subtree): number {
     // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
     // `!` is contain in the error node so in the lastChild in this situation
     start = node.lastChild.start;
+  } else if (node.type.id === 0 && node.parent?.type.id === OffsetExpr) {
+    start = pos;
   }
   return start;
 }
@@ -183,6 +189,14 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
   const result: Context[] = [];
   switch (node.type.id) {
     case 0: // 0 is the id of the error node
+      if (node.parent?.type.id === OffsetExpr) {
+        // we are likely in the given situation:
+        // `metric_name offset 5` that leads to this tree:
+        // `Expr(OffsetExpr(Expr(VectorSelector(MetricIdentifier(Identifier))),Offset,⚠))`
+        // Here we can just autocomplete a duration.
+        result.push({ kind: ContextKind.Duration });
+        break;
+      }
       // when we are in the situation 'metric_name !', we have the following tree
       // Expr(VectorSelector(MetricIdentifier(Identifier),⚠))
       // We should try to know if the char '!' is part of a binOp.
@@ -368,6 +382,11 @@ export class HybridComplete implements CompleteStrategy {
             return result.concat(autocompleteNode.aggregateOpModifier);
           });
           break;
+        case ContextKind.Duration:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat(autocompleteNode.duration);
+          });
+          break;
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
             completeSnippet = true;
@@ -386,7 +405,7 @@ export class HybridComplete implements CompleteStrategy {
       }
     }
     return asyncResult.then((result) => {
-      return arrayToCompletionResult(result, computeStartCompletePosition(tree), pos, completeSnippet);
+      return arrayToCompletionResult(result, computeStartCompletePosition(tree, pos), pos, completeSnippet);
     });
   }
 

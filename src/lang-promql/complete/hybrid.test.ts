@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import chai from 'chai';
-import { analyzeCompletion, computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
+import { analyzeCompletion, computeStartCompletePosition, ContextKind } from './hybrid';
 import { createEditorState } from '../../test/utils';
 
 describe('analyzeCompletion test', () => {
@@ -133,6 +133,12 @@ describe('analyzeCompletion test', () => {
       pos: 22, // cursor is after '!'
       expectedContext: [{ kind: ContextKind.MatchOp }],
     },
+    {
+      title: 'autocomplete duration with offset',
+      expr: 'http_requests_total offset 5',
+      pos: 28,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
   ];
   testCases.forEach((value) => {
     it(value.title, () => {
@@ -194,12 +200,30 @@ describe('computeStartCompletePosition test', () => {
       pos: 22,
       expectedStart: 21,
     },
+    {
+      title: 'start should be equal to the pos for the duration of an offset',
+      expr: 'http_requests_total offset 5',
+      pos: 28,
+      expectedStart: 28,
+    },
+    {
+      title: 'start should be equal to the pos for the duration of an offset 2',
+      expr: 'http_requests_total offset 587',
+      pos: 30,
+      expectedStart: 30,
+    },
+    {
+      title: 'start should be equal to the pos for the duration of an offset 3',
+      expr: 'http_requests_total offset 587',
+      pos: 29,
+      expectedStart: 29,
+    },
   ];
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const node = state.tree.resolve(value.pos, -1);
-      const result = computeStartCompletePosition(node);
+      const result = computeStartCompletePosition(node, value.pos);
       chai.expect(value.expectedStart).to.equal(result);
     });
   });
