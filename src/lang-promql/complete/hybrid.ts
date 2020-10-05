@@ -232,6 +232,16 @@ export class HybridComplete implements CompleteStrategy {
   analyzeCompletion(state: EditorState, node: Subtree): Context[] {
     const result: Context[] = [];
     switch (node.type.id) {
+      case 0: // 0 is the id of the error node
+        // when we are in the situation 'metric_name !', we have the following tree
+        // Expr(VectorSelector(MetricIdentifier(Identifier),⚠))
+        // We should try to know if the char '!' is part of a binOp.
+        // Note: as it is quite experimental, maybe it requires more condition and to check the current tree (parent, other child at the same level ..etc.).
+        const operator = state.sliceDoc(node.start, node.end);
+        if (binOpTerms.filter((term) => term.label.includes(operator)).length > 0) {
+          result.push({ kind: ContextKind.BinOp });
+        }
+        break;
       case Identifier:
         // sometimes an Identifier has an error has parent. This should be treated in priority
         if (node.parent?.type.id === 0) {

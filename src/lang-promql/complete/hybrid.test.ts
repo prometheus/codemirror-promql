@@ -110,6 +110,18 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.BinOp }],
     },
     {
+      title: 'autocomplete binOp 2',
+      expr: 'metric_name !',
+      pos: 13,
+      expectedContext: [{ kind: ContextKind.BinOp }],
+    },
+    {
+      title: 'autocomplete binOp 3',
+      expr: 'metric_name =',
+      pos: 13,
+      expectedContext: [{ kind: ContextKind.BinOp }],
+    },
+    {
       title: 'autocomplete matchOp',
       expr: 'go{instance=""}',
       pos: 12, // cursor is after the 'equal'
