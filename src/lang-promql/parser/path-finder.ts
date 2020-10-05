@@ -74,7 +74,7 @@ export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtre
   });
 }
 
-export function containsChild(node: Subtree, ...child: (number | string)[]): boolean {
+export function containsAtLeastOneChild(node: Subtree, ...child: (number | string)[]): boolean {
   // Somehow, the first type is always the given node.
   // So we have to manually move forward before considering the given path.
   // A way to achieve that is to manually add the given node in the path
@@ -87,6 +87,34 @@ export function containsChild(node: Subtree, ...child: (number | string)[]): boo
         return undefined;
       }
       return child.some((n) => type.id === n || type.name === n);
+    },
+  });
+  return result === undefined ? false : result;
+}
+
+export function containsChild(node: Subtree, ...child: (number | string)[]): boolean {
+  let depth = 0;
+  if (node.name === '' && node.type.id > 0) {
+    // the root node is identified by an empty string as a name and a number different than 0.
+    // When the iteration is starting by the root node, it ignores it and automatically iterate other the children.
+    // If it's not the case, then the iteration is starting by the current node.
+    depth++;
+  }
+  let i = 0;
+  const result = node.iterate<boolean>({
+    enter: (type) => {
+      if (type.id === node.type.id && depth === 0) {
+        depth++;
+        i++;
+        return undefined;
+      }
+      if (type.id === child[i] || type.name === child[i]) {
+        i++;
+        if (i >= child.length) {
+          return true;
+        }
+      }
+      return false;
     },
   });
   return result === undefined ? false : result;
