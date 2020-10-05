@@ -105,7 +105,6 @@ export function containsChild(node: Subtree, ...child: (number | string)[]): boo
     enter: (type) => {
       if (type.id === node.type.id && depth === 0) {
         depth++;
-        i++;
         return undefined;
       }
       if (type.id === child[i] || type.name === child[i]) {

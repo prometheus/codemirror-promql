@@ -22,7 +22,7 @@
 
 import chai from 'chai';
 import {
-  Add,
+  Add, AggregateExpr,
   BinaryExpr,
   Div,
   Eql,
@@ -159,6 +159,14 @@ describe('containsChild test', () => {
       pos: 0,
       expectedResult: true,
       walkThrough: [],
+      child: [Expr, Expr],
+    },
+    {
+      title: 'Should not find all child required',
+      expr: 'sum(ra)',
+      pos: 0,
+      expectedResult: false,
+      walkThrough: [AggregateExpr, FunctionCallBody, FunctionCallArgs],
       child: [Expr, Expr],
     },
   ];
