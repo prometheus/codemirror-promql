@@ -122,6 +122,12 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.BinOp }],
     },
     {
+      title: 'autocomplete binOp 4',
+      expr: 'rate(foo[5m]) un',
+      pos: 16,
+      expectedContext: [{ kind: ContextKind.BinOp }],
+    },
+    {
       title: 'autocomplete matchOp',
       expr: 'go{instance=""}',
       pos: 12, // cursor is after the 'equal'
@@ -137,6 +143,12 @@ describe('analyzeCompletion test', () => {
       title: 'autocomplete duration with offset',
       expr: 'http_requests_total offset 5',
       pos: 28,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration with offset',
+      expr: 'sum(http_requests_total{method="GET"} offset 4)',
+      pos: 46,
       expectedContext: [{ kind: ContextKind.Duration }],
     },
     {
@@ -223,6 +235,12 @@ describe('computeStartCompletePosition test', () => {
       expr: 'http_requests_total offset 587',
       pos: 29,
       expectedStart: 29,
+    },
+    {
+      title: 'start should be equal to the pos for the duration of an offset 4',
+      expr: 'sum(http_requests_total{method="GET"} offset 4)',
+      pos: 46,
+      expectedStart: 46,
     },
   ];
   testCases.forEach((value) => {

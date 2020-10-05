@@ -28,7 +28,7 @@ import {
   AggregateExpr,
   And,
   BinaryExpr,
-  Div,
+  Div, Duration,
   Eql,
   EqlRegex,
   EqlSingle,
@@ -177,7 +177,7 @@ export function computeStartCompletePosition(node: Subtree, pos: number): number
     // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
     // `!` is contain in the error node so in the lastChild in this situation
     start = node.lastChild.start;
-  } else if (node.type.id === 0 && node.parent?.type.id === OffsetExpr) {
+  } else if (node.type.id === OffsetExpr || (node.type.id === 0 && node.parent?.type.id === OffsetExpr)) {
     start = pos;
   }
   return start;
@@ -304,6 +304,10 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         const metricName = getMetricNameInVectorSelector(node, state);
         result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName });
       }
+      break;
+    case Duration:
+    case OffsetExpr:
+      result.push({ kind: ContextKind.Duration });
       break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
