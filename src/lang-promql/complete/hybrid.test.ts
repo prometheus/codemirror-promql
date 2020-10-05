@@ -33,6 +33,30 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
+      title: 'metric/function/aggregation autocompletion',
+      expr: 'sum()',
+      pos: 4,
+      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+    },
+    {
+      title: 'metric/function/aggregation autocompletion 2',
+      expr: 'sum(rat)',
+      pos: 7,
+      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+    },
+    {
+      title: 'metric/function/aggregation autocompletion 3',
+      expr: 'sum(rate())',
+      pos: 9,
+      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+    },
+    {
+      title: 'metric/function/aggregation autocompletion 4',
+      expr: 'sum(rate(my_))',
+      pos: 12,
+      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+    },
+    {
       title: 'autocomplete binOp modifier or metric',
       expr: 'metric_name / ignor',
       pos: 19,
@@ -206,6 +230,24 @@ describe('computeStartCompletePosition test', () => {
       expectedStart: 7,
     },
     {
+      title: 'empty bracket 4',
+      expr: 'sum by(test) ()',
+      pos: 14, // cursor is between the bracket
+      expectedStart: 14,
+    },
+    {
+      title: 'empty bracket 5',
+      expr: 'sum()',
+      pos: 4, // cursor is between the bracket
+      expectedStart: 4,
+    },
+    {
+      title: 'empty bracket 6',
+      expr: 'sum(rate())',
+      pos: 9, // cursor is between the bracket
+      expectedStart: 9,
+    },
+    {
       title: 'bracket containing a substring',
       expr: '{myL}',
       pos: 4, // cursor is between the bracket
@@ -222,6 +264,18 @@ describe('computeStartCompletePosition test', () => {
       expr: 'sum by(myL)',
       pos: 10, // cursor is between the bracket
       expectedStart: 7,
+    },
+    {
+      title: 'bracket containing a substring 3',
+      expr: 'sum(ra)',
+      pos: 6, // cursor is between the bracket
+      expectedStart: 4,
+    },
+    {
+      title: 'bracket containing a substring 3',
+      expr: 'sum(rate(my))',
+      pos: 11, // cursor is between the bracket
+      expectedStart: 9,
     },
     {
       title: 'start should not be at the beginning of the substring',

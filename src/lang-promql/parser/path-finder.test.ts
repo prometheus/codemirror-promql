@@ -22,7 +22,8 @@
 
 import chai from 'chai';
 import {
-  Add, AggregateExpr,
+  Add,
+  AggregateExpr,
   BinaryExpr,
   Div,
   Eql,

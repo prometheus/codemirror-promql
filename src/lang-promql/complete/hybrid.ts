@@ -34,6 +34,7 @@ import {
   EqlRegex,
   EqlSingle,
   Expr,
+  FunctionCallBody,
   GroupingLabel,
   GroupingLabels,
   Gte,
@@ -164,6 +165,7 @@ export function computeStartCompletePosition(node: Subtree, pos: number): number
   if (
     node.type.id === GroupingLabels ||
     node.type.id === LabelMatchers ||
+    node.type.id === FunctionCallBody ||
     (node.type.id === StringLiteral && node.parent?.type.id === LabelMatcher)
   ) {
     // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
@@ -340,6 +342,9 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
     case Duration:
     case OffsetExpr:
       result.push({ kind: ContextKind.Duration });
+      break;
+    case FunctionCallBody:
+      result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
