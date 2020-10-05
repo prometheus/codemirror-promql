@@ -1,20 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { EditorState, EditorView } from '@codemirror/next/basic-setup';
+import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
 import { PromQLExtension } from 'codemirror-promql';
-import { Extension } from '@codemirror/next/state';
-import { lineNumbers } from '@codemirror/next/gutter';
-import { highlightSpecialChars, keymap, multipleSelections } from '@codemirror/next/view';
-import { foldGutter, foldKeymap } from '@codemirror/next/fold';
-import { bracketMatching } from '@codemirror/next/matchbrackets';
-import { closeBrackets, closeBracketsKeymap } from '@codemirror/next/closebrackets';
-import { rectangularSelection } from '@codemirror/next/rectangular-selection';
-import { highlightActiveLine, highlightSelectionMatches } from '@codemirror/next/highlight-selection';
-import { defaultKeymap } from '@codemirror/next/commands';
-import { searchKeymap } from '@codemirror/next/search';
-import { commentKeymap } from '@codemirror/next/comment';
-import { gotoLineKeymap } from '@codemirror/next/goto-line';
-import { lintKeymap } from '@codemirror/next/lint';
-import { autocomplete, autocompleteKeymap } from '@nexucis/codemirror-next-autocomplete';
 import { highlighter } from '@codemirror/next/highlight';
 
 @Component({
@@ -23,28 +9,6 @@ import { highlighter } from '@codemirror/next/highlight';
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent implements OnInit {
-  private basicSetup: Extension = [
-    lineNumbers(),
-    highlightSpecialChars(),
-    foldGutter(),
-    multipleSelections(),
-    bracketMatching(),
-    closeBrackets(),
-    autocomplete({ matchPre: '<b style="color: brown">', matchPost: '</b>' }),
-    rectangularSelection(),
-    highlightActiveLine(),
-    highlightSelectionMatches(),
-    keymap([
-      ...closeBracketsKeymap,
-      ...defaultKeymap,
-      ...searchKeymap,
-      ...foldKeymap,
-      ...commentKeymap,
-      ...gotoLineKeymap,
-      ...autocompleteKeymap,
-      ...lintKeymap,
-    ]),
-  ];
 
   private promQLHighlightMaterialTheme = highlighter({
     deleted: { textDecoration: 'line-through' },
@@ -73,7 +37,7 @@ export class AppComponent implements OnInit {
     // tslint:disable-next-line:no-unused-expression
     const view = new EditorView({
       state: EditorState.create({
-        extensions: [this.basicSetup, promqlExtension.asExtension(), this.promQLHighlightMaterialTheme],
+        extensions: [basicSetup, promqlExtension.asExtension(), this.promQLHighlightMaterialTheme],
       }),
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       // tslint:disable-next-line:no-non-null-assertion

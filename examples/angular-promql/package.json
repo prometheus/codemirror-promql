@@ -19,9 +19,8 @@
     "@angular/platform-browser": "~9.1.0",
     "@angular/platform-browser-dynamic": "~9.1.0",
     "@angular/router": "~9.1.0",
-    "@codemirror/next": "^0.10.0",
-    "@nexucis/codemirror-next-autocomplete": "^0.1.9",
-    "codemirror-promql": "^0.7.0",
+    "@codemirror/next": "^0.13.0",
+    "codemirror-promql": "^0.9.0",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
     "zone.js": "~0.10.2"
