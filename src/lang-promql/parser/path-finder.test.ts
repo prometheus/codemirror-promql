@@ -115,7 +115,7 @@ describe('containsAtLeastOneChild test', () => {
       title: 'should find a node in the given list',
       expr: '1 > 2',
       pos: 0,
-      walkThrough: [Expr, BinaryExpr],
+      walkThrough: [BinaryExpr],
       child: [Eql, Neq, Lte, Lss, Gte, Gtr],
       expectedResult: true,
     },
@@ -123,7 +123,7 @@ describe('containsAtLeastOneChild test', () => {
       title: 'should not find a node in the given list',
       expr: '1 > 2',
       pos: 0,
-      walkThrough: [Expr, BinaryExpr],
+      walkThrough: [BinaryExpr],
       child: [Mul, Div, Mod, Add, Sub],
       expectedResult: false,
     },
@@ -135,8 +135,7 @@ describe('containsAtLeastOneChild test', () => {
       const tree = subTree.name === '' && subTree.firstChild ? subTree.firstChild : subTree;
       const node = walkThrough(tree, ...value.walkThrough);
       chai.expect(node).to.not.null;
-      // TODO this test is failing once the line below is uncommented. TO BE FIXED
-      // chai.expect(node).to.not.undefined;
+      chai.expect(node).to.not.undefined;
       if (node) {
         chai.expect(value.expectedResult).to.equal(containsAtLeastOneChild(node, ...value.child));
       }
