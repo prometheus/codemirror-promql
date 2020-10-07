@@ -9,12 +9,6 @@ This project provides a mode for [CodeMirror Next](https://codemirror.net/6) tha
 > Initially this code was in a private repository. It has been transferred to the `prometheus-community` organization (Thanks to [Julius Volz](https://github.com/juliusv) who helped us with that).
 During the transfer, the repository and the package changed its name from `codemirror-mode-promql` to the current one: `codemirror-promql`.
 
-### Status
-This mode is **not** production ready. If you want to use it, you may encounter some issues.
-API and usage of this mode can be deeply changed between two versions.
-
-See the [Development](#development) section for more information on features and usage.
-
 ### Installation
 This mode is available as an npm package:
 
@@ -37,6 +31,77 @@ Here is a short preview of it looks like currently:
 A roadmap is available in the issue [#5](https://github.com/prometheus-community/codemirror-promql/issues/5).
 
 ## Usage
+
+As the setup of the PromQL language can a bit tricky in CMN, this lib provides a class `PromQLExtension` 
+which is here to help you to configure the different extensions we aim to provide.
+
+### Default setup
+If you want to enjoy about the different features provided without taking too much time to understand how to configure them,
+then the easiest way is this one:
+
+```typescript
+import { PromQLExtension } from 'codemirror-promql';
+import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
+
+const promQL = new PromQLExtension()
+new EditorView({
+  state: EditorState.create({
+    extensions: [basicSetup, promQL.asExtension()],
+  }),
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  // tslint:disable-next-line:no-non-null-assertion
+  parent: document.getElementById('editor')!,
+});
+```
+
+Using the default setup will activate:
+* syntax highlighting
+* an offline autocompletion that will suggest PromQL keywords such as functions / aggregations, depending on the context.
+* an offline linter that will display PromQL syntax errors (which is closer to what Prometheus returns)
+
+### Deactivate autocompletion - linter
+In case you would like to deactivate the linter and/or the autocompletion it's simple as that:
+
+```typescript
+const promQL = new PromQLExtension().activateLinter(false).activateCompletion(false) // here the linter and the autocomplete are deactivated
+```
+
+### Connect the autocompletion extension to a remote Prometheus server
+Connecting the autocompletion extension to a remote Prometheus server will provide autocompletion of metric names, label names, and label values.
+
+#### Use the default Prometheus client
+
+##### Prometheus URL
+If you want to use the default Prometheus client provided by this lib, you have to provide the url used to contact the Prometheus server.
+
+```typescript
+const promQL = new PromQLExtension().setComplete({url: 'https://prometheus.land'})
+```
+
+##### Override FetchFn
+In case your Prometheus server is protected and requires a special HTTP client, you can override the function `fetchFn` that is used to perform any required HTTP request.
+
+```typescript
+const promQL = new PromQLExtension().setComplete({fetchFn: myHTTPClient})
+```
+
+##### Error Handling
+You can set up your own error handler to catch any HTTP error that can occur when the PrometheusClient is contacting Prometheus.
+
+```typescript
+const promQL = new PromQLExtension().setComplete({httpErrorHandler: (error:any) => console.error(error)})
+```
+
+#### Override the default Prometheus client
+In case you are not satisfied by our default Prometheus client, you can still provide your own. 
+It has to implement the interface [PrometheusClient](https://github.com/prometheus-community/codemirror-promql/blob/master/src/lang-promql/client/prometheus.ts#L111-L117).
+
+```typescript
+const promQL = new PromQLExtension().setComplete({prometheusClient: MyPrometheusClient})
+```
+
+### Example
+
 * The development [app](./src/app) can give you an example of how to use it with no TS Framework.
 * [How to use it in an angular project](./examples/angular-promql/README.md)
 
