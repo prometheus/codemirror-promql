@@ -32,11 +32,11 @@ A roadmap is available in the issue [#5](https://github.com/prometheus-community
 
 ## Usage
 
-As the setup of the promQL language can a bit tricky in CMN, this lib provides a class `PromQLExtension` 
-which is here to help you to configure the different extension we aim to provide.
+As the setup of the PromQL language can a bit tricky in CMN, this lib provides a class `PromQLExtension` 
+which is here to help you to configure the different extensions we aim to provide.
 
 ### Default setup
-If you want to enjoy about the different features provides without taking too much time to understand how to configure it,
+If you want to enjoy about the different features provided without taking too much time to understand how to configure them,
 then the easiest way is this one:
 
 ```typescript
@@ -45,56 +45,56 @@ import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setu
 
 const promQL = new PromQLExtension()
 new EditorView({
-      state: EditorState.create({
-        extensions: [basicSetup, promQL.asExtension()],
-      }),
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      // tslint:disable-next-line:no-non-null-assertion
-      parent: document.getElementById('editor')!,
-    });
+  state: EditorState.create({
+    extensions: [basicSetup, promQL.asExtension()],
+  }),
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  // tslint:disable-next-line:no-non-null-assertion
+  parent: document.getElementById('editor')!,
+});
 ```
 
 Using the default setup will activate:
-* the syntax highlight
-* an offline autocompletion that will suggest every promQL keyword such as the function / the aggregation depending of the context.
-* an offline linter that will display the promQL syntax error (which is closer to what Prometheus returns)
+* syntax highlighting
+* an offline autocompletion that will suggest PromQL keywords such as functions / aggregations, depending on the context.
+* an offline linter that will display PromQL syntax errors (which is closer to what Prometheus returns)
 
 ### Deactivate autocompletion - linter
-In case you would like to deactivate, or/and the linter or the autocompletion it's simple as that:
+In case you would like to deactivate the linter and/or the autocompletion it's simple as that:
 
 ```typescript
 const promQL = new PromQLExtension().activateLinter(false).activateCompletion(false) // here the linter and the autocomplete are deactivated
 ```
 
 ### Connect the autocompletion extension to a remote Prometheus server
-Connecting the autocompletion extension to a remote Prometheus server will provide autocompletion of the metric/ the label name and the label value
+Connecting the autocompletion extension to a remote Prometheus server will provide autocompletion of metric names, label names, and label values.
 
-#### Use the default prometheus client
+#### Use the default Prometheus client
 
 ##### Prometheus URL
-If you want to use the default prometheus client provided by this lib, you have to provide the url used to contact the Prometheus server.
+If you want to use the default Prometheus client provided by this lib, you have to provide the url used to contact the Prometheus server.
 
 ```typescript
 const promQL = new PromQLExtension().setComplete({url: 'https://prometheus.land'})
 ```
 
 ##### Override FetchFn
-In case your prometheus server is protected and required a special http client, you can override the function fetchFn that is used to perform any required HTTP request.
+In case your Prometheus server is protected and requires a special HTTP client, you can override the function `fetchFn` that is used to perform any required HTTP request.
 
 ```typescript
 const promQL = new PromQLExtension().setComplete({fetchFn: myHTTPClient})
 ```
 
 ##### Error Handling
-You can setup your own error handler to catch any HTTP error that can occur when the PrometheusClient is contacting Prometheus.
+You can set up your own error handler to catch any HTTP error that can occur when the PrometheusClient is contacting Prometheus.
 
 ```typescript
 const promQL = new PromQLExtension().setComplete({httpErrorHandler: (error:any) => console.error(error)})
 ```
 
-#### Override the default prometheus client
-In case you are not satisfied by our default prometheus client, you can still provide your own. 
-It has to implement the interface [PrometheusClient](https://github.com/prometheus-community/codemirror-promql/blob/master/src/lang-promql/client/prometheus.ts#L111-L117)
+#### Override the default Prometheus client
+In case you are not satisfied by our default Prometheus client, you can still provide your own. 
+It has to implement the interface [PrometheusClient](https://github.com/prometheus-community/codemirror-promql/blob/master/src/lang-promql/client/prometheus.ts#L111-L117).
 
 ```typescript
 const promQL = new PromQLExtension().setComplete({prometheusClient: MyPrometheusClient})
