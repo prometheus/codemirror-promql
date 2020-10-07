@@ -34,41 +34,13 @@ function setCompletion() {
     case 'offline':
       promqlExtension.setComplete();
       break;
-    case 'lsp':
-      promqlExtension.setComplete({
-        lsp: {
-          url: 'http://localhost:8080/lsp',
-        },
-      });
-      break;
     case 'prometheus':
       promqlExtension.setComplete({
-        hybrid: {
-          url: 'http://localhost:9090',
-        },
+        url: 'http://localhost:9090',
       });
       break;
     default:
       promqlExtension.setComplete();
-  }
-}
-
-function setLinter() {
-  const completionSelect = document.getElementById('linter') as HTMLSelectElement;
-  const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
-  switch (completionValue) {
-    case 'offline':
-      promqlExtension.setLinter();
-      break;
-    case 'lsp':
-      promqlExtension.setLinter({
-        lsp: {
-          url: 'http://localhost:8080/lsp',
-        },
-      });
-      break;
-    default:
-      promqlExtension.setLinter();
   }
 }
 
@@ -93,7 +65,6 @@ function createEditor() {
 
 function applyConfiguration(): void {
   setCompletion();
-  setLinter();
   createEditor();
 }
 

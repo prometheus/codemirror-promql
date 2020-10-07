@@ -25,7 +25,7 @@ import { parser } from 'lezer-promql';
 import { styleTags } from '@codemirror/next/highlight';
 import { Extension } from '@codemirror/next/state';
 import { CompleteConfiguration, CompleteStrategy, newCompleteStrategy } from './complete';
-import { LintConfiguration, LintStrategy, newLintStrategy, promQLLinter } from './lint';
+import { LintStrategy, newLintStrategy, promQLLinter } from './lint';
 import { CompletionContext } from '@codemirror/next/autocomplete';
 
 export const promQLSyntax = LezerSyntax.define(
@@ -62,7 +62,7 @@ export const promQLSyntax = LezerSyntax.define(
  */
 export class PromQLExtension {
   private complete: CompleteStrategy;
-  private lint: LintStrategy;
+  private readonly lint: LintStrategy;
   private enableCompletion: boolean;
   private enableLinter: boolean;
 
@@ -75,11 +75,6 @@ export class PromQLExtension {
 
   setComplete(conf?: CompleteConfiguration): PromQLExtension {
     this.complete = newCompleteStrategy(conf);
-    return this;
-  }
-
-  setLinter(conf?: LintConfiguration): PromQLExtension {
-    this.lint = newLintStrategy(conf);
     return this;
   }
 
