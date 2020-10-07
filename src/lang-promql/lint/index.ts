@@ -22,8 +22,6 @@
 
 import { EditorView } from '@codemirror/next/view';
 import { Diagnostic, linter } from '@codemirror/next/lint';
-import { LSPLint } from './lsp';
-import { HTTPLSPClient, LSPClient } from '../client/lsp';
 import { HybridLint } from './hybrid';
 
 type lintFunc = (view: EditorView) => readonly Diagnostic[] | Promise<readonly Diagnostic[]>;
@@ -34,26 +32,7 @@ export interface LintStrategy {
   promQL(this: LintStrategy): lintFunc;
 }
 
-// LintConfiguration should be used to customize the autocompletion.
-export interface LintConfiguration {
-  lsp?: {
-    url?: string;
-    lspClient?: LSPClient;
-    httpErrorHandler?: (error: any) => void;
-  };
-}
-
-export function newLintStrategy(conf?: LintConfiguration): LintStrategy {
-  if (conf?.lsp) {
-    const lspConf = conf.lsp;
-    if (lspConf.lspClient) {
-      return new LSPLint(lspConf.lspClient);
-    }
-    if (lspConf.url) {
-      return new LSPLint(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler));
-    }
-    throw new Error('the url or the lspClient must be set');
-  }
+export function newLintStrategy(): LintStrategy {
   return new HybridLint();
 }
 

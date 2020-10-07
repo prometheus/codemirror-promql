@@ -62,29 +62,20 @@ This should create a tab in your browser with the development app that contains 
 
 ### Autocompletion
 
-The autocompletion feature has 3 different modes, each requiring a different setup:
+The autocompletion feature has 2 different modes, each requiring a different setup:
 
- * **lsp**: This mode requires starting a Prometheus server and the [promql-langserver](https://github.com/prometheus-community/promql-langserver) with the following configuration:
- ```yaml
-prometheus_url: "http://localhost:9090"
-rest_api_port: 8000
-```
  * **prometheus**: This mode requires starting a Prometheus server listening on port 9090.
  * **offline**: This mode doesn't require anything.
 
- **Note:** To avoid CORS issues when testing LSP-based completion, the development web server running on port 8080 proxies LSP requests to the language server backend running on port 8000. Alternatively, if you decide to remove this proxying and want the browser to be able to speak to your LSP backend directly, start your browser with web security disabled.
- * Example for Google Chrome on Windows:
-    * `<Win>` + `r`  and copy and paste `chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security`
-
 ### Linter
 
-The linter feature has 2 different modes, each requiring a different setup:
+The linter feature has only an offline mode that doesn't require any particular setup.
 
- * **lsp**: This mode requires the same setup as described before
- * **offline**: This mode doesn't require anything
- 
- **Note:** Changing the linter mode during runtime requires reloading CodeMirror entirely.
- The [app](./src/app/app.ts) can give you an idea of how to do it.
+In case you are bothered by the linter, you can deactivate like that:
+
+```typescript
+const extension = new PromQLExtension().activateLinter(false)
+```
 
 ### Deploy to Github Pages
 * `npm install -g angular-cli-ghpages`

@@ -20,9 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { LSPComplete } from './lsp';
 import { HybridComplete } from './hybrid';
-import { HTTPLSPClient, LSPClient } from '../client/lsp';
 import { HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
 import { FetchFn } from '../client';
 import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
@@ -34,49 +32,22 @@ export interface CompleteStrategy {
 
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
-  lsp?: {
-    // Provide these settings when not using a custom LSPClient.
-    url?: string;
-    httpErrorHandler?: (error: any) => void;
-    fetchFn?: FetchFn;
+  // Provide these settings when not using a custom PrometheusClient.
+  url?: string;
+  lookbackInterval?: number;
+  httpErrorHandler?: (error: any) => void;
+  fetchFn?: FetchFn;
 
-    // When providing this custom LSPClient, the settings above will not be used.
-    lspClient?: LSPClient;
-  };
-  hybrid?: {
-    // Provide these settings when not using a custom PrometheusClient.
-    url?: string;
-    lookbackInterval?: number;
-    httpErrorHandler?: (error: any) => void;
-    fetchFn?: FetchFn;
-
-    // When providing this custom PrometheusClient, the settings above will not be used.
-    prometheusClient?: PrometheusClient;
-  };
+  // When providing this custom PrometheusClient, the settings above will not be used.
+  prometheusClient?: PrometheusClient;
 }
 
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
-  if (conf?.lsp) {
-    const lspConf = conf.lsp;
-    if (lspConf.lspClient) {
-      return new LSPComplete(lspConf.lspClient);
-    }
-    if (lspConf.url) {
-      return new LSPComplete(new HTTPLSPClient(lspConf.url, lspConf.httpErrorHandler, lspConf.fetchFn));
-    }
-    throw new Error('the url or the lspClient must be set');
+  if (conf?.prometheusClient) {
+    return new HybridComplete(conf.prometheusClient);
   }
-  if (conf?.hybrid) {
-    const hybridConf = conf.hybrid;
-    if (hybridConf.prometheusClient) {
-      return new HybridComplete(hybridConf.prometheusClient);
-    }
-    if (hybridConf.url) {
-      return new HybridComplete(
-        new HTTPPrometheusClient(hybridConf.url, hybridConf.httpErrorHandler, hybridConf.lookbackInterval, hybridConf.fetchFn)
-      );
-    }
-    throw new Error('the url or the prometheusClient must be set');
+  if (conf?.url) {
+    return new HybridComplete(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn));
   }
   return new HybridComplete();
 }

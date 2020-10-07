@@ -20,7 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-export { LSPClient, LSPBody } from './lsp';
 export { PrometheusClient } from './prometheus';
 
 export type FetchFn = (input: RequestInfo, init?: RequestInit) => Promise<Response>;
