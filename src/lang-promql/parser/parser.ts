@@ -59,7 +59,7 @@ import {
   VectorSelector,
 } from 'lezer-promql';
 import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
-import { getFunction, getType, ValueType } from './type';
+import { buildVectorMatching, getFunction, getType, ValueType, VectorMatchCardinality } from './type';
 import { buildLabelMatchers, Matcher } from './matcher';
 import { EditorState } from '@codemirror/next/state';
 
@@ -209,13 +209,38 @@ export class Parser {
         this.addDiagnostic(node, 'comparisons between scalars must use BOOL modifier');
       }
     }
-    // TODO missing check regarding cardManyToOne or cardOneToMany
-    // TODO missing check regarding the matching label
+
+    const vectorMatching = buildVectorMatching(this.state, node);
+    if (vectorMatching !== null && vectorMatching.on) {
+      for (const l1 of vectorMatching.matchingLabels) {
+        for (const l2 of vectorMatching.include) {
+          if (l1 === l2) {
+            this.addDiagnostic(node, `label "${l1}" must not occur in ON and GROUP clause at once`);
+          }
+        }
+      }
+    }
+
     if (lt !== ValueType.scalar && lt !== ValueType.vector) {
       this.addDiagnostic(lExpr, 'binary expression must contain only scalar and instant vector types');
     }
     if (rt !== ValueType.scalar && rt !== ValueType.vector) {
       this.addDiagnostic(rExpr, 'binary expression must contain only scalar and instant vector types');
+    }
+
+    if ((lt !== ValueType.vector || rt !== ValueType.vector) && vectorMatching !== null) {
+      if (vectorMatching.matchingLabels.length > 0) {
+        this.addDiagnostic(node, 'vector matching only allowed between instant vectors');
+      }
+    } else {
+      if (isSetOperator) {
+        if (vectorMatching?.card === VectorMatchCardinality.CardOneToMany || vectorMatching?.card === VectorMatchCardinality.CardManyToOne) {
+          this.addDiagnostic(node, 'no grouping allowed for set operations');
+        }
+        if (vectorMatching?.card !== VectorMatchCardinality.CardManyToMany) {
+          this.addDiagnostic(node, 'set operations must always be many-to-many');
+        }
+      }
     }
     if ((lt === ValueType.scalar || rt === ValueType.scalar) && isSetOperator) {
       this.addDiagnostic(node, 'set operator not allowed in binary scalar expression');

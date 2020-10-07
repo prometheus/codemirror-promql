@@ -26,8 +26,10 @@ import {
   Absent,
   AbsentOverTime,
   AggregateExpr,
+  And,
   AvgOverTime,
   BinaryExpr,
+  BinModifier,
   Ceil,
   Changes,
   ClampMax,
@@ -42,10 +44,17 @@ import {
   Expr,
   Floor,
   FunctionCall,
+  GroupingLabel,
+  GroupingLabelList,
+  GroupingLabels,
+  GroupLeft,
+  GroupModifiers,
+  GroupRight,
   HistogramQuantile,
   HoltWinters,
   Hour,
   Idelta,
+  Ignoring,
   Increase,
   Irate,
   LabelJoin,
@@ -55,10 +64,15 @@ import {
   Log2,
   MatrixSelector,
   MaxOverTime,
+  MaybeGroupingLabels,
   MinOverTime,
   Minute,
   Month,
   NumberLiteral,
+  OffsetExpr,
+  On,
+  OnOrIgnoring,
+  Or,
   ParenExpr,
   PredictLinear,
   QuantileOverTime,
@@ -77,12 +91,13 @@ import {
   Time,
   Timestamp,
   UnaryExpr,
+  Unless,
   Vector,
   VectorSelector,
   Year,
-  OffsetExpr,
 } from 'lezer-promql';
-import { walkThrough } from './path-finder';
+import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
+import { EditorState } from '@codemirror/next/state';
 
 export enum ValueType {
   none = 'none',
@@ -432,4 +447,74 @@ export function getType(node: Subtree | null | undefined): ValueType {
     default:
       return ValueType.none;
   }
+}
+
+export enum VectorMatchCardinality {
+  CardOneToOne = 'one-to-one',
+  CardManyToOne = 'many-to-one',
+  CardOneToMany = 'one-to-many',
+  CardManyToMany = 'many-to-many',
+}
+
+export interface VectorMatching {
+  // The cardinality of the two Vectors.
+  card: VectorMatchCardinality;
+  // MatchingLabels contains the labels which define equality of a pair of
+  // elements from the Vectors.
+  matchingLabels: string[];
+  // On includes the given label names from matching,
+  // rather than excluding them.
+  on: boolean;
+  // Include contains additional labels that should be included in
+  // the result from the side with the lower cardinality.
+  include: string[];
+}
+
+export function buildVectorMatching(state: EditorState, binaryNode: Subtree) {
+  if (!binaryNode || binaryNode.type.id !== BinaryExpr) {
+    return null;
+  }
+  const result: VectorMatching = {
+    card: VectorMatchCardinality.CardOneToOne,
+    matchingLabels: [],
+    on: false,
+    include: [],
+  };
+  const on = walkThrough(binaryNode, BinModifier, GroupModifiers, OnOrIgnoring, On);
+  const ignoring = walkThrough(binaryNode, BinModifier, GroupModifiers, OnOrIgnoring, Ignoring);
+  if (on || ignoring) {
+    result.on = on !== null && on !== undefined;
+    const labels = retrieveAllRecursiveNodes(
+      walkThrough(binaryNode, BinModifier, GroupModifiers, OnOrIgnoring, GroupingLabels),
+      GroupingLabelList,
+      GroupingLabel
+    );
+    if (labels.length > 0) {
+      for (const label of labels) {
+        result.matchingLabels.push(state.sliceDoc(label.start, label.end));
+      }
+    }
+  }
+
+  const groupLeft = walkThrough(binaryNode, BinModifier, GroupModifiers, GroupLeft);
+  const groupRight = walkThrough(binaryNode, BinModifier, GroupModifiers, GroupRight);
+  if (groupLeft || groupRight) {
+    result.card = groupLeft ? VectorMatchCardinality.CardManyToOne : VectorMatchCardinality.CardOneToMany;
+    const includeLabels = retrieveAllRecursiveNodes(
+      walkThrough(binaryNode, BinModifier, GroupModifiers, MaybeGroupingLabels, GroupingLabels),
+      GroupingLabelList,
+      GroupingLabel
+    );
+    if (includeLabels.length > 0) {
+      for (const label of includeLabels) {
+        result.include.push(state.sliceDoc(label.start, label.end));
+      }
+    }
+  }
+
+  const isSetOperator = containsAtLeastOneChild(binaryNode, And, Or, Unless);
+  if (isSetOperator && result.card === VectorMatchCardinality.CardOneToOne) {
+    result.card = VectorMatchCardinality.CardManyToMany;
+  }
+  return result;
 }
