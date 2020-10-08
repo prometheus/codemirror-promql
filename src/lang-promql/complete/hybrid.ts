@@ -486,7 +486,20 @@ export class HybridComplete implements CompleteStrategy {
             if (metadata) {
               if (metadata.length > 1) {
                 // it means the metricName has different possible helper and type
-                node.detail = 'unknown';
+                for (const m of metadata) {
+                  if (node.detail === '') {
+                    node.detail = m.type;
+                  } else if (node.detail !== m.type) {
+                    node.detail = 'unknown';
+                    node.info = 'multiple different definitions for this metric';
+                  }
+
+                  if (node.info === '') {
+                    node.info = m.help;
+                  } else if (node.info !== m.help) {
+                    node.info = 'multiple different definitions for this metric';
+                  }
+                }
               } else if (metadata.length === 1) {
                 let { type, help } = metadata[0];
                 if (type === 'histogram' || type === 'summary') {
