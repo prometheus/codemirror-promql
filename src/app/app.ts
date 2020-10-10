@@ -22,7 +22,7 @@
 
 import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
 import { PromQLExtension } from '../lang-promql';
-import { promQLHighlightMaterialTheme } from './theme';
+import { customTheme, promQLHighlightMaterialTheme } from './theme';
 
 const promqlExtension = new PromQLExtension();
 let editor: EditorView;
@@ -55,7 +55,7 @@ function createEditor() {
   }
   editor = new EditorView({
     state: EditorState.create({
-      extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme],
+      extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme, customTheme],
       doc: doc,
     }),
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

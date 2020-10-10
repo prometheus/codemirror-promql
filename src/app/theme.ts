@@ -1,4 +1,5 @@
 import { highlighter } from '@codemirror/next/highlight';
+import { EditorView } from '@codemirror/next/basic-setup';
 
 // promQLHighlightMaterialTheme is based on the material theme defined here:
 // https://codemirror.net/theme/material.css
@@ -22,4 +23,17 @@ export const promQLHighlightMaterialTheme = highlighter({
   'propertyName definition': { color: '#00c' },
   comment: { color: '#546E7A' },
   meta: { color: '#FFCB6B' },
+});
+
+export const customTheme = EditorView.theme({
+  $completionDetail: {
+    marginLeft: '0.5em',
+    float: 'right',
+    color: '#9d4040',
+  },
+  $completionMatchedText: {
+    color: '#83080a',
+    textDecoration: 'none',
+    fontWeight: 'bold',
+  },
 });
