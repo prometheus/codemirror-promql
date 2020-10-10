@@ -127,6 +127,12 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.LabelValue, metricName: 'metric_name', labelName: 'labelName' }],
     },
     {
+      title: 'autocomplete the labelValue associated to a labelName',
+      expr: '{labelName=""}',
+      pos: 12, // cursor is between the quotes
+      expectedContext: [{ kind: ContextKind.LabelValue, metricName: '', labelName: 'labelName' }],
+    },
+    {
       title: 'autocomplete aggregate operation modifier',
       expr: 'sum() b',
       pos: 7, // cursor is between the quotes

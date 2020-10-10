@@ -343,7 +343,7 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         // Get the labelName.
         // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
         let labelName = '';
-        if (node.parent.firstChild && node.parent.firstChild.type.id === LabelName) {
+        if (node.parent.firstChild?.type.id === LabelName) {
           labelName = state.sliceDoc(node.parent.firstChild.start, node.parent.firstChild.end);
         }
         // then find the metricName if it exists
@@ -412,8 +412,6 @@ export class HybridComplete implements CompleteStrategy {
     const { state, pos } = context;
     const tree = state.tree.resolve(pos, -1);
     const contexts = analyzeCompletion(state, tree);
-    console.log(`${state.tree.resolve(0, -1)}`);
-    console.log(`${tree.name}`)
     let asyncResult: Promise<AutoCompleteNodes[]> = Promise.resolve([]);
     let completeSnippet = false;
     let span = true;
