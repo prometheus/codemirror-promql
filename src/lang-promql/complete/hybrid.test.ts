@@ -198,6 +198,24 @@ describe('analyzeCompletion test', () => {
       pos: 16,
       expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
     },
+    {
+      title: 'autocomplete duration for a matrixSelector',
+      expr: 'go[]',
+      pos: 3,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a matrixSelector 2',
+      expr: 'go[5]',
+      pos: 4,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a matrixSelector 3',
+      expr: 'rate(my_metric{l1="l2"}[25])',
+      pos: 26,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
   ];
   testCases.forEach((value) => {
     it(value.title, () => {
@@ -312,6 +330,24 @@ describe('computeStartCompletePosition test', () => {
       expr: 'sum(http_requests_total{method="GET"} offset 4)',
       pos: 46,
       expectedStart: 46,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector',
+      expr: 'go[]',
+      pos: 3,
+      expectedStart: 3,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector 2',
+      expr: 'go[5]',
+      pos: 4,
+      expectedStart: 4,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector 3',
+      expr: 'rate(my_metric{l1="l2"}[25])',
+      pos: 26,
+      expectedStart: 26,
     },
   ];
   testCases.forEach((value) => {

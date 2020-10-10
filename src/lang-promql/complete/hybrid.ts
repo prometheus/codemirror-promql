@@ -46,6 +46,7 @@ import {
   Lss,
   Lte,
   MatchOp,
+  MatrixSelector,
   MetricIdentifier,
   Mod,
   Mul,
@@ -132,7 +133,7 @@ function getMetricNameInVectorSelector(tree: Subtree, state: EditorState): strin
   return state.sliceDoc(currentNode.start, currentNode.end);
 }
 
-function arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: number, includeSnippet = false): CompletionResult {
+function arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: number, includeSnippet = false, span = true): CompletionResult {
   const options: Completion[] = [];
 
   for (const completionList of data) {
@@ -152,7 +153,7 @@ function arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: nu
     from: from,
     to: to,
     options: options,
-    span: /^[a-zA-Z0-9_:]+$/,
+    span: span ? /^[a-zA-Z0-9_:]+$/ : undefined,
   } as CompletionResult;
 }
 
@@ -181,7 +182,11 @@ export function computeStartCompletePosition(node: Subtree, pos: number): number
     // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
     // `!` is contain in the error node so in the lastChild in this situation
     start = node.lastChild.start;
-  } else if (node.type.id === OffsetExpr || (node.type.id === 0 && node.parent?.type.id === OffsetExpr)) {
+  } else if (
+    node.type.id === OffsetExpr ||
+    (node.type.id === MatrixSelector && containsAtLeastOneChild(node, 0)) ||
+    (node.type.id === 0 && (node.parent?.type.id === OffsetExpr || node.parent?.type.id === MatrixSelector))
+  ) {
     start = pos;
   }
   return start;
@@ -199,6 +204,13 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         // `metric_name offset 5` that leads to this tree:
         // `Expr(OffsetExpr(Expr(VectorSelector(MetricIdentifier(Identifier))),Offset,⚠))`
         // Here we can just autocomplete a duration.
+        result.push({ kind: ContextKind.Duration });
+        break;
+      }
+      if (node.parent?.type.id === MatrixSelector) {
+        // we are likely in the given situation:
+        // `metric_name{}[5]`
+        // We can also just autocomplete a duration
         result.push({ kind: ContextKind.Duration });
         break;
       }
@@ -346,6 +358,14 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
     case FunctionCallBody:
       result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
+    case MatrixSelector:
+      if (containsAtLeastOneChild(node, 0)) {
+        // we are likely in the given situation:
+        // `my_metric[]`
+        // we should autocomplete the duration.
+        result.push({ kind: ContextKind.Duration });
+      }
+      break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
         result.push({ kind: ContextKind.MatchOp });
@@ -392,8 +412,11 @@ export class HybridComplete implements CompleteStrategy {
     const { state, pos } = context;
     const tree = state.tree.resolve(pos, -1);
     const contexts = analyzeCompletion(state, tree);
+    console.log(`${state.tree.resolve(0, -1)}`);
+    console.log(`${tree.name}`)
     let asyncResult: Promise<AutoCompleteNodes[]> = Promise.resolve([]);
     let completeSnippet = false;
+    let span = true;
     for (const context of contexts) {
       switch (context.kind) {
         case ContextKind.Aggregation:
@@ -427,6 +450,7 @@ export class HybridComplete implements CompleteStrategy {
           });
           break;
         case ContextKind.Duration:
+          span = false;
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNode.duration);
           });
@@ -454,7 +478,7 @@ export class HybridComplete implements CompleteStrategy {
       }
     }
     return asyncResult.then((result) => {
-      return arrayToCompletionResult(result, computeStartCompletePosition(tree, pos), pos, completeSnippet);
+      return arrayToCompletionResult(result, computeStartCompletePosition(tree, pos), pos, completeSnippet, span);
     });
   }
 
