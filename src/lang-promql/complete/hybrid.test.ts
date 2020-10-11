@@ -205,19 +205,19 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
     },
     {
-      title: 'autocomplete duration for a matrixSelector',
+      title: 'not autocompleting duration for a matrixSelector',
       expr: 'go[]',
       pos: 3,
-      expectedContext: [{ kind: ContextKind.Duration }],
+      expectedContext: [],
     },
     {
-      title: 'autocomplete duration for a matrixSelector 2',
+      title: 'autocomplete duration for a matrixSelector',
       expr: 'go[5]',
       pos: 4,
       expectedContext: [{ kind: ContextKind.Duration }],
     },
     {
-      title: 'autocomplete duration for a matrixSelector 3',
+      title: 'autocomplete duration for a matrixSelector 2',
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
       expectedContext: [{ kind: ContextKind.Duration }],

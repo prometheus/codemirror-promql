@@ -358,14 +358,6 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
     case FunctionCallBody:
       result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
-    case MatrixSelector:
-      if (containsAtLeastOneChild(node, 0)) {
-        // we are likely in the given situation:
-        // `my_metric[]`
-        // we should autocomplete the duration.
-        result.push({ kind: ContextKind.Duration });
-      }
-      break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
         result.push({ kind: ContextKind.MatchOp });
