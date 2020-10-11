@@ -127,6 +127,12 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.LabelValue, metricName: 'metric_name', labelName: 'labelName' }],
     },
     {
+      title: 'autocomplete the labelValue associated to a labelName',
+      expr: '{labelName=""}',
+      pos: 12, // cursor is between the quotes
+      expectedContext: [{ kind: ContextKind.LabelValue, metricName: '', labelName: 'labelName' }],
+    },
+    {
       title: 'autocomplete aggregate operation modifier',
       expr: 'sum() b',
       pos: 7, // cursor is between the quotes
@@ -197,6 +203,30 @@ describe('analyzeCompletion test', () => {
       expr: 'rate(foo[5m]) un',
       pos: 16,
       expectedContext: [{ kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
+    },
+    {
+      title: 'not autocompleting duration for a matrixSelector',
+      expr: 'go[]',
+      pos: 3,
+      expectedContext: [],
+    },
+    {
+      title: 'not autocompleting duration for a matrixSelector 2',
+      expr: 'go{l1="l2"}[]',
+      pos: 12,
+      expectedContext: [],
+    },
+    {
+      title: 'autocomplete duration for a matrixSelector',
+      expr: 'go[5]',
+      pos: 4,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a matrixSelector 2',
+      expr: 'rate(my_metric{l1="l2"}[25])',
+      pos: 26,
+      expectedContext: [{ kind: ContextKind.Duration }],
     },
   ];
   testCases.forEach((value) => {
@@ -312,6 +342,24 @@ describe('computeStartCompletePosition test', () => {
       expr: 'sum(http_requests_total{method="GET"} offset 4)',
       pos: 46,
       expectedStart: 46,
+    },
+    {
+      title: 'start should not be equal to the pos for the duration in a matrix selector',
+      expr: 'go[]',
+      pos: 3,
+      expectedStart: 0,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector',
+      expr: 'go[5]',
+      pos: 4,
+      expectedStart: 4,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector 2',
+      expr: 'rate(my_metric{l1="l2"}[25])',
+      pos: 26,
+      expectedStart: 26,
     },
   ];
   testCases.forEach((value) => {
