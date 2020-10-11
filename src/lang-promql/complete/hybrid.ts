@@ -184,7 +184,6 @@ export function computeStartCompletePosition(node: Subtree, pos: number): number
     start = node.lastChild.start;
   } else if (
     node.type.id === OffsetExpr ||
-    (node.type.id === MatrixSelector && containsAtLeastOneChild(node, 0)) ||
     (node.type.id === 0 && (node.parent?.type.id === OffsetExpr || node.parent?.type.id === MatrixSelector))
   ) {
     start = pos;

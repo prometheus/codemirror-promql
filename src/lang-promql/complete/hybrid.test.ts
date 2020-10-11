@@ -211,6 +211,12 @@ describe('analyzeCompletion test', () => {
       expectedContext: [],
     },
     {
+      title: 'not autocompleting duration for a matrixSelector 2',
+      expr: 'go{l1="l2"}[]',
+      pos: 12,
+      expectedContext: [],
+    },
+    {
       title: 'autocomplete duration for a matrixSelector',
       expr: 'go[5]',
       pos: 4,
@@ -338,19 +344,19 @@ describe('computeStartCompletePosition test', () => {
       expectedStart: 46,
     },
     {
-      title: 'start should be equal to the pos for the duration in a matrix selector',
+      title: 'start should not be equal to the pos for the duration in a matrix selector',
       expr: 'go[]',
       pos: 3,
-      expectedStart: 3,
+      expectedStart: 0,
     },
     {
-      title: 'start should be equal to the pos for the duration in a matrix selector 2',
+      title: 'start should be equal to the pos for the duration in a matrix selector',
       expr: 'go[5]',
       pos: 4,
       expectedStart: 4,
     },
     {
-      title: 'start should be equal to the pos for the duration in a matrix selector 3',
+      title: 'start should be equal to the pos for the duration in a matrix selector 2',
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
       expectedStart: 26,
