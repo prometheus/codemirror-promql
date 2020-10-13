@@ -19,7 +19,12 @@ export const binOpTerms = [
   { label: 'or' },
   { label: 'unless' },
 ];
-export const binOpModifierTerms = [{ label: 'on' }, { label: 'ignoring' }, { label: 'group_left' }, { label: 'group_right' }];
+export const binOpModifierTerms = [
+  { label: 'on', info: 'Match only on specified labels' },
+  { label: 'ignoring', info: 'Ignore specified labels for matching' },
+  { label: 'group_left', info: 'Allow many-to-one matching' },
+  { label: 'group_right', info: 'Allow one-to-many matching' },
+];
 export const functionIdentifierTerms = [
   {
     label: 'abs',
