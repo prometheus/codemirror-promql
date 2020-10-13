@@ -320,7 +320,16 @@ export const aggregateOpTerms = [
   },
 ];
 
-export const aggregateOpModifierTerms = [{ label: 'by' }, { label: 'without' }];
+export const aggregateOpModifierTerms = [
+  {
+    label: 'by',
+    info: 'Keep the listed labels, remove all others.',
+  },
+  {
+    label: 'without',
+    info: 'Remove the listed labels, preserve all others.',
+  },
+];
 
 export const snippets: readonly Completion[] = [
   {
