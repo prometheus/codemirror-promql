@@ -29,9 +29,7 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
-    "lezer-promql": "^0.12.0",
-    "lezer-tree": "^0.11.1",
-    "vscode-languageserver-types": "^3.15.1"
+    "lezer-promql": "^0.12.0"
   },
   "devDependencies": {
     "@codemirror/next": "^0.13.0",
