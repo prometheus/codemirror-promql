@@ -9,7 +9,6 @@ import { highlighter } from '@codemirror/next/highlight';
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent implements OnInit {
-
   private promQLHighlightMaterialTheme = highlighter({
     deleted: { textDecoration: 'line-through' },
     inserted: { textDecoration: 'underline' },
@@ -32,12 +31,25 @@ export class AppComponent implements OnInit {
     meta: { color: '#FFCB6B' },
   });
 
+  private customTheme = EditorView.theme({
+    $completionDetail: {
+      marginLeft: '0.5em',
+      float: 'right',
+      color: '#9d4040',
+    },
+    $completionMatchedText: {
+      color: '#83080a',
+      textDecoration: 'none',
+      fontWeight: 'bold',
+    },
+  });
+
   ngOnInit(): void {
     const promqlExtension = new PromQLExtension();
     // tslint:disable-next-line:no-unused-expression
     const view = new EditorView({
       state: EditorState.create({
-        extensions: [basicSetup, promqlExtension.asExtension(), this.promQLHighlightMaterialTheme],
+        extensions: [basicSetup, promqlExtension.asExtension(), this.promQLHighlightMaterialTheme, this.customTheme],
       }),
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       // tslint:disable-next-line:no-non-null-assertion
