@@ -21,8 +21,19 @@
 // SOFTWARE.
 
 import chai from 'chai';
-import { analyzeCompletion, computeStartCompletePosition, ContextKind } from './hybrid';
+import { analyzeCompletion, computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
 import { createEditorState } from '../../test/utils';
+import { Completion, CompletionContext } from '@codemirror/next/autocomplete';
+import {
+  aggregateOpModifierTerms,
+  aggregateOpTerms,
+  binOpModifierTerms,
+  binOpTerms,
+  durationTerms,
+  functionIdentifierTerms,
+  matchOpTerms,
+  snippets,
+} from './promql.terms';
 
 describe('analyzeCompletion test', () => {
   const testCases = [
@@ -368,6 +379,381 @@ describe('computeStartCompletePosition test', () => {
       const node = state.tree.resolve(value.pos, -1);
       const result = computeStartCompletePosition(node, value.pos);
       chai.expect(value.expectedStart).to.equal(result);
+    });
+  });
+});
+
+describe('autocomplete promQL test', () => {
+  const testCases = [
+    {
+      title: 'offline simple function/aggregation autocompletion',
+      expr: 'go_',
+      pos: 3,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 0,
+        to: 3,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline function/aggregation autocompletion in aggregation',
+      expr: 'sum()',
+      pos: 4,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 4,
+        to: 4,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline function/aggregation autocompletion in aggregation 2',
+      expr: 'sum(ra)',
+      pos: 6,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 4,
+        to: 6,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline function/aggregation autocompletion in aggregation 3',
+      expr: 'sum(rate())',
+      pos: 9,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 9,
+        to: 9,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline function/aggregation autocompletion in aggregation 4',
+      expr:
+        'sum by (instance, job) ( sum_over(scrape_series_added[1h])) / sum by (instance, job) (sum_over_time(scrape_samples_scraped[1h])) > 0.1 and sum by(instance, job) (scrape_samples_scraped{) > 100',
+      pos: 33,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 25,
+        to: 33,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'autocomplete binOp modifier or metric',
+      expr: 'metric_name / ignor',
+      pos: 19,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, snippets),
+        from: 14,
+        to: 19,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'autocomplete binOp modifier or metric 2',
+      expr: 'sum(http_requests_total{method="GET"} / o)',
+      pos: 41,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, snippets),
+        from: 40,
+        to: 41,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing',
+      expr: 'sum by ()',
+      pos: 8, // cursor is between the bracket
+      prometheusClient: undefined,
+      expectedResult: {
+        options: [],
+        from: 8,
+        to: 8,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing 2',
+      expr: 'sum by (myL)',
+      pos: 11, // cursor is between the bracket after the string myL
+      expectedResult: {
+        options: [],
+        from: 8,
+        to: 11,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing 3',
+      expr: 'sum by (myLabel1, myLab)',
+      pos: 23, // cursor is between the bracket after the string myLab
+      expectedResult: {
+        options: [],
+        from: 18,
+        to: 23,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing 4',
+      expr: 'metric_name{}',
+      pos: 12, // cursor is between the bracket
+      expectedResult: {
+        options: [],
+        from: 12,
+        to: 12,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing 5',
+      expr: '{}',
+      pos: 1, // cursor is between the bracket
+      expectedResult: {
+        options: [],
+        from: 1,
+        to: 1,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing 6',
+      expr: 'metric_name{myL}',
+      pos: 15, // cursor is between the bracket after the string myL
+      expectedResult: {
+        options: [],
+        from: 12,
+        to: 15,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelName return nothing 7',
+      expr: '{myL}',
+      pos: 4, // cursor is between the bracket after the string myL
+      expectedResult: {
+        options: [],
+        from: 1,
+        to: 4,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelValue return nothing',
+      expr: 'metric_name{labelName=""}',
+      pos: 23, // cursor is between the quotes
+      expectedResult: {
+        options: [],
+        from: 23,
+        to: 23,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete labelValue return nothing 2',
+      expr: '{labelName=""}',
+      pos: 12, // cursor is between the quotes
+      expectedResult: {
+        options: [],
+        from: 12,
+        to: 12,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete aggregate operation modifier',
+      expr: 'sum() b',
+      pos: 7, // cursor is between the quotes
+      expectedResult: {
+        options: aggregateOpModifierTerms,
+        from: 6,
+        to: 7,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete aggregate operation modifier or binary operator or offset',
+      expr: 'sum b',
+      pos: 5, // cursor is after 'b'
+      expectedResult: {
+        options: ([] as Completion[]).concat(aggregateOpModifierTerms, binOpTerms, [{ label: 'offset' }]),
+        from: 4,
+        to: 5,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete binOp',
+      expr: 'metric_name !',
+      pos: 13,
+      expectedResult: {
+        options: binOpTerms,
+        from: 12,
+        to: 13,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete binOp 2',
+      expr: 'metric_name =',
+      pos: 13,
+      expectedResult: {
+        options: binOpTerms,
+        from: 12,
+        to: 13,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete matchOp',
+      expr: 'go{instance=""}',
+      pos: 12, // cursor is after the 'equal'
+      expectedResult: {
+        options: matchOpTerms,
+        from: 11,
+        to: 12,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete matchOp 2',
+      expr: 'metric_name{labelName!}',
+      pos: 22, // cursor is after '!'
+      expectedResult: {
+        options: matchOpTerms,
+        from: 21,
+        to: 22,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete duration with offset',
+      expr: 'http_requests_total offset 5',
+      pos: 28,
+      expectedResult: {
+        options: durationTerms,
+        from: 28,
+        to: 28,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration with offset 2',
+      expr: 'sum(http_requests_total{method="GET"} offset 4)',
+      pos: 46,
+      expectedResult: {
+        options: durationTerms,
+        from: 46,
+        to: 46,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete offset or binOp',
+      expr: 'http_requests_total off',
+      pos: 23,
+      expectedResult: {
+        options: ([] as Completion[]).concat(binOpTerms, [{ label: 'offset' }]),
+        from: 20,
+        to: 23,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete offset or binOp 2',
+      expr: 'metric_name unle',
+      pos: 16,
+      expectedResult: {
+        options: ([] as Completion[]).concat(binOpTerms, [{ label: 'offset' }]),
+        from: 12,
+        to: 16,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete offset or binOp 3',
+      expr: 'http_requests_total{method="GET"} off',
+      pos: 37,
+      expectedResult: {
+        options: ([] as Completion[]).concat(binOpTerms, [{ label: 'offset' }]),
+        from: 34,
+        to: 37,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete offset or binOp 4',
+      expr: 'rate(foo[5m]) un',
+      pos: 16,
+      expectedResult: {
+        options: ([] as Completion[]).concat(binOpTerms, [{ label: 'offset' }]),
+        from: 14,
+        to: 16,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline not autocompleting duration for a matrixSelector',
+      expr: 'go[]',
+      pos: 3,
+      expectedResult: {
+        options: [],
+        from: 0,
+        to: 3,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline not autocompleting duration for a matrixSelector 2',
+      expr: 'go{l1="l2"}[]',
+      pos: 12,
+      expectedResult: {
+        options: [],
+        from: 0,
+        to: 12,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a matrixSelector',
+      expr: 'go[5]',
+      pos: 4,
+      expectedResult: {
+        options: durationTerms,
+        from: 4,
+        to: 4,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a matrixSelector 2',
+      expr: 'rate(my_metric{l1="l2"}[25])',
+      pos: 26,
+      expectedResult: {
+        options: durationTerms,
+        from: 26,
+        to: 26,
+        span: undefined,
+      },
+    },
+  ];
+  testCases.forEach((value) => {
+    it(value.title, async () => {
+      const state = createEditorState(value.expr);
+      const context = new CompletionContext(state, value.pos, true);
+      const completion = new HybridComplete(value.prometheusClient);
+      const result = await completion.promQL(context);
+      chai.expect(value.expectedResult).to.deep.equal(result);
     });
   });
 });

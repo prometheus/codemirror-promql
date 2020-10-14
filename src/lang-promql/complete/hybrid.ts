@@ -74,25 +74,14 @@ import {
   snippets,
 } from './promql.terms';
 
-interface AutoCompleteNode {
-  label: string;
-  detail?: string;
-  info?: string;
-}
-
-interface AutoCompleteNodes {
-  nodes: AutoCompleteNode[];
-  type?: string;
-}
-
-const autocompleteNode: { [key: string]: AutoCompleteNodes } = {
-  matchOp: { nodes: matchOpTerms },
-  binOp: { nodes: binOpTerms },
-  duration: { nodes: durationTerms },
-  binOpModifier: { nodes: binOpModifierTerms, type: 'keyword' },
-  functionIdentifier: { nodes: functionIdentifierTerms, type: 'function' },
-  aggregateOp: { nodes: aggregateOpTerms, type: 'keyword' },
-  aggregateOpModifier: { nodes: aggregateOpModifierTerms, type: 'keyword' },
+const autocompleteNodes: { [key: string]: Completion[] } = {
+  matchOp: matchOpTerms,
+  binOp: binOpTerms,
+  duration: durationTerms,
+  binOpModifier: binOpModifierTerms,
+  functionIdentifier: functionIdentifierTerms,
+  aggregateOp: aggregateOpTerms,
+  aggregateOpModifier: aggregateOpModifierTerms,
 };
 
 // ContextKind is the different possible value determinate by the autocompletion
@@ -133,19 +122,8 @@ function getMetricNameInVectorSelector(tree: Subtree, state: EditorState): strin
   return state.sliceDoc(currentNode.start, currentNode.end);
 }
 
-function arrayToCompletionResult(data: AutoCompleteNodes[], from: number, to: number, includeSnippet = false, span = true): CompletionResult {
-  const options: Completion[] = [];
-
-  for (const completionList of data) {
-    for (const node of completionList.nodes) {
-      options.push({
-        label: node.label,
-        type: completionList.type,
-        detail: node.detail,
-        info: node.info,
-      });
-    }
-  }
+function arrayToCompletionResult(data: Completion[], from: number, to: number, includeSnippet = false, span = true): CompletionResult {
+  const options = data;
   if (includeSnippet) {
     options.push(...snippets);
   }
@@ -403,50 +381,50 @@ export class HybridComplete implements CompleteStrategy {
     const { state, pos } = context;
     const tree = state.tree.resolve(pos, -1);
     const contexts = analyzeCompletion(state, tree);
-    let asyncResult: Promise<AutoCompleteNodes[]> = Promise.resolve([]);
+    let asyncResult: Promise<Completion[]> = Promise.resolve([]);
     let completeSnippet = false;
     let span = true;
     for (const context of contexts) {
       switch (context.kind) {
         case ContextKind.Aggregation:
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.aggregateOp);
+            return result.concat(autocompleteNodes.aggregateOp);
           });
           break;
         case ContextKind.Function:
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.functionIdentifier);
+            return result.concat(autocompleteNodes.functionIdentifier);
           });
           break;
         case ContextKind.BinOpModifier:
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.binOpModifier);
+            return result.concat(autocompleteNodes.binOpModifier);
           });
           break;
         case ContextKind.BinOp:
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.binOp);
+            return result.concat(autocompleteNodes.binOp);
           });
           break;
         case ContextKind.MatchOp:
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.matchOp);
+            return result.concat(autocompleteNodes.matchOp);
           });
           break;
         case ContextKind.AggregateOpModifier:
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.aggregateOpModifier);
+            return result.concat(autocompleteNodes.aggregateOpModifier);
           });
           break;
         case ContextKind.Duration:
           span = false;
           asyncResult = asyncResult.then((result) => {
-            return result.concat(autocompleteNode.duration);
+            return result.concat(autocompleteNodes.duration);
           });
           break;
         case ContextKind.Offset:
           asyncResult = asyncResult.then((result) => {
-            return result.concat([{ nodes: [{ label: 'offset' }] }]);
+            return result.concat([{ label: 'offset' }]);
           });
           break;
         case ContextKind.MetricName:
@@ -471,16 +449,16 @@ export class HybridComplete implements CompleteStrategy {
     });
   }
 
-  private autocompleteMetricName(result: AutoCompleteNodes[]) {
+  private autocompleteMetricName(result: Completion[]) {
     if (!this.prometheusClient) {
       return result;
     }
-    const metricCompletion = new Map<string, AutoCompleteNode>();
+    const metricCompletion = new Map<string, Completion>();
     return this.prometheusClient
       .labelValues('__name__')
       .then((metricNames: string[]) => {
         for (const metricName of metricNames) {
-          metricCompletion.set(metricName, { label: metricName });
+          metricCompletion.set(metricName, { label: metricName, type: 'constant' });
         }
 
         // avoid to get all metric metadata if the prometheus server is too big
@@ -535,35 +513,25 @@ export class HybridComplete implements CompleteStrategy {
             }
           }
         }
-        return result.concat([{ nodes: Array.from(metricCompletion.values()), type: 'constant' }]);
+        return result.concat(Array.from(metricCompletion.values()));
       });
   }
 
-  private autocompleteLabelName(result: AutoCompleteNodes[], metricName?: string) {
+  private autocompleteLabelName(result: Completion[], metricName?: string) {
     if (!this.prometheusClient) {
       return result;
     }
     return this.prometheusClient.labelNames(metricName).then((labelNames: string[]) => {
-      return result.concat([
-        {
-          nodes: labelNames.map((value) => ({ label: value })),
-          type: 'constant',
-        },
-      ]);
+      return result.concat(labelNames.map((value) => ({ label: value, type: 'constant' })));
     });
   }
 
-  private autocompleteLabelValue(result: AutoCompleteNodes[], labelName?: string, metricName?: string) {
+  private autocompleteLabelValue(result: Completion[], labelName?: string, metricName?: string) {
     if (!this.prometheusClient || !labelName) {
       return result;
     }
     return this.prometheusClient.labelValues(labelName, metricName).then((labelValues: string[]) => {
-      return result.concat([
-        {
-          nodes: labelValues.map((value) => ({ label: value })),
-          type: 'text',
-        },
-      ]);
+      return result.concat(labelValues.map((value) => ({ label: value, type: 'text' })));
     });
   }
 }
