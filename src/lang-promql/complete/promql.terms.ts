@@ -341,18 +341,21 @@ export const snippets: readonly Completion[] = [
     label: 'sum(rate(__input_vector__[5m]))',
     type: 'function',
     detail: 'snippet',
+    info: 'Sum over rates of increase',
     apply: snippet('sum(rate(${__input_vector__}[5m]))'),
   },
   {
     label: 'histogram_quantile(__quantile__, sum by(le) (rate(__histogram_metric__[5m])))',
     type: 'function',
     detail: 'snippet',
+    info: 'Approximate a quantile value from an aggregated histogram',
     apply: snippet('histogram_quantile(${__quantile__}, sum by(le) (rate(${__histogram_metric__}[5m])))'),
   },
   {
     label: 'label_replace(__input_vector__, "__dst__", "__replacement__", "__src__", "__regex__")',
     type: 'function',
     detail: 'snippet',
+    info: 'Set or replace a label value in an input vector',
     apply: snippet('label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")'),
   },
 ];
