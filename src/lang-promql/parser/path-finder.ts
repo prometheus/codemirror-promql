@@ -52,7 +52,7 @@ export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtre
         if (i >= path.length) {
           // We reached the last node. We should return it then.
           // First get the first node resolved at the `start` position.
-          let result: Subtree | null = node.resolve(start, -1);
+          let result: Subtree | null = node.resolve(end, -1);
           if (result.type.id === type.id && result.start === start && result.end === end) {
             return result;
           }
