@@ -35,14 +35,14 @@ export interface MetricMetadata {
 
 class Cache {
   // completeAssociation is the association between a metric name, a label name and the possible label values
-  private completeAssociation: Map<string, Map<string, string[]>>;
+  private completeAssociation: Map<string, Map<string, Set<string>>>;
   // metricMetadata is the association between a metric name and the associated metadata
   private readonly metricMetadata: Map<string, MetricMetadata[]>;
   private labelValues: Map<string, string[]>;
   private labelNames: string[];
 
   constructor() {
-    this.completeAssociation = new Map<string, Map<string, string[]>>();
+    this.completeAssociation = new Map<string, Map<string, Set<string>>>();
     this.metricMetadata = new Map<string, MetricMetadata[]>();
     this.labelValues = new Map<string, string[]>();
     this.labelNames = [];
@@ -51,7 +51,7 @@ class Cache {
   setAssociation(metricName: string, labelSet: Map<string, string>): void {
     let currentAssociation = this.completeAssociation.get(metricName);
     if (!currentAssociation) {
-      currentAssociation = new Map<string, string[]>();
+      currentAssociation = new Map<string, Set<string>>();
       this.completeAssociation.set(metricName, currentAssociation);
     }
 
@@ -59,13 +59,15 @@ class Cache {
       if (key === '__name__') {
         continue;
       }
-      let labelValues = currentAssociation.get(key);
-      if (!labelValues || labelValues.length === 0) {
-        labelValues = [value];
-      } else if (!labelValues.includes(value)) {
-        labelValues.push(value);
+      const labelValues = currentAssociation.get(key);
+      if (labelValues === undefined) {
+        currentAssociation.set(
+          key,
+          new Set<string>([value])
+        );
+      } else {
+        labelValues.add(value);
       }
-      currentAssociation.set(key, labelValues);
     }
   }
 
@@ -102,7 +104,7 @@ class Cache {
     const labelSet = this.completeAssociation.get(metricName);
     if (labelSet) {
       const labelValues = labelSet.get(labelName);
-      return labelValues ? labelValues : [];
+      return labelValues ? Array.from(labelValues) : [];
     }
     return [];
   }
