@@ -115,6 +115,26 @@ describe('Scalars and scalar-to-scalar operations', () => {
       expectedDiag: [] as Diagnostic[],
     },
     {
+      expr: 'foo*bar',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'foo* bar',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'foo *bar',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'foo==bar',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
       expr: 'foo * sum',
       expectedValueType: ValueType.vector,
       expectedDiag: [] as Diagnostic[],
@@ -169,7 +189,17 @@ describe('Scalars and scalar-to-scalar operations', () => {
       expectedDiag: [] as Diagnostic[],
     },
     {
+      expr: 'foo*on(test,blub)bar',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
       expr: 'foo * on(test,blub) group_left bar',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [] as Diagnostic[],
+    },
+    {
+      expr: 'foo*on(test,blub)group_left()bar',
       expectedValueType: ValueType.vector,
       expectedDiag: [] as Diagnostic[],
     },
