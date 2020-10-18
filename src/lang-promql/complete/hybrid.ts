@@ -204,8 +204,10 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
       // sometimes an Identifier has an error has parent. This should be treated in priority
       if (node.parent?.type.id === 0) {
         if (node.parent.parent?.type.id === AggregateExpr) {
-          // it matches 'sum() b'. So here we only have to autocomplete the aggregate operation modifier
-          result.push({ kind: ContextKind.AggregateOpModifier });
+          // it matches 'sum() b'. So here we can autocomplete:
+          // - the aggregate operation modifier
+          // - the binary operation (since it's not mandatory to have an aggregate operation modifier)
+          result.push({ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp });
           break;
         }
         if (node.parent.parent?.type.id === VectorSelector) {
