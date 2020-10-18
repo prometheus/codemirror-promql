@@ -1,3 +1,8 @@
+0.10.2 / 2020-10-18
+===================
+
+* **[BugFix]**: Fixed missing autocompletion of binary operators after aggregations
+
 0.10.1 / 2020-10-16
 ===================
 
