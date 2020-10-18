@@ -144,13 +144,19 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.LabelValue, metricName: '', labelName: 'labelName' }],
     },
     {
-      title: 'autocomplete aggregate operation modifier',
+      title: 'autocomplete AggregateOpModifier or BinOp',
       expr: 'sum() b',
-      pos: 7, // cursor is between the quotes
-      expectedContext: [{ kind: ContextKind.AggregateOpModifier }],
+      pos: 7, // cursor is after the 'b'
+      expectedContext: [{ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp }],
     },
     {
-      title: 'autocomplete aggregate operation modifier 2',
+      title: 'autocomplete AggregateOpModifier or BinOp 2',
+      expr: 'sum(rate(foo[5m])) an',
+      pos: 21,
+      expectedContext: [{ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp }],
+    },
+    {
+      title: 'autocomplete AggregateOpModifier or BinOp or Offset',
       expr: 'sum b',
       pos: 5, // cursor is after 'b'
       expectedContext: [{ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp }, { kind: ContextKind.Offset }],
@@ -571,13 +577,24 @@ describe('autocomplete promQL test', () => {
       },
     },
     {
-      title: 'offline autocomplete aggregate operation modifier',
+      title: 'offline autocomplete aggregate operation modifier or binary operator',
       expr: 'sum() b',
       pos: 7, // cursor is between the quotes
       expectedResult: {
-        options: aggregateOpModifierTerms,
+        options: ([] as Completion[]).concat(aggregateOpModifierTerms, binOpTerms),
         from: 6,
         to: 7,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'offline autocomplete aggregate operation modifier or binary operator 2',
+      expr: 'sum(rate(foo[5m])) an',
+      pos: 21, // cursor is between the quotes
+      expectedResult: {
+        options: ([] as Completion[]).concat(aggregateOpModifierTerms, binOpTerms),
+        from: 19,
+        to: 21,
         span: /^[a-zA-Z0-9_:]+$/,
       },
     },
