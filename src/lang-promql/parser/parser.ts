@@ -260,16 +260,16 @@ export class Parser {
 
     if (funcSignature.variadic === 0) {
       if (args.length !== nargs) {
-        this.addDiagnostic(node, `expected ${nargs} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
+        this.addDiagnostic(node, `expected ${nargs} argument(s) in call to "${funcSignature.name}", got ${args.length}`);
       }
     } else {
       const na = nargs - 1;
       if (na > args.length) {
-        this.addDiagnostic(node, `expected at least ${na} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
+        this.addDiagnostic(node, `expected at least ${na} argument(s) in call to "${funcSignature.name}", got ${args.length}`);
       } else {
         const nargsmax = na + funcSignature.variadic;
         if (funcSignature.variadic > 0 && nargsmax < args.length) {
-          this.addDiagnostic(node, `expected at most ${nargsmax} argument(s) in call to ${funcSignature.name}, got ${args.length}`);
+          this.addDiagnostic(node, `expected at most ${nargsmax} argument(s) in call to "${funcSignature.name}", got ${args.length}`);
         }
       }
     }
@@ -285,7 +285,7 @@ export class Parser {
         }
         j = funcSignature.argTypes.length - 1;
       }
-      this.expectType(args[i], funcSignature.argTypes[j], `call to function ${funcSignature.name}`);
+      this.expectType(args[i], funcSignature.argTypes[j], `call to function "${funcSignature.name}"`);
     }
   }
 
