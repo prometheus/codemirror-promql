@@ -123,7 +123,7 @@ export function retrieveAllRecursiveNodes(parentNode: Subtree | undefined | null
   const nodes: Subtree[] = [];
 
   function recursiveRetrieveNode(node: Subtree | undefined | null, nodes: Subtree[]) {
-    const subNode = node?.firstChild;
+    const subNode = node ? walkThrough(node, recursiveNode) : undefined;
     const le = node?.lastChild;
     if (subNode && subNode.type.id === recursiveNode) {
       recursiveRetrieveNode(subNode, nodes);
