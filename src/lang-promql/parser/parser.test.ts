@@ -26,7 +26,7 @@ import { ValueType } from './type';
 import { Diagnostic } from '@codemirror/next/lint';
 import { createEditorState } from '../../test/utils';
 
-describe('Scalars and scalar-to-scalar operations', () => {
+describe('promql operations', () => {
   const testSuites = [
     {
       expr: '1',
@@ -516,6 +516,212 @@ describe('Scalars and scalar-to-scalar operations', () => {
           severity: 'error',
         },
       ],
+    },
+    // test aggregration
+    {
+      expr: 'sum by (foo)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'avg by (foo)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'max by (foo)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum without (foo) (some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum (some_metric) without (foo)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'stddev(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'stdvar by (foo)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum by ()(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum by (foo,bar,)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum by (foo,)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'topk(5, some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'topk( # my awesome comment\n' + '5, some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'count_values("value", some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum without(and, by, avg, count, alert, annotations)(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum some_metric by (test)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 25,
+          message: 'unable to find the parameter for the expression',
+          severity: 'error',
+        },
+      ],
+    },
+    // Test function calls.
+    {
+      expr: 'time()',
+      expectedValueType: ValueType.scalar,
+      expectedDiag: [],
+    },
+    {
+      expr: 'floor(some_metric{foo!="bar"})',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'rate(some_metric[5m])',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'round(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'round(some_metric, 5)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'floor()',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 7,
+          message: 'expected 1 argument(s) in call to "floor", got 0',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'floor(some_metric, other_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 32,
+          message: 'expected 1 argument(s) in call to "floor", got 2',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'floor(some_metric, 1)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 21,
+          message: 'expected 1 argument(s) in call to "floor", got 2',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'floor(1)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 6,
+          to: 7,
+          message: 'expected type vector in call to function "floor", got scalar',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'hour(some_metric, some_metric, some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 43,
+          message: 'expected at most 1 argument(s) in call to "hour", got 3',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'time(some_metric)',
+      expectedValueType: ValueType.scalar,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 17,
+          message: 'expected 0 argument(s) in call to "time", got 1',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'rate(some_metric)',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [
+        {
+          from: 5,
+          to: 16,
+          message: 'expected type matrix in call to function "rate", got vector',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr:
+        'histogram_quantile(                                             # Root of the query, final result, approximates a quantile.\n' +
+        '  0.9,                                                          # 1st argument to histogram_quantile(), the target quantile.\n' +
+        '  sum by(le, method, path) (                                    # 2nd argument to histogram_quantile(), an aggregated histogram.\n' +
+        '    rate(                                                       # Argument to sum(), the per-second increase of a histogram over 5m.\n' +
+        '      demo_api_request_duration_seconds_bucket{job="demo"}[5m]  # Argument to rate(), the raw histogram series over the last 5m.\n' +
+        '    )\n' +
+        '  )\n' +
+        ')',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
     },
   ];
   testSuites.forEach((value) => {
