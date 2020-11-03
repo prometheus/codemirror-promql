@@ -91,11 +91,12 @@ export class Parser {
     const cursor = this.tree.cursor();
     while (cursor.next()) {
       if (cursor.type.id === 0 && cursor.to !== this.tree.topNode.to) {
+        const node = cursor.node.parent;
         this.diagnostics.push({
           severity: 'error',
           message: 'unexpected expression',
-          from: cursor.from,
-          to: cursor.to,
+          from: node ? node.from : cursor.from,
+          to: node ? node.to : cursor.to,
         });
       }
     }
