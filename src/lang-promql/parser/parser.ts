@@ -90,6 +90,9 @@ export class Parser {
   private diagnoseAllErrorNodes() {
     const cursor = this.tree.cursor();
     while (cursor.next()) {
+      // usually there is an error node at the end of the expression when user is typing
+      // so it's not really a useful information to say the expression is wrong.
+      // Hopefully if there is an error node at the end of the tree, checkAST should yell more precisely
       if (cursor.type.id === 0 && cursor.to !== this.tree.topNode.to) {
         const node = cursor.node.parent;
         this.diagnostics.push({
@@ -103,8 +106,8 @@ export class Parser {
   }
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
-  // https://github.com/prometheus/prometheus/blob/master/promql/parser/parse.go#L433
-  checkAST(node: SyntaxNode | undefined | null): ValueType {
+  // https://github.com/prometheus/prometheus/blob/3470ee1fbf9d424784eb2613bab5ab0f14b4d222/promql/parser/parse.go#L433
+  checkAST(node: SyntaxNode | null): ValueType {
     if (!node) {
       return ValueType.none;
     }
