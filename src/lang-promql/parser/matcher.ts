@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { Subtree } from 'lezer-tree';
-import { EqlRegex, EqlSingle, LabelMatcher, LabelName, MatchOp, Neq, NeqRegex, StringLiteral } from 'lezer-promql';
+import { SyntaxNode } from 'lezer-tree';
+import { EqlSingle, LabelName, MatchOp, Neq, StringLiteral } from 'lezer-promql';
 import { EditorState } from '@codemirror/next/basic-setup';
 
 export class Matcher {
@@ -47,35 +47,33 @@ export class Matcher {
   }
 }
 
-function createMatcher(labelMatcher: Subtree, state: EditorState): Matcher {
+function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {
   const matcher = new Matcher(0, '', '');
-  labelMatcher.iterate({
-    enter: (type, start, end) => {
-      switch (type.id) {
-        case LabelMatcher:
-          return undefined;
-        case LabelName:
-          matcher.name = state.sliceDoc(start, end);
-          break;
-        case MatchOp:
-          return undefined;
-        case EqlSingle:
-        case Neq:
-        case EqlRegex:
-        case NeqRegex:
-          matcher.type = type.id;
-          break;
-        case StringLiteral:
-          matcher.value = state.sliceDoc(start, end).slice(1, -1);
-          break;
-      }
-      return false;
-    },
-  });
+  const cursor = labelMatcher.cursor;
+  if (!cursor.next()) {
+    // weird case, that would mean the labelMatcher doesn't have any child.
+    return matcher;
+  }
+  do {
+    switch (cursor.type.id) {
+      case LabelName:
+        matcher.name = state.sliceDoc(cursor.from, cursor.to);
+        break;
+      case MatchOp:
+        const ope = cursor.node.firstChild;
+        if (ope) {
+          matcher.type = ope.type.id;
+        }
+        break;
+      case StringLiteral:
+        matcher.value = state.sliceDoc(cursor.from, cursor.to).slice(1, -1);
+        break;
+    }
+  } while (cursor.nextSibling());
   return matcher;
 }
 
-export function buildLabelMatchers(labelMatchers: Subtree[], state: EditorState): Matcher[] {
+export function buildLabelMatchers(labelMatchers: SyntaxNode[], state: EditorState): Matcher[] {
   const matchers: Matcher[] = [];
   labelMatchers.forEach((value) => {
     matchers.push(createMatcher(value, state));

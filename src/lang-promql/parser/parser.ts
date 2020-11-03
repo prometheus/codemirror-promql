@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import { Diagnostic } from '@codemirror/next/lint';
-import { Subtree, Tree } from 'lezer-tree';
+import { SyntaxNode, Tree } from 'lezer-tree';
 import {
   AggregateExpr,
   And,
@@ -83,33 +83,27 @@ export class Parser {
   analyze() {
     // when you are at the root of the tree, the first node is not `Expr` but a node with no name.
     // So to be able to iterate other the node relative to the promql node, we have to get the first child at the beginning
-    this.checkAST(this.tree.firstChild);
+    this.checkAST(this.tree.topNode.firstChild);
     this.diagnoseAllErrorNodes();
   }
 
   private diagnoseAllErrorNodes() {
-    this.tree.iterate({
-      enter: (type, start, end) => {
-        // usually there is an error node at the end of the expression when user is typing
-        // so it's not really a useful information to say the expression is wrong.
-        // Hopefully if there is an error node at the end of the tree, checkAST should yell more precisely
-        if (type.id === 0 && end !== this.tree.end) {
-          // get the parent to highlight the expression where the errorNode has been placed
-          const node = this.tree.resolve(start, -1);
-          this.diagnostics.push({
-            severity: 'error',
-            message: 'unexpected expression',
-            from: node.start,
-            to: node.end,
-          });
-        }
-      },
-    });
+    const cursor = this.tree.cursor();
+    while (cursor.next()) {
+      if (cursor.type.id === 0 && cursor.to !== this.tree.topNode.to) {
+        this.diagnostics.push({
+          severity: 'error',
+          message: 'unexpected expression',
+          from: cursor.from,
+          to: cursor.to,
+        });
+      }
+    }
   }
 
   // checkAST is inspired of the same named method from prometheus/prometheus:
   // https://github.com/prometheus/prometheus/blob/master/promql/parser/parse.go#L433
-  checkAST(node: Subtree | undefined | null): ValueType {
+  checkAST(node: SyntaxNode | undefined | null): ValueType {
     if (!node) {
       return ValueType.none;
     }
@@ -151,7 +145,7 @@ export class Parser {
     return getType(node);
   }
 
-  private checkAggregationExpr(node: Subtree): void {
+  private checkAggregationExpr(node: SyntaxNode): void {
     // according to https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L26
     // the name of the aggregator function is stored in the first child
     const aggregateOp = node.firstChild?.firstChild;
@@ -183,7 +177,7 @@ export class Parser {
     }
   }
 
-  private checkBinaryExpr(node: Subtree): void {
+  private checkBinaryExpr(node: SyntaxNode): void {
     // Following the definition of the BinaryExpr, the left and the right
     // expression are respectively the first and last child
     // https://github.com/promlabs/lezer-promql/blob/master/src/promql.grammar#L52
@@ -247,7 +241,7 @@ export class Parser {
     }
   }
 
-  private checkCallFunction(node: Subtree): void {
+  private checkCallFunction(node: SyntaxNode): void {
     const funcID = node.firstChild?.firstChild;
     if (!funcID) {
       this.addDiagnostic(node, 'function not defined');
@@ -289,7 +283,7 @@ export class Parser {
     }
   }
 
-  private checkVectorSelector(node: Subtree): void {
+  private checkVectorSelector(node: SyntaxNode): void {
     const labelMatchers = buildLabelMatchers(
       retrieveAllRecursiveNodes(walkThrough(node, LabelMatchers, LabelMatchList), LabelMatchList, LabelMatcher),
       this.state
@@ -299,7 +293,7 @@ export class Parser {
     // https://github.com/promlabs/lezer-promql/blob/71e2f9fa5ae6f5c5547d5738966cd2512e6b99a8/src/promql.grammar#L200
     const vectorSelectorNodeName = walkThrough(node, MetricIdentifier, Identifier);
     if (vectorSelectorNodeName) {
-      vectorSelectorName = this.state.sliceDoc(vectorSelectorNodeName.start, vectorSelectorNodeName.end);
+      vectorSelectorName = this.state.sliceDoc(vectorSelectorNodeName.from, vectorSelectorNodeName.to);
     }
     if (vectorSelectorName !== '') {
       // In this case the last LabelMatcher is checking for the metric name
@@ -322,19 +316,19 @@ export class Parser {
     }
   }
 
-  private expectType(node: Subtree, want: ValueType, context: string): void {
+  private expectType(node: SyntaxNode, want: ValueType, context: string): void {
     const t = this.checkAST(node);
     if (t !== want) {
       this.addDiagnostic(node, `expected type ${want} in ${context}, got ${t}`);
     }
   }
 
-  private addDiagnostic(node: Subtree, msg: string): void {
+  private addDiagnostic(node: SyntaxNode, msg: string): void {
     this.diagnostics.push({
       severity: 'error',
       message: msg,
-      from: node.start,
-      to: node.end,
+      from: node.from,
+      to: node.to,
     });
   }
 }

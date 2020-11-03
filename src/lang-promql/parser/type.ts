@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { Subtree } from 'lezer-tree';
+import { SyntaxNode } from 'lezer-tree';
 import {
   Abs,
   Absent,
@@ -406,7 +406,7 @@ export function getFunction(id: number): PromQLFunction {
 }
 
 // Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
-export function getType(node: Subtree | null | undefined): ValueType {
+export function getType(node: SyntaxNode | null): ValueType {
   if (!node) {
     return ValueType.none;
   }
@@ -470,7 +470,7 @@ export interface VectorMatching {
   include: string[];
 }
 
-export function buildVectorMatching(state: EditorState, binaryNode: Subtree) {
+export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode) {
   if (!binaryNode || binaryNode.type.id !== BinaryExpr) {
     return null;
   }
@@ -491,7 +491,7 @@ export function buildVectorMatching(state: EditorState, binaryNode: Subtree) {
     );
     if (labels.length > 0) {
       for (const label of labels) {
-        result.matchingLabels.push(state.sliceDoc(label.start, label.end));
+        result.matchingLabels.push(state.sliceDoc(label.from, label.to));
       }
     }
   }
@@ -507,7 +507,7 @@ export function buildVectorMatching(state: EditorState, binaryNode: Subtree) {
     );
     if (includeLabels.length > 0) {
       for (const label of includeLabels) {
-        result.include.push(state.sliceDoc(label.start, label.end));
+        result.include.push(state.sliceDoc(label.from, label.to));
       }
     }
   }
