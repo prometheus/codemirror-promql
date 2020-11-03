@@ -272,8 +272,9 @@ export class CachedPrometheusClient implements PrometheusClient {
   }
 
   labelNames(metricName?: string): Promise<string[]> {
-    if (this.cache.getLabelNames(metricName) && this.cache.getLabelNames(metricName).length > 0) {
-      return Promise.resolve(this.cache.getLabelNames(metricName));
+    const cachedLabel = this.cache.getLabelNames(metricName);
+    if (cachedLabel) {
+      return Promise.resolve(cachedLabel);
     }
 
     if (metricName === undefined || metricName === '') {
@@ -288,8 +289,9 @@ export class CachedPrometheusClient implements PrometheusClient {
   }
 
   labelValues(labelName: string, metricName?: string): Promise<string[]> {
-    if (this.cache.getLabelValues(labelName, metricName) && this.cache.getLabelValues(labelName, metricName).length > 0) {
-      return Promise.resolve(this.cache.getLabelValues(labelName, metricName));
+    const cachedLabel = this.cache.getLabelValues(labelName, metricName);
+    if (cachedLabel) {
+      return Promise.resolve(cachedLabel);
     }
 
     if (metricName === undefined || metricName === '') {
@@ -305,8 +307,9 @@ export class CachedPrometheusClient implements PrometheusClient {
   }
 
   metricMetadata(): Promise<Map<string, MetricMetadata[]>> {
-    if (this.cache.getMetricMetadata() && this.cache.getMetricMetadata().size > 0) {
-      return Promise.resolve(this.cache.getMetricMetadata());
+    const cachedMetada = this.cache.getMetricMetadata();
+    if (cachedMetada) {
+      return Promise.resolve(cachedMetada);
     }
 
     return this.client.metricMetadata().then((metadata) => {
