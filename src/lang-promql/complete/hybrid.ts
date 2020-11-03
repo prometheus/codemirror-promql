@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import { CompleteStrategy } from './index';
-import { Subtree } from 'lezer-tree';
+import { SyntaxNode } from 'lezer-tree';
 import { PrometheusClient } from '../client';
 import {
   Add,
@@ -107,10 +107,10 @@ export interface Context {
   labelName?: string;
 }
 
-function getMetricNameInVectorSelector(tree: Subtree, state: EditorState): string {
+function getMetricNameInVectorSelector(tree: SyntaxNode, state: EditorState): string {
   // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
   // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
-  let currentNode: Subtree | undefined | null = walkBackward(tree, VectorSelector);
+  let currentNode: SyntaxNode | null = walkBackward(tree, VectorSelector);
   if (!currentNode) {
     // Weird case that shouldn't happen, because "VectorSelector" is by definition the parent of the LabelMatchers.
     return '';
@@ -119,7 +119,7 @@ function getMetricNameInVectorSelector(tree: Subtree, state: EditorState): strin
   if (!currentNode) {
     return '';
   }
-  return state.sliceDoc(currentNode.start, currentNode.end);
+  return state.sliceDoc(currentNode.from, currentNode.to);
 }
 
 function arrayToCompletionResult(data: Completion[], from: number, to: number, includeSnippet = false, span = true): CompletionResult {
@@ -139,8 +139,8 @@ function arrayToCompletionResult(data: Completion[], from: number, to: number, i
 // It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
 // A wrong `start` position will lead to have the completion not working.
 // Note: this method is exported only for testing purpose.
-export function computeStartCompletePosition(node: Subtree, pos: number): number {
-  let start = node.start;
+export function computeStartCompletePosition(node: SyntaxNode, pos: number): number {
+  let start = node.from;
   if (
     node.type.id === GroupingLabels ||
     node.type.id === LabelMatchers ||
@@ -149,17 +149,6 @@ export function computeStartCompletePosition(node: Subtree, pos: number): number
   ) {
     // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
     start++;
-  } else if (
-    node.type.id === LabelMatcher &&
-    node.firstChild?.type.id === LabelName &&
-    node.lastChild?.type.id === 0 &&
-    node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
-  ) {
-    // We are in the following situation :
-    //      metric_name{labelName!}
-    // if start would be `node.start`, then at the end it would try to autocomplete a string that starts with labelName! and not by !
-    // `!` is contain in the error node so in the lastChild in this situation
-    start = node.lastChild.start;
   } else if (
     node.type.id === OffsetExpr ||
     (node.type.id === 0 && (node.parent?.type.id === OffsetExpr || node.parent?.type.id === MatrixSelector))
@@ -172,7 +161,7 @@ export function computeStartCompletePosition(node: Subtree, pos: number): number
 // analyzeCompletion is going to determinate what should be autocompleted.
 // The value of the autocompletion is then calculate by the function buildCompletion.
 // Note: this method is exported for testing purpose only. Do not use it directly.
-export function analyzeCompletion(state: EditorState, node: Subtree): Context[] {
+export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context[] {
   const result: Context[] = [];
   switch (node.type.id) {
     case 0: // 0 is the id of the error node
@@ -182,6 +171,12 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         // `Expr(OffsetExpr(Expr(VectorSelector(MetricIdentifier(Identifier))),Offset,⚠))`
         // Here we can just autocomplete a duration.
         result.push({ kind: ContextKind.Duration });
+        break;
+      }
+      if (node.parent?.type.id === LabelMatcher) {
+        // In this case the current token is not itself a valid match op yet:
+        //      metric_name{labelName!}
+        result.push({ kind: ContextKind.MatchOp });
         break;
       }
       if (node.parent?.type.id === MatrixSelector) {
@@ -195,7 +190,7 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
       // Expr(VectorSelector(MetricIdentifier(Identifier),⚠))
       // We should try to know if the char '!' is part of a binOp.
       // Note: as it is quite experimental, maybe it requires more condition and to check the current tree (parent, other child at the same level ..etc.).
-      const operator = state.sliceDoc(node.start, node.end);
+      const operator = state.sliceDoc(node.from, node.to);
       if (binOpTerms.filter((term) => term.label.includes(operator)).length > 0) {
         result.push({ kind: ContextKind.BinOp });
       }
@@ -233,7 +228,7 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
           break;
         }
       }
-      // As the leaf Identifier is coming for a lot of different case, we have to take a bit time analyze the tree
+      // As the leaf Identifier is coming for a lot of different case, we have to take a bit time to analyze the tree
       // in order to know what we have to autocomplete exactly.
       // Here is some cases:
       // 1. metric_name / ignor --> we should autocomplete the BinOpModifier + metric/function/aggregation
@@ -258,7 +253,7 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
         break;
       }
-      // now we have to know if we have to Expr in the direct children of the `parent`
+      // now we have to know if we have two Expr in the direct children of the `parent`
       const containExprTwice = containsChild(parent, Expr, Expr);
       if (containExprTwice) {
         if (parent.type.id === BinaryExpr && !containsAtLeastOneChild(parent, 0)) {
@@ -302,17 +297,6 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         result.push({ kind: ContextKind.LabelName, metricName: getMetricNameInVectorSelector(node, state) });
       }
       break;
-    case LabelMatcher:
-      if (
-        node.firstChild?.type.id === LabelName &&
-        node.lastChild?.type.id === 0 &&
-        node.lastChild?.firstChild === null // Discontinues completion in invalid cases like `foo{bar==<cursor>}`
-      ) {
-        // In this case the current token is not itself a valid match op yet:
-        //      metric_name{labelName!}
-        result.push({ kind: ContextKind.MatchOp });
-      }
-      break;
     case StringLiteral:
       if (node.parent?.type.id === LabelMatcher) {
         // In this case we are in the given situation:
@@ -323,7 +307,7 @@ export function analyzeCompletion(state: EditorState, node: Subtree): Context[] 
         // By definition it's the firstChild: https://github.com/promlabs/lezer-promql/blob/0ef65e196a8db6a989ff3877d57fd0447d70e971/src/promql.grammar#L250
         let labelName = '';
         if (node.parent.firstChild?.type.id === LabelName) {
-          labelName = state.sliceDoc(node.parent.firstChild.start, node.parent.firstChild.end);
+          labelName = state.sliceDoc(node.parent.firstChild.from, node.parent.firstChild.to);
         }
         // then find the metricName if it exists
         const metricName = getMetricNameInVectorSelector(node, state);
