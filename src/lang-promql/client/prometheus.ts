@@ -286,7 +286,7 @@ export class CachedPrometheusClient implements PrometheusClient {
 
   labelNames(metricName?: string): Promise<string[]> {
     const cachedLabel = this.cache.getLabelNames(metricName);
-    if (cachedLabel) {
+    if (cachedLabel && cachedLabel.length > 0) {
       return Promise.resolve(cachedLabel);
     }
 
@@ -303,7 +303,7 @@ export class CachedPrometheusClient implements PrometheusClient {
 
   labelValues(labelName: string, metricName?: string): Promise<string[]> {
     const cachedLabel = this.cache.getLabelValues(labelName, metricName);
-    if (cachedLabel) {
+    if (cachedLabel && cachedLabel.length > 0) {
       return Promise.resolve(cachedLabel);
     }
 
@@ -321,7 +321,7 @@ export class CachedPrometheusClient implements PrometheusClient {
 
   metricMetadata(): Promise<Map<string, MetricMetadata[]>> {
     const cachedMetadata = this.cache.getMetricMetadata();
-    if (cachedMetadata) {
+    if (cachedMetadata && cachedMetadata.size > 0) {
       return Promise.resolve(cachedMetadata);
     }
 
