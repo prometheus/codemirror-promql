@@ -28,7 +28,7 @@ export function walkBackward(node: SyntaxNode, exit: number): SyntaxNode | null 
   const cursor = node.cursor;
   let cursorIsMoving = true;
   while (cursorIsMoving && cursor.type.id !== exit) {
-    cursorIsMoving = cursor.prev();
+    cursorIsMoving = cursor.parent();
   }
   return cursor.type.id === exit ? cursor.node : null;
 }

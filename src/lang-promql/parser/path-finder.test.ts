@@ -40,13 +40,20 @@ import {
   Neq,
   NumberLiteral,
   Sub,
+  VectorSelector,
 } from 'lezer-promql';
 import { createEditorState } from '../../test/utils';
-import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
+import {
+  containsAtLeastOneChild,
+  containsChild,
+  retrieveAllRecursiveNodes,
+  walkBackward,
+  walkThrough
+} from './path-finder';
 import { SyntaxNode } from 'lezer-tree';
 
 describe('walkThrough test', () => {
-  const testSuites = [
+  const testCases = [
     {
       title: 'should return the node when no path is given',
       expr: '1 > bool 2',
@@ -87,7 +94,7 @@ describe('walkThrough test', () => {
       expectedDoc: '2',
     },
   ];
-  testSuites.forEach((value) => {
+  testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const subTree = state.tree.resolve(value.pos, -1);
@@ -105,7 +112,7 @@ describe('walkThrough test', () => {
 });
 
 describe('containsAtLeastOneChild test', () => {
-  const testSuites = [
+  const testCases = [
     {
       title: 'should not find a node if none is defined',
       expr: '1 > 2',
@@ -131,7 +138,7 @@ describe('containsAtLeastOneChild test', () => {
       expectedResult: false,
     },
   ];
-  testSuites.forEach((value) => {
+  testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const subTree = state.tree.resolve(value.pos, -1);
@@ -145,7 +152,7 @@ describe('containsAtLeastOneChild test', () => {
 });
 
 describe('containsChild test', () => {
-  const testSuites = [
+  const testCases = [
     {
       title: 'Should find all expr in a subtree',
       expr: 'metric_name / ignor',
@@ -171,7 +178,7 @@ describe('containsChild test', () => {
       child: [Expr, Expr],
     },
   ];
-  testSuites.forEach((value) => {
+  testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const subTree = state.tree.resolve(value.pos, -1);
@@ -193,5 +200,24 @@ describe('retrieveAllRecursiveNodes test', () => {
     if (tree) {
       chai.expect(3).to.equal(retrieveAllRecursiveNodes(walkThrough(tree, FunctionCall, FunctionCallBody), FunctionCallArgs, Expr).length);
     }
+  });
+});
+
+describe('walkbackward test', () => {
+  const testCases = [
+    {
+      title: 'should find the parent',
+      expr: 'metric_name{}',
+      pos: 12,
+      exit: VectorSelector,
+      expectedResult: VectorSelector,
+    },
+  ];
+  testCases.forEach((value) => {
+    it(value.title, () => {
+      const state = createEditorState(value.expr);
+      const tree = state.tree.resolve(value.pos, -1);
+      chai.expect(value.expectedResult).to.equal(walkBackward(tree, value.exit)?.type.id);
+    });
   });
 });

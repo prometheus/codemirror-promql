@@ -27,7 +27,7 @@ import { Diagnostic } from '@codemirror/next/lint';
 import { createEditorState } from '../../test/utils';
 
 describe('promql operations', () => {
-  const testSuites = [
+  const testCases = [
     {
       expr: '1',
       expectedValueType: ValueType.scalar,
@@ -724,7 +724,7 @@ describe('promql operations', () => {
       expectedDiag: [],
     },
   ];
-  testSuites.forEach((value) => {
+  testCases.forEach((value) => {
     const state = createEditorState(value.expr);
     const parser = new Parser(state);
     it(value.expr, () => {
