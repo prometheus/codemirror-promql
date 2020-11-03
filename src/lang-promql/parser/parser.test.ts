@@ -27,7 +27,7 @@ import { Diagnostic } from '@codemirror/next/lint';
 import { createEditorState } from '../../test/utils';
 
 describe('promql operations', () => {
-  const testSuites = [
+  const testCases = [
     {
       expr: '1',
       expectedValueType: ValueType.scalar,
@@ -724,11 +724,11 @@ describe('promql operations', () => {
       expectedDiag: [],
     },
   ];
-  testSuites.forEach((value) => {
+  testCases.forEach((value) => {
     const state = createEditorState(value.expr);
     const parser = new Parser(state);
     it(value.expr, () => {
-      chai.expect(parser.checkAST(state.tree.firstChild)).to.equal(value.expectedValueType);
+      chai.expect(parser.checkAST(state.tree.topNode.firstChild)).to.equal(value.expectedValueType);
       chai.expect(parser.getDiagnostics()).to.deep.equal(value.expectedDiag);
     });
   });

@@ -20,10 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { buildVectorMatching, ValueType, VectorMatchCardinality } from './type';
+import { buildVectorMatching, VectorMatchCardinality } from './type';
 import { createEditorState } from '../../test/utils';
 import { walkThrough } from './path-finder';
-import { BinaryExpr } from 'lezer-promql';
+import { BinaryExpr, Expr } from 'lezer-promql';
 import chai from 'chai';
 
 describe('buildVectorMatching test', () => {
@@ -209,7 +209,7 @@ describe('buildVectorMatching test', () => {
   testCases.forEach((value) => {
     it(value.binaryExpr, () => {
       const state = createEditorState(value.binaryExpr);
-      const node = walkThrough(state.tree.firstChild ? state.tree.firstChild : state.tree, BinaryExpr);
+      const node = walkThrough(state.tree.topNode, Expr, BinaryExpr);
       chai.expect(node).to.not.null;
       chai.expect(node).to.not.undefined;
       if (node) {
