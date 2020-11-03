@@ -459,7 +459,7 @@ export class HybridComplete implements CompleteStrategy {
           for (const [metricName, node] of metricCompletion) {
             // For histograms and summaries, the metadata is only exposed for the base metric name,
             // not separately for the _count, _sum, and _bucket time series.
-            const metadata = metricMetadata.get(metricName.replace(/(_count|_sum|_bucket)$/, ''));
+            const metadata = metricMetadata[metricName.replace(/(_count|_sum|_bucket)$/, '')];
             if (metadata) {
               if (metadata.length > 1) {
                 // it means the metricName has different possible helper and type

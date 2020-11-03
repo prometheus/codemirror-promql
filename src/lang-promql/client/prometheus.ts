@@ -40,7 +40,7 @@ export interface PrometheusClient {
   // In case a metric is provided, then the list of values is then associated to the couple <MetricName, LabelName>
   labelValues(labelName: string, metricName?: string): Promise<string[]>;
 
-  metricMetadata(): Promise<Map<string, MetricMetadata[]>>;
+  metricMetadata(): Promise<Record<string, MetricMetadata[]>>;
 
   series(metricName: string): Promise<Map<string, string>[]>;
 }
@@ -170,12 +170,12 @@ export class HTTPPrometheusClient implements PrometheusClient {
     });
   }
 
-  metricMetadata(): Promise<Map<string, MetricMetadata[]>> {
-    return this.fetchAPI<Map<string, MetricMetadata[]>>(metricMetadataEndpoint).catch((error) => {
+  metricMetadata(): Promise<Record<string, MetricMetadata[]>> {
+    return this.fetchAPI<Record<string, MetricMetadata[]>>(metricMetadataEndpoint).catch((error) => {
       if (this.errorHandler) {
         this.errorHandler(error);
       }
-      return new Map<string, MetricMetadata[]>();
+      return {};
     });
   }
 
@@ -221,13 +221,13 @@ class Cache {
   // completeAssociation is the association between a metric name, a label name and the possible label values
   private readonly completeAssociation: Map<string, Map<string, Set<string>>>;
   // metricMetadata is the association between a metric name and the associated metadata
-  private readonly metricMetadata: Map<string, MetricMetadata[]>;
+  private metricMetadata: Record<string, MetricMetadata[]>;
   private labelValues: Map<string, string[]>;
   private labelNames: string[];
 
   constructor() {
     this.completeAssociation = new Map<string, Map<string, Set<string>>>();
-    this.metricMetadata = new Map<string, MetricMetadata[]>();
+    this.metricMetadata = {};
     this.labelValues = new Map<string, string[]>();
     this.labelNames = [];
   }
@@ -236,11 +236,11 @@ class Cache {
     buildAssociations(metricName, series, this.completeAssociation);
   }
 
-  setMetricMetadata(metricName: string, metadata: MetricMetadata[]): void {
-    this.metricMetadata.set(metricName, metadata);
+  setMetricMetadata(metadata: Record<string, MetricMetadata[]>): void {
+    this.metricMetadata = metadata;
   }
 
-  getMetricMetadata(): Map<string, MetricMetadata[]> {
+  getMetricMetadata(): Record<string, MetricMetadata[]> {
     return this.metricMetadata;
   }
 
@@ -319,16 +319,14 @@ export class CachedPrometheusClient implements PrometheusClient {
     });
   }
 
-  metricMetadata(): Promise<Map<string, MetricMetadata[]>> {
+  metricMetadata(): Promise<Record<string, MetricMetadata[]>> {
     const cachedMetadata = this.cache.getMetricMetadata();
-    if (cachedMetadata && cachedMetadata.size > 0) {
+    if (cachedMetadata && Object.keys(cachedMetadata).length > 0) {
       return Promise.resolve(cachedMetadata);
     }
 
     return this.client.metricMetadata().then((metadata) => {
-      for (const [key, value] of Object.entries(metadata)) {
-        this.cache.setMetricMetadata(key, value);
-      }
+      this.cache.setMetricMetadata(metadata);
       return this.cache.getMetricMetadata();
     });
   }
