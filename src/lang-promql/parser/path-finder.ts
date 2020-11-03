@@ -20,109 +20,81 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { Subtree } from 'lezer-tree';
+import { SyntaxNode } from 'lezer-tree';
 
 // walkBackward will iterate other the tree from the leaf to the root until it founds the given `exit` node.
 // It returns null if the exit is not found.
-export function walkBackward(node: Subtree, exit: number): Subtree | null {
-  let result: Subtree | null = node;
-  while (result && result.type.id !== exit) {
-    result = result.parent;
+export function walkBackward(node: SyntaxNode, exit: number): SyntaxNode | null {
+  const cursor = node.cursor;
+  let cursorIsMoving = true;
+  while (cursorIsMoving && cursor.type.id !== exit) {
+    cursorIsMoving = cursor.prev();
   }
-  return result;
+  return cursor.type.id === exit ? cursor.node : null;
 }
 
 // walkThrough is going to follow the path passed in parameter.
 // If it succeeds to reach the last id/name of the path, then it will return the corresponding Subtree.
-// Otherwise if it's not possible to reach the last id/name of the path, it will return `undefined`
-// It will return `null` in case it's not possible to get the Subtree corresponding to the last id/name.
-// With other words, when it returns `null`, that means the path has been correctly followed to the end,
-// but somehow it's not possible to return the `SubTree`
+// Otherwise if it's not possible to reach the last id/name of the path, it will return `null`
 // Note: the way followed during the iteration of the tree to find the given path, is only from the root to the leaf.
-export function walkThrough(node: Subtree, ...path: (number | string)[]): Subtree | undefined | null {
+export function walkThrough(node: SyntaxNode, ...path: (number | string)[]): SyntaxNode | null {
+  const cursor = node.cursor;
   let i = 0;
-  // Somehow, the first type is always the given node.
-  // So we have to manually move forward before considering the given path.
-  // A way to achieve that is to manually add the given node in the path
-  path.unshift(node.type.id);
-  return node.iterate<Subtree | null>({
-    enter: (type, start, end) => {
-      if (type.id === path[i] || type.name === path[i]) {
-        i++;
-        if (i >= path.length) {
-          // We reached the last node. We should return it then.
-          // First get the first node resolved at the `start` position.
-          let result: Subtree | null = node.resolve(end, -1);
-          if (result.type.id === type.id && result.start === start && result.end === end) {
-            return result;
-          }
-          // In case the first node returned is not the one expected,
-          // then go to the deepest node at the `start` position and walk backward.
-          // Note: workaround suggested here: https://github.com/codemirror/codemirror.next/issues/270#issuecomment-674855519
-          result = node.resolve(start, 1);
-          while (result && (result.type.id !== type.id || result.start !== start || result.end !== end)) {
-            result = result.parent;
-          }
-          return result;
-        }
-        // continue to loop on this node
-        return undefined;
+  let cursorIsMoving = true;
+  path.unshift(cursor.type.id);
+  while (i < path.length && cursorIsMoving) {
+    if (cursor.type.id === path[i] || cursor.type.name === path[i]) {
+      i++;
+      if (i < path.length) {
+        cursorIsMoving = cursor.next();
       }
-      // go to the next node
-      return false;
-    },
-  });
+    } else {
+      cursorIsMoving = cursor.nextSibling();
+    }
+  }
+  if (i >= path.length) {
+    return cursor.node;
+  }
+  return null;
 }
 
-export function containsAtLeastOneChild(node: Subtree, ...child: (number | string)[]): boolean {
-  // Somehow, the first type is always the given node.
-  // So we have to manually move forward before considering the given path.
-  // A way to achieve that is to manually add the given node in the path
-  child.unshift(node.type.id);
-  let depth = 0;
-  const result = node.iterate<boolean>({
-    enter: (type) => {
-      if (type.id === node.type.id && depth === 0) {
-        depth++;
-        return undefined;
-      }
-      return child.some((n) => type.id === n || type.name === n);
-    },
-  });
-  return result === undefined ? false : result;
+export function containsAtLeastOneChild(node: SyntaxNode, ...child: (number | string)[]): boolean {
+  const cursor = node.cursor;
+  if (!cursor.next()) {
+    // let's try to move directly to the children level and
+    // return false immediately if the current node doesn't have any child
+    return false;
+  }
+  let result = false;
+  do {
+    result = child.some((n) => cursor.type.id === n || cursor.type.name === n);
+  } while (!result && cursor.nextSibling());
+  return result;
 }
 
-export function containsChild(node: Subtree, ...child: (number | string)[]): boolean {
-  let depth = 0;
-  if (node.name === '' && node.type.id > 0) {
-    // the root node is identified by an empty string as a name and a number different than 0.
-    // When the iteration is starting by the root node, it ignores it and automatically iterate other the children.
-    // If it's not the case, then the iteration is starting by the current node.
-    depth++;
+export function containsChild(node: SyntaxNode, ...child: (number | string)[]): boolean {
+  const cursor = node.cursor;
+  if (!cursor.next()) {
+    // let's try to move directly to the children level and
+    // return false immediately if the current node doesn't have any child
+    return false;
   }
   let i = 0;
-  const result = node.iterate<boolean>({
-    enter: (type) => {
-      if (type.id === node.type.id && depth === 0) {
-        depth++;
-        return undefined;
-      }
-      if (type.id === child[i] || type.name === child[i]) {
-        i++;
-        if (i >= child.length) {
-          return true;
-        }
-      }
-      return false;
-    },
-  });
-  return result === undefined ? false : result;
+
+  do {
+    if (cursor.type.id === child[i] || cursor.type.name === child[i]) {
+      i++;
+    }
+  } while (i < child.length && cursor.nextSibling());
+
+  return i >= child.length;
 }
 
-export function retrieveAllRecursiveNodes(parentNode: Subtree | undefined | null, recursiveNode: number, leaf: number): Subtree[] {
-  const nodes: Subtree[] = [];
+export function retrieveAllRecursiveNodes(parentNode: SyntaxNode | null, recursiveNode: number, leaf: number): SyntaxNode[] {
+  const nodes: SyntaxNode[] = [];
 
-  function recursiveRetrieveNode(node: Subtree | undefined | null, nodes: Subtree[]) {
+  function recursiveRetrieveNode(node: SyntaxNode | null, nodes: SyntaxNode[]) {
+    // todo use getChild here once it allows number
     const subNode = node ? walkThrough(node, recursiveNode) : undefined;
     const le = node?.lastChild;
     if (subNode && subNode.type.id === recursiveNode) {

@@ -43,7 +43,7 @@ import {
 } from 'lezer-promql';
 import { createEditorState } from '../../test/utils';
 import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
-import { Subtree } from 'lezer-tree';
+import { SyntaxNode } from 'lezer-tree';
 
 describe('walkThrough test', () => {
   const testSuites = [
@@ -51,7 +51,7 @@ describe('walkThrough test', () => {
       title: 'should return the node when no path is given',
       expr: '1 > bool 2',
       pos: 0,
-      expectedNode: Expr,
+      expectedNode: 'PromQL',
       path: [] as number[],
       expectedDoc: '1 > bool 2',
     },
@@ -82,7 +82,7 @@ describe('walkThrough test', () => {
       title: 'should find a node in a recursive node definition',
       expr: 'rate(1, 2, 3)',
       pos: 0,
-      path: [FunctionCall, FunctionCallBody, FunctionCallArgs, FunctionCallArgs, Expr, NumberLiteral],
+      path: [Expr, FunctionCall, FunctionCallBody, FunctionCallArgs, FunctionCallArgs, Expr, NumberLiteral],
       expectedNode: NumberLiteral,
       expectedDoc: '2',
     },
@@ -91,11 +91,14 @@ describe('walkThrough test', () => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const subTree = state.tree.resolve(value.pos, -1);
-      const tree = subTree.name === '' && subTree.firstChild ? subTree.firstChild : subTree;
-      const node = walkThrough(tree, ...value.path);
-      chai.expect(value.expectedNode).to.equal(node?.type.id);
+      const node = walkThrough(subTree, ...value.path);
+      if (typeof value.expectedNode === 'number') {
+        chai.expect(value.expectedNode).to.equal(node?.type.id);
+      } else {
+        chai.expect(value.expectedNode).to.equal(node?.type.name);
+      }
       if (node) {
-        chai.expect(value.expectedDoc).to.equal(state.sliceDoc(node.start, node.end));
+        chai.expect(value.expectedDoc).to.equal(state.sliceDoc(node.from, node.to));
       }
     });
   });
@@ -115,7 +118,7 @@ describe('containsAtLeastOneChild test', () => {
       title: 'should find a node in the given list',
       expr: '1 > 2',
       pos: 0,
-      walkThrough: [BinaryExpr],
+      walkThrough: [Expr, BinaryExpr],
       child: [Eql, Neq, Lte, Lss, Gte, Gtr],
       expectedResult: true,
     },
@@ -123,7 +126,7 @@ describe('containsAtLeastOneChild test', () => {
       title: 'should not find a node in the given list',
       expr: '1 > 2',
       pos: 0,
-      walkThrough: [BinaryExpr],
+      walkThrough: [Expr, BinaryExpr],
       child: [Mul, Div, Mod, Add, Sub],
       expectedResult: false,
     },
@@ -132,10 +135,8 @@ describe('containsAtLeastOneChild test', () => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const subTree = state.tree.resolve(value.pos, -1);
-      const tree = subTree.name === '' && subTree.firstChild ? subTree.firstChild : subTree;
-      const node = walkThrough(tree, ...value.walkThrough);
+      const node = walkThrough(subTree, ...value.walkThrough);
       chai.expect(node).to.not.null;
-      chai.expect(node).to.not.undefined;
       if (node) {
         chai.expect(value.expectedResult).to.equal(containsAtLeastOneChild(node, ...value.child));
       }
@@ -150,15 +151,15 @@ describe('containsChild test', () => {
       expr: 'metric_name / ignor',
       pos: 0,
       expectedResult: true,
-      walkThrough: [BinaryExpr],
+      walkThrough: [Expr, BinaryExpr],
       child: [Expr, Expr],
     },
     {
-      title: 'Should find all expr at the root',
+      title: 'Should find all expr in a subtree 2',
       expr: 'http_requests_total{method="GET"} off',
       pos: 0,
       expectedResult: true,
-      walkThrough: [],
+      walkThrough: [Expr, BinaryExpr],
       child: [Expr, Expr],
     },
     {
@@ -166,7 +167,7 @@ describe('containsChild test', () => {
       expr: 'sum(ra)',
       pos: 0,
       expectedResult: false,
-      walkThrough: [AggregateExpr, FunctionCallBody, FunctionCallArgs],
+      walkThrough: [Expr, AggregateExpr, FunctionCallBody, FunctionCallArgs],
       child: [Expr, Expr],
     },
   ];
@@ -174,14 +175,9 @@ describe('containsChild test', () => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
       const subTree = state.tree.resolve(value.pos, -1);
-      let tree: Subtree = subTree;
-      let node: null | undefined | Subtree = subTree;
-      if (value.walkThrough.length > 0 || value.pos !== 0) {
-        tree = subTree.name === '' && subTree.firstChild ? subTree.firstChild : subTree;
-        node = walkThrough(tree, ...value.walkThrough);
-      }
+      const node: SyntaxNode | null = walkThrough(subTree, ...value.walkThrough);
+
       chai.expect(node).to.not.null;
-      chai.expect(node).to.not.undefined;
       if (node) {
         chai.expect(value.expectedResult).to.equal(containsChild(node, ...value.child));
       }
@@ -192,7 +188,7 @@ describe('containsChild test', () => {
 describe('retrieveAllRecursiveNodes test', () => {
   it('should find every occurrence', () => {
     const state = createEditorState('rate(1,2,3)');
-    const tree = state.tree.firstChild;
+    const tree = state.tree.topNode.firstChild;
     chai.expect(tree).to.not.null;
     if (tree) {
       chai.expect(3).to.equal(retrieveAllRecursiveNodes(walkThrough(tree, FunctionCall, FunctionCallBody), FunctionCallArgs, Expr).length);
