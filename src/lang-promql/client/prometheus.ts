@@ -35,10 +35,13 @@ export interface MetricMetadata {
 
 export interface PrometheusClient {
   labelNames(metricName?: string): Promise<string[]>;
+
   // labelValues return a list of the value associated to the given labelName.
   // In case a metric is provided, then the list of values is then associated to the couple <MetricName, LabelName>
   labelValues(labelName: string, metricName?: string): Promise<string[]>;
+
   metricMetadata(): Promise<Map<string, MetricMetadata[]>>;
+
   series(metricName: string): Promise<Map<string, string>[]>;
 }
 
@@ -118,10 +121,16 @@ export class HTTPPrometheusClient implements PrometheusClient {
     }
 
     return this.series(metricName).then((series) => {
-      const completeAssociation = new Map<string, Map<string, Set<string>>>();
-      buildAssociations(metricName, series, completeAssociation);
-      const labelSet = completeAssociation.get(metricName);
-      return labelSet ? Array.from(labelSet.keys()) : [];
+      const labelNames = new Set<string>();
+      for (const labelSet of series) {
+        for (const [key] of Object.entries(labelSet)) {
+          if (key === '__name__') {
+            continue;
+          }
+          labelNames.add(key);
+        }
+      }
+      return Array.from(labelNames);
     });
   }
 
@@ -146,14 +155,18 @@ export class HTTPPrometheusClient implements PrometheusClient {
     }
 
     return this.series(metricName).then((series) => {
-      const completeAssociation = new Map<string, Map<string, Set<string>>>();
-      buildAssociations(metricName, series, completeAssociation);
-      const labelSet = completeAssociation.get(metricName);
-      if (labelSet) {
-        const labelValues = labelSet.get(labelName);
-        return labelValues ? Array.from(labelValues) : [];
+      const labelValues = new Set<string>();
+      for (const labelSet of series) {
+        for (const [key, value] of Object.entries(labelSet)) {
+          if (key === '__name__') {
+            continue;
+          }
+          if (key === labelName) {
+            labelValues.add(value);
+          }
+        }
       }
-      return [];
+      return Array.from(labelValues);
     });
   }
 
@@ -307,9 +320,9 @@ export class CachedPrometheusClient implements PrometheusClient {
   }
 
   metricMetadata(): Promise<Map<string, MetricMetadata[]>> {
-    const cachedMetada = this.cache.getMetricMetadata();
-    if (cachedMetada) {
-      return Promise.resolve(cachedMetada);
+    const cachedMetadata = this.cache.getMetricMetadata();
+    if (cachedMetadata) {
+      return Promise.resolve(cachedMetadata);
     }
 
     return this.client.metricMetadata().then((metadata) => {
