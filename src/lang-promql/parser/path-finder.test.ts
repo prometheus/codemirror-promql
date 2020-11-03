@@ -43,13 +43,7 @@ import {
   VectorSelector,
 } from 'lezer-promql';
 import { createEditorState } from '../../test/utils';
-import {
-  containsAtLeastOneChild,
-  containsChild,
-  retrieveAllRecursiveNodes,
-  walkBackward,
-  walkThrough
-} from './path-finder';
+import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from './path-finder';
 import { SyntaxNode } from 'lezer-tree';
 
 describe('walkThrough test', () => {
