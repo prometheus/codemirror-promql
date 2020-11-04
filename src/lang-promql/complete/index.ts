@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 import { HybridComplete } from './hybrid';
-import { HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
+import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
 import { FetchFn } from '../client';
 import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
@@ -47,7 +47,9 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
     return new HybridComplete(conf.prometheusClient);
   }
   if (conf?.url) {
-    return new HybridComplete(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn));
+    return new HybridComplete(
+      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn))
+    );
   }
   return new HybridComplete();
 }
