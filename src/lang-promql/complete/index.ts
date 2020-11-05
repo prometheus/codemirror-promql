@@ -38,17 +38,22 @@ export interface CompleteConfiguration {
   httpErrorHandler?: (error: any) => void;
   fetchFn?: FetchFn;
 
+  // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
+  // Under this limit, it allows the completion to get the metadata of the metrics.
+  maxMetricsMetadata?: number;
+
   // When providing this custom PrometheusClient, the settings above will not be used.
   prometheusClient?: PrometheusClient;
 }
 
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
   if (conf?.prometheusClient) {
-    return new HybridComplete(conf.prometheusClient);
+    return new HybridComplete(conf.prometheusClient, conf.maxMetricsMetadata);
   }
   if (conf?.url) {
     return new HybridComplete(
-      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn))
+      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn)),
+      conf.maxMetricsMetadata
     );
   }
   return new HybridComplete();

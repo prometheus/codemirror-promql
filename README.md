@@ -136,12 +136,6 @@ The autocompletion feature has 2 different modes, each requiring a different set
 
 The linter feature has only an offline mode that doesn't require any particular setup.
 
-In case you are bothered by the linter, you can deactivate like that:
-
-```typescript
-const extension = new PromQLExtension().activateLinter(false)
-```
-
 ### Deploy to Github Pages
 * `npm install -g angular-cli-ghpages`
 * Change into the `examples/angular-promql` directory.

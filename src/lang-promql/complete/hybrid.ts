@@ -358,9 +358,11 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
 // HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | undefined;
+  private readonly maxMetricsMetadata: number;
 
-  constructor(prometheusClient?: PrometheusClient) {
+  constructor(prometheusClient?: PrometheusClient, maxMetricsMetadata = 10000) {
     this.prometheusClient = prometheusClient;
+    this.maxMetricsMetadata = maxMetricsMetadata;
   }
 
   promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null {
@@ -448,7 +450,7 @@ export class HybridComplete implements CompleteStrategy {
         }
 
         // avoid to get all metric metadata if the prometheus server is too big
-        if (metricNames.length <= 10000) {
+        if (metricNames.length <= this.maxMetricsMetadata) {
           // in order to enrich the completion list of the metric,
           // we are trying to find the associated metadata
           return this.prometheusClient?.metricMetadata();
