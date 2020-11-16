@@ -20,10 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { HybridComplete } from './hybrid';
+import { EnrichCompletionHandler, HybridComplete } from './hybrid';
 import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
 import { FetchFn } from '../client';
 import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
+
+export { EnrichCompletionHandler, ContextKind } from './hybrid';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
@@ -50,7 +52,8 @@ export interface CompleteConfiguration {
   // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
   // Under this limit, it allows the completion to get the metadata of the metrics.
   maxMetricsMetadata?: number;
-
+  // enricher is a function that will allow user to enrich the current completion by adding a custom one
+  enricher?: EnrichCompletionHandler;
   // When providing this custom CompleteStrategy, the settings above will not be used.
   completeStrategy?: CompleteStrategy;
 }
@@ -60,7 +63,7 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
     return conf.completeStrategy;
   }
   if (conf?.remote.prometheusClient) {
-    return new HybridComplete(conf.remote.prometheusClient, conf.maxMetricsMetadata);
+    return new HybridComplete(conf.remote.prometheusClient, conf.maxMetricsMetadata, conf.enricher);
   }
   if (conf?.remote.url) {
     return new HybridComplete(
@@ -68,7 +71,8 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
         new HTTPPrometheusClient(conf.remote.url, conf.remote.httpErrorHandler, conf.remote.lookbackInterval, conf.remote.fetchFn),
         conf.remote.cache?.maxAge
       ),
-      conf.maxMetricsMetadata
+      conf.maxMetricsMetadata,
+      conf.enricher
     );
   }
   return new HybridComplete();
