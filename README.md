@@ -27,9 +27,6 @@ Here is a short preview of it looks like currently:
 
 ![preview](https://user-images.githubusercontent.com/4548045/95660829-d5e4b680-0b2a-11eb-9ecb-41dca6396273.gif)
 
-### RoadMap
-A roadmap is available in the issue [#5](https://github.com/prometheus-community/codemirror-promql/issues/5).
-
 ## Usage
 
 As the setup of the PromQL language can a bit tricky in CMN, this lib provides a class `PromQLExtension` 
