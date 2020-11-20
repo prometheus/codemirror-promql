@@ -122,15 +122,6 @@ function getMetricNameInVectorSelector(tree: SyntaxNode, state: EditorState): st
   return state.sliceDoc(currentNode.from, currentNode.to);
 }
 
-// getMetricIdentifierValue returns the value of the encapsulating MetricIdentifier for the given tree
-function getMetricIdentifierValue(tree: SyntaxNode, state: EditorState): string {
-  let currentNode: SyntaxNode | null = walkBackward(tree, MetricIdentifier);
-  if (!currentNode) {
-    return '';
-  }
-  return state.sliceDoc(currentNode.from, currentNode.to);
-}
-
 function arrayToCompletionResult(data: Completion[], from: number, to: number, includeSnippet = false, span = true): CompletionResult {
   const options = data;
   if (includeSnippet) {
@@ -260,7 +251,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         // this case is normally impossible since by definition, the identifier has 3 parents,
         // and in Lexer, there is always a default parent in top of everything.
         result.push(
-          { kind: ContextKind.MetricName, metricName: getMetricIdentifierValue(node, state) },
+          { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
           { kind: ContextKind.Function },
           { kind: ContextKind.Aggregation }
         );
@@ -272,7 +263,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         if (parent.type.id === BinaryExpr && !containsAtLeastOneChild(parent, 0)) {
           // We are likely in the case 1 or 5
           result.push(
-            { kind: ContextKind.MetricName, metricName: getMetricIdentifierValue(node, state) },
+            { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
             { kind: ContextKind.Function },
             { kind: ContextKind.Aggregation },
             { kind: ContextKind.BinOpModifier }
@@ -282,7 +273,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         }
       } else {
         result.push(
-          { kind: ContextKind.MetricName, metricName: getMetricIdentifierValue(node, state) },
+          { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
           { kind: ContextKind.Function },
           { kind: ContextKind.Aggregation }
         );
@@ -336,11 +327,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       result.push({ kind: ContextKind.Duration });
       break;
     case FunctionCallBody:
-      result.push(
-        { kind: ContextKind.MetricName, metricName: getMetricIdentifierValue(node, state) },
-        { kind: ContextKind.Function },
-        { kind: ContextKind.Aggregation }
-      );
+      result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
