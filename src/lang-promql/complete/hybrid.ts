@@ -327,6 +327,9 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       result.push({ kind: ContextKind.Duration });
       break;
     case FunctionCallBody:
+      // In this case we are in the given situation:
+      //       sum() or in rate()
+      // with the cursor between the bracket. So we can autocomplete the metric, the function and the aggregation.
       result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
     case Neq:
