@@ -250,7 +250,11 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       if (!parent) {
         // this case is normally impossible since by definition, the identifier has 3 parents,
         // and in Lexer, there is always a default parent in top of everything.
-        result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+        result.push(
+          { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
+          { kind: ContextKind.Function },
+          { kind: ContextKind.Aggregation }
+        );
         break;
       }
       // now we have to know if we have two Expr in the direct children of the `parent`
@@ -259,7 +263,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         if (parent.type.id === BinaryExpr && !containsAtLeastOneChild(parent, 0)) {
           // We are likely in the case 1 or 5
           result.push(
-            { kind: ContextKind.MetricName },
+            { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
             { kind: ContextKind.Function },
             { kind: ContextKind.Aggregation },
             { kind: ContextKind.BinOpModifier }
@@ -268,7 +272,11 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
           result.push({ kind: ContextKind.BinOp }, { kind: ContextKind.Offset });
         }
       } else {
-        result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+        result.push(
+          { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
+          { kind: ContextKind.Function },
+          { kind: ContextKind.Aggregation }
+        );
       }
       break;
     case GroupingLabels:
@@ -319,7 +327,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       result.push({ kind: ContextKind.Duration });
       break;
     case FunctionCallBody:
-      result.push({ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+      result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
@@ -418,7 +426,7 @@ export class HybridComplete implements CompleteStrategy {
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
             completeSnippet = true;
-            return this.autocompleteMetricName(result);
+            return this.autocompleteMetricName(result, context.metricName);
           });
           break;
         case ContextKind.LabelName:
@@ -437,13 +445,13 @@ export class HybridComplete implements CompleteStrategy {
     });
   }
 
-  private autocompleteMetricName(result: Completion[]) {
+  private autocompleteMetricName(result: Completion[], prefix?: string) {
     if (!this.prometheusClient) {
       return result;
     }
     const metricCompletion = new Map<string, Completion>();
     return this.prometheusClient
-      .labelValues('__name__')
+      .metricNames(prefix)
       .then((metricNames: string[]) => {
         for (const metricName of metricNames) {
           metricCompletion.set(metricName, { label: metricName, type: 'constant' });

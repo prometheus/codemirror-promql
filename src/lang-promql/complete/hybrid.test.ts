@@ -41,38 +41,38 @@ describe('analyzeCompletion test', () => {
       title: 'simple metric autocompletion',
       expr: 'go_',
       pos: 3, // cursor is at the end of the expr
-      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [{ kind: ContextKind.MetricName, metricName: 'go_' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
       title: 'metric/function/aggregation autocompletion',
       expr: 'sum()',
       pos: 4,
-      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [{ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
       title: 'metric/function/aggregation autocompletion 2',
       expr: 'sum(rat)',
       pos: 7,
-      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [{ kind: ContextKind.MetricName, metricName: 'rat' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
       title: 'metric/function/aggregation autocompletion 3',
       expr: 'sum(rate())',
       pos: 9,
-      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [{ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
       title: 'metric/function/aggregation autocompletion 4',
       expr: 'sum(rate(my_))',
       pos: 12,
-      expectedContext: [{ kind: ContextKind.MetricName }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [{ kind: ContextKind.MetricName, metricName: 'my_' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
     },
     {
       title: 'autocomplete binOp modifier or metric',
       expr: 'metric_name / ignor',
       pos: 19,
       expectedContext: [
-        { kind: ContextKind.MetricName },
+        { kind: ContextKind.MetricName, metricName: 'ignor' },
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
@@ -83,7 +83,7 @@ describe('analyzeCompletion test', () => {
       expr: 'sum(http_requests_total{method="GET"} / o)',
       pos: 41,
       expectedContext: [
-        { kind: ContextKind.MetricName },
+        { kind: ContextKind.MetricName, metricName: 'o' },
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },

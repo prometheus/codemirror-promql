@@ -43,6 +43,11 @@ export interface PrometheusClient {
   metricMetadata(): Promise<Record<string, MetricMetadata[]>>;
 
   series(metricName: string): Promise<Map<string, string>[]>;
+
+  // metricNames returns a list of suggestions for the metric name given the `prefix`.
+  // Note that the returned list can be a superset of those suggestions for the prefix (i.e., including ones without the
+  // prefix), as codemirror will filter these out when displaying suggestions to the user.
+  metricNames(prefix?: string): Promise<string[]>;
 }
 
 interface APIResponse<T> {
@@ -196,6 +201,10 @@ export class HTTPPrometheusClient implements PrometheusClient {
     });
   }
 
+  metricNames(prefix?: string): Promise<string[]> {
+    return this.labelValues('__name__');
+  }
+
   private fetchAPI<T>(resource: string): Promise<T> {
     return this.fetchFn(this.url + resource)
       .then((res) => {
@@ -336,5 +345,9 @@ export class CachedPrometheusClient implements PrometheusClient {
       this.cache.setAssociations(metricName, series);
       return series;
     });
+  }
+
+  metricNames(prefix?: string): Promise<string[]> {
+    return this.labelValues('__name__');
   }
 }
