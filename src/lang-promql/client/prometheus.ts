@@ -201,7 +201,7 @@ export class HTTPPrometheusClient implements PrometheusClient {
     });
   }
 
-  metricNames(prefix?: string): Promise<string[]> {
+  metricNames(): Promise<string[]> {
     return this.labelValues('__name__');
   }
 
@@ -347,7 +347,7 @@ export class CachedPrometheusClient implements PrometheusClient {
     });
   }
 
-  metricNames(prefix?: string): Promise<string[]> {
+  metricNames(): Promise<string[]> {
     return this.labelValues('__name__');
   }
 }
