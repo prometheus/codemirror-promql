@@ -44,9 +44,16 @@ export interface CompleteConfiguration {
 
   // When providing this custom PrometheusClient, the settings above will not be used.
   prometheusClient?: PrometheusClient;
+
+  // When providing this custom CompleteStrategy, the settings above will not be used.
+  completeStrategy?: CompleteStrategy;
 }
 
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
+  if (conf?.completeStrategy) {
+    return conf.completeStrategy;
+  }
+
   if (conf?.prometheusClient) {
     return new HybridComplete(conf.prometheusClient, conf.maxMetricsMetadata);
   }
