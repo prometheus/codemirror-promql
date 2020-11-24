@@ -37,6 +37,12 @@ export interface CompleteConfiguration {
   lookbackInterval?: number;
   httpErrorHandler?: (error: any) => void;
   fetchFn?: FetchFn;
+  // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
+  cache?: {
+    // maxAge is the maximum amount of time that the cache will keep in memory the data fetched from Prometheus.
+    // It is in milliseconds. Default value:  300 000 (5min)
+    maxAge: number;
+  };
 
   // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
   // Under this limit, it allows the completion to get the metadata of the metrics.
@@ -59,7 +65,7 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
   }
   if (conf?.url) {
     return new HybridComplete(
-      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn)),
+      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn), conf.cache?.maxAge),
       conf.maxMetricsMetadata
     );
   }
