@@ -21,31 +21,9 @@
 // SOFTWARE.
 
 import { SyntaxNode } from 'lezer-tree';
-import { EqlSingle, LabelName, MatchOp, Neq, StringLiteral } from 'lezer-promql';
+import { LabelName, MatchOp, StringLiteral } from 'lezer-promql';
 import { EditorState } from '@codemirror/next/basic-setup';
-
-export class Matcher {
-  type: number;
-  name: string;
-  value: string;
-
-  constructor(type: number, name: string, value: string) {
-    this.type = type;
-    this.name = name;
-    this.value = value;
-  }
-
-  matchesEmpty(): boolean {
-    switch (this.type) {
-      case EqlSingle:
-        return this.value === '';
-      case Neq:
-        return this.value !== '';
-      default:
-        return false;
-    }
-  }
-}
+import { Matcher } from '../types/matcher';
 
 function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {
   const matcher = new Matcher(0, '', '');
