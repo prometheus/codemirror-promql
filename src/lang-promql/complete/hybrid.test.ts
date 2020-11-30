@@ -34,6 +34,7 @@ import {
   matchOpTerms,
   snippets,
 } from './promql.terms';
+import { EqlSingle, Neq } from 'lezer-promql';
 
 describe('analyzeCompletion test', () => {
   const testCases = [
@@ -135,13 +136,87 @@ describe('analyzeCompletion test', () => {
       title: 'autocomplete the labelValue with metricName + labelName',
       expr: 'metric_name{labelName=""}',
       pos: 23, // cursor is between the quotes
-      expectedContext: [{ kind: ContextKind.LabelValue, metricName: 'metric_name', labelName: 'labelName' }],
+      expectedContext: [
+        {
+          kind: ContextKind.LabelValue,
+          metricName: 'metric_name',
+          labelName: 'labelName',
+          matchers: [
+            {
+              name: 'labelName',
+              type: EqlSingle,
+              value: '',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'autocomplete the labelValue with metricName + labelName 2',
+      expr: 'metric_name{labelName="labelValue", labelName!=""}',
+      pos: 48, // cursor is between the quotes
+      expectedContext: [
+        {
+          kind: ContextKind.LabelValue,
+          metricName: 'metric_name',
+          labelName: 'labelName',
+          matchers: [
+            {
+              name: 'labelName',
+              type: EqlSingle,
+              value: 'labelValue',
+            },
+            {
+              name: 'labelName',
+              type: Neq,
+              value: '',
+            },
+          ],
+        },
+      ],
     },
     {
       title: 'autocomplete the labelValue associated to a labelName',
       expr: '{labelName=""}',
       pos: 12, // cursor is between the quotes
-      expectedContext: [{ kind: ContextKind.LabelValue, metricName: '', labelName: 'labelName' }],
+      expectedContext: [
+        {
+          kind: ContextKind.LabelValue,
+          metricName: '',
+          labelName: 'labelName',
+          matchers: [
+            {
+              name: 'labelName',
+              type: EqlSingle,
+              value: '',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'autocomplete the labelValue associated to a labelName 2',
+      expr: '{labelName="labelValue", labelName!=""}',
+      pos: 37, // cursor is between the quotes
+      expectedContext: [
+        {
+          kind: ContextKind.LabelValue,
+          metricName: '',
+          labelName: 'labelName',
+          matchers: [
+            {
+              name: 'labelName',
+              type: EqlSingle,
+              value: 'labelValue',
+            },
+            {
+              name: 'labelName',
+              type: Neq,
+              value: '',
+            },
+          ],
+        },
+      ],
     },
     {
       title: 'autocomplete AggregateOpModifier or BinOp',
