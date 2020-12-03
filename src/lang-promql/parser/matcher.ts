@@ -59,14 +59,14 @@ export function buildLabelMatchers(labelMatchers: SyntaxNode[], state: EditorSta
   return matchers;
 }
 
-export function labelMatchersToString(metricName: string, matchers?: Matcher[]): string {
+export function labelMatchersToString(metricName: string, matchers?: Matcher[], labelName?: string): string {
   if (!matchers || matchers.length === 0) {
     return metricName;
   }
 
   let matchersAsString = '';
   for (const matcher of matchers) {
-    if (matcher.value === '') {
+    if (matcher.name === labelName || matcher.value === '') {
       continue;
     }
     let type = '';

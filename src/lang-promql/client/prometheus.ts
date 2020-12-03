@@ -44,7 +44,7 @@ export interface PrometheusClient {
 
   metricMetadata(): Promise<Record<string, MetricMetadata[]>>;
 
-  series(metricName: string, matchers?: Matcher[]): Promise<Map<string, string>[]>;
+  series(metricName: string, matchers?: Matcher[], labelName?: string): Promise<Map<string, string>[]>;
 
   // metricNames returns a list of suggestions for the metric name given the `prefix`.
   // Note that the returned list can be a superset of those suggestions for the prefix (i.e., including ones without the
@@ -161,7 +161,7 @@ export class HTTPPrometheusClient implements PrometheusClient {
       });
     }
 
-    return this.series(metricName, matchers).then((series) => {
+    return this.series(metricName, matchers, labelName).then((series) => {
       const labelValues = new Set<string>();
       for (const labelSet of series) {
         for (const [key, value] of Object.entries(labelSet)) {
@@ -186,13 +186,13 @@ export class HTTPPrometheusClient implements PrometheusClient {
     });
   }
 
-  series(metricName: string, matchers?: Matcher[]): Promise<Map<string, string>[]> {
+  series(metricName: string, matchers?: Matcher[], labelName?: string): Promise<Map<string, string>[]> {
     const end = new Date();
     const start = new Date(end.getTime() - this.lookbackInterval);
     const params: URLSearchParams = new URLSearchParams({
       start: start.toISOString(),
       end: end.toISOString(),
-      'match[]': labelMatchersToString(metricName, matchers),
+      'match[]': labelMatchersToString(metricName, matchers, labelName),
     });
     // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
     return this.fetchAPI<Map<string, string>[]>(`${seriesEndpoint}?${params}`).catch((error) => {

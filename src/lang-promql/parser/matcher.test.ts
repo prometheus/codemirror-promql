@@ -30,18 +30,21 @@ describe('labelMatchersToString test', () => {
     {
       title: 'metric_name',
       metricName: 'metric_name',
+      labelName: undefined,
       matchers: [] as Matcher[],
       result: 'metric_name',
     },
     {
       title: 'metric_name 2',
       metricName: 'metric_name',
+      labelName: undefined,
       matchers: undefined,
       result: 'metric_name',
     },
     {
       title: 'metric_name{}',
       metricName: 'metric_name',
+      labelName: undefined,
       matchers: [
         {
           type: EqlSingle,
@@ -54,6 +57,7 @@ describe('labelMatchersToString test', () => {
     {
       title: 'sum{LabelName!="LabelValue"}',
       metricName: 'sum',
+      labelName: undefined,
       matchers: [
         {
           type: Neq,
@@ -64,8 +68,9 @@ describe('labelMatchersToString test', () => {
       result: 'sum{LabelName!="LabelValue"}',
     },
     {
-      title: 'rate{labelName=~"label.+"}',
+      title: 'rate{LabelName=~"label.+"}',
       metricName: 'rate',
+      labelName: undefined,
       matchers: [
         {
           type: EqlSingle,
@@ -83,6 +88,7 @@ describe('labelMatchersToString test', () => {
     {
       title: 'rate{LabelName="l1",labelName2=~"label.+",labelName3!~"label.+"}',
       metricName: 'rate',
+      labelName: undefined,
       matchers: [
         {
           type: EqlSingle,
@@ -102,11 +108,39 @@ describe('labelMatchersToString test', () => {
       ] as Matcher[],
       result: 'rate{LabelName="l1",labelName2=~"label.+",labelName3!~"label.+"}',
     },
+    {
+      title: 'rate{LabelName="l1",labelName2=~"label.+",labelName3!~"label.+"}',
+      metricName: 'rate',
+      labelName: 'LabelName',
+      matchers: [
+        {
+          type: EqlSingle,
+          name: 'LabelName',
+          value: 'l1',
+        },
+        {
+          type: EqlRegex,
+          name: 'labelName2',
+          value: 'label.+',
+        },
+        {
+          type: NeqRegex,
+          name: 'labelName3',
+          value: 'label.+',
+        },
+        {
+          type: Neq,
+          name: 'labelName4',
+          value: '',
+        },
+      ] as Matcher[],
+      result: 'rate{labelName2=~"label.+",labelName3!~"label.+"}',
+    },
   ];
 
   testCases.forEach((value) => {
     it(value.title, () => {
-      chai.expect(labelMatchersToString(value.metricName, value.matchers)).to.equal(value.result);
+      chai.expect(labelMatchersToString(value.metricName, value.matchers, value.labelName)).to.equal(value.result);
     });
   });
 });
