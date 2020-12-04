@@ -42,6 +42,7 @@ import {
   Identifier,
   LabelMatcher,
   LabelMatchers,
+  LabelMatchList,
   LabelName,
   Lss,
   Lte,
@@ -62,7 +63,7 @@ import {
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
 import { EditorState } from '@codemirror/next/state';
-import { containsAtLeastOneChild, containsChild, walkBackward, walkThrough } from '../parser/path-finder';
+import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from '../parser/path-finder';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -73,6 +74,8 @@ import {
   matchOpTerms,
   snippets,
 } from './promql.terms';
+import { buildLabelMatchers } from '../parser/matcher';
+import { Matcher } from '../types/matcher';
 
 const autocompleteNodes: { [key: string]: Completion[] } = {
   matchOp: matchOpTerms,
@@ -105,6 +108,7 @@ export interface Context {
   kind: ContextKind;
   metricName?: string;
   labelName?: string;
+  matchers?: Matcher[];
 }
 
 function getMetricNameInVectorSelector(tree: SyntaxNode, state: EditorState): string {
@@ -319,7 +323,9 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         }
         // then find the metricName if it exists
         const metricName = getMetricNameInVectorSelector(node, state);
-        result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName });
+        // finally get the full matcher available
+        const labelMatchers = buildLabelMatchers(retrieveAllRecursiveNodes(walkBackward(node, LabelMatchList), LabelMatchList, LabelMatcher), state);
+        result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName, matchers: labelMatchers });
       }
       break;
     case Duration:
@@ -429,17 +435,17 @@ export class HybridComplete implements CompleteStrategy {
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
             completeSnippet = true;
-            return this.autocompleteMetricName(result, context.metricName);
+            return this.autocompleteMetricName(result, context);
           });
           break;
         case ContextKind.LabelName:
           asyncResult = asyncResult.then((result) => {
-            return this.autocompleteLabelName(result, context.metricName);
+            return this.autocompleteLabelName(result, context);
           });
           break;
         case ContextKind.LabelValue:
           asyncResult = asyncResult.then((result) => {
-            return this.autocompleteLabelValue(result, context.labelName, context.metricName);
+            return this.autocompleteLabelValue(result, context);
           });
       }
     }
@@ -448,13 +454,13 @@ export class HybridComplete implements CompleteStrategy {
     });
   }
 
-  private autocompleteMetricName(result: Completion[], prefix?: string) {
+  private autocompleteMetricName(result: Completion[], context: Context) {
     if (!this.prometheusClient) {
       return result;
     }
     const metricCompletion = new Map<string, Completion>();
     return this.prometheusClient
-      .metricNames(prefix)
+      .metricNames(context.metricName)
       .then((metricNames: string[]) => {
         for (const metricName of metricNames) {
           metricCompletion.set(metricName, { label: metricName, type: 'constant' });
@@ -516,20 +522,20 @@ export class HybridComplete implements CompleteStrategy {
       });
   }
 
-  private autocompleteLabelName(result: Completion[], metricName?: string) {
+  private autocompleteLabelName(result: Completion[], context: Context) {
     if (!this.prometheusClient) {
       return result;
     }
-    return this.prometheusClient.labelNames(metricName).then((labelNames: string[]) => {
+    return this.prometheusClient.labelNames(context.metricName).then((labelNames: string[]) => {
       return result.concat(labelNames.map((value) => ({ label: value, type: 'constant' })));
     });
   }
 
-  private autocompleteLabelValue(result: Completion[], labelName?: string, metricName?: string) {
-    if (!this.prometheusClient || !labelName) {
+  private autocompleteLabelValue(result: Completion[], context: Context) {
+    if (!this.prometheusClient || !context.labelName) {
       return result;
     }
-    return this.prometheusClient.labelValues(labelName, metricName).then((labelValues: string[]) => {
+    return this.prometheusClient.labelValues(context.labelName, context.metricName, context.matchers).then((labelValues: string[]) => {
       return result.concat(labelValues.map((value) => ({ label: value, type: 'text' })));
     });
   }

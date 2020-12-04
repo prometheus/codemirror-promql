@@ -21,31 +21,9 @@
 // SOFTWARE.
 
 import { SyntaxNode } from 'lezer-tree';
-import { EqlSingle, LabelName, MatchOp, Neq, StringLiteral } from 'lezer-promql';
+import { EqlRegex, EqlSingle, LabelName, MatchOp, Neq, NeqRegex, StringLiteral } from 'lezer-promql';
 import { EditorState } from '@codemirror/next/basic-setup';
-
-export class Matcher {
-  type: number;
-  name: string;
-  value: string;
-
-  constructor(type: number, name: string, value: string) {
-    this.type = type;
-    this.name = name;
-    this.value = value;
-  }
-
-  matchesEmpty(): boolean {
-    switch (this.type) {
-      case EqlSingle:
-        return this.value === '';
-      case Neq:
-        return this.value !== '';
-      default:
-        return false;
-    }
-  }
-}
+import { Matcher } from '../types/matcher';
 
 function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {
   const matcher = new Matcher(0, '', '');
@@ -79,4 +57,41 @@ export function buildLabelMatchers(labelMatchers: SyntaxNode[], state: EditorSta
     matchers.push(createMatcher(value, state));
   });
   return matchers;
+}
+
+export function labelMatchersToString(metricName: string, matchers?: Matcher[], labelName?: string): string {
+  if (!matchers || matchers.length === 0) {
+    return metricName;
+  }
+
+  let matchersAsString = '';
+  for (const matcher of matchers) {
+    if (matcher.name === labelName || matcher.value === '') {
+      continue;
+    }
+    let type = '';
+    switch (matcher.type) {
+      case EqlSingle:
+        type = '=';
+        break;
+      case Neq:
+        type = '!=';
+        break;
+      case NeqRegex:
+        type = '!~';
+        break;
+      case EqlRegex:
+        type = '=~';
+        break;
+      default:
+        type = '=';
+    }
+    const m = `${matcher.name}${type}"${matcher.value}"`;
+    if (matchersAsString === '') {
+      matchersAsString = m;
+    } else {
+      matchersAsString = `${matchersAsString},${m}`;
+    }
+  }
+  return `${metricName}{${matchersAsString}}`;
 }

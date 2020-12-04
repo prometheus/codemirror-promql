@@ -60,8 +60,9 @@ import {
 } from 'lezer-promql';
 import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 import { buildVectorMatching, getFunction, getType, ValueType, VectorMatchCardinality } from './type';
-import { buildLabelMatchers, Matcher } from './matcher';
+import { buildLabelMatchers } from './matcher';
 import { EditorState } from '@codemirror/next/state';
+import { Matcher } from '../types/matcher';
 
 export class Parser {
   private readonly tree: Tree;
