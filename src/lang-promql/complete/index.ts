@@ -34,8 +34,8 @@ export interface CompleteStrategy {
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
   remote?: PrometheusConfig | PrometheusClient;
-  // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
-  // Under this limit, it allows the completion to get the metadata of the metrics.
+  // maxMetricsMetadata is the maximum number of metrics in Prometheus for which metadata is fetched.
+  // If the number of metrics exceeds this limit, no metric metadata is fetched at all.
   maxMetricsMetadata?: number;
   // enricher is a function that will allow user to enrich the current completion by adding a custom one
   enricher?: EnrichCompletionHandler;

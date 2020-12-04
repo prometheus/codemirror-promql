@@ -65,7 +65,8 @@ const promQL = new PromQLExtension().activateLinter(false).activateCompletion(fa
 
 ### maxMetricsMetadata
 
-maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus. Under this limit, it allows the completion to get the metadata of the metrics.
+`maxMetricsMetadata` is the maximum number of metrics in Prometheus for which metadata is fetched. 
+If the number of metrics exceeds this limit, no metric metadata is fetched at all.
 
 By default, the limit is 10 000 metrics. 
 
