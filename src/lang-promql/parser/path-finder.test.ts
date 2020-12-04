@@ -45,6 +45,7 @@ import {
 import { createEditorState } from '../../test/utils';
 import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from './path-finder';
 import { SyntaxNode } from 'lezer-tree';
+import { syntaxTree } from '@codemirror/next/language';
 
 describe('walkThrough test', () => {
   const testCases = [
@@ -91,7 +92,7 @@ describe('walkThrough test', () => {
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
-      const subTree = state.tree.resolve(value.pos, -1);
+      const subTree = syntaxTree(state).resolve(value.pos, -1);
       const node = walkThrough(subTree, ...value.path);
       if (typeof value.expectedNode === 'number') {
         chai.expect(value.expectedNode).to.equal(node?.type.id);
@@ -135,7 +136,7 @@ describe('containsAtLeastOneChild test', () => {
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
-      const subTree = state.tree.resolve(value.pos, -1);
+      const subTree = syntaxTree(state).resolve(value.pos, -1);
       const node = walkThrough(subTree, ...value.walkThrough);
       chai.expect(node).to.not.null;
       if (node) {
@@ -175,7 +176,7 @@ describe('containsChild test', () => {
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
-      const subTree = state.tree.resolve(value.pos, -1);
+      const subTree = syntaxTree(state).resolve(value.pos, -1);
       const node: SyntaxNode | null = walkThrough(subTree, ...value.walkThrough);
 
       chai.expect(node).to.not.null;
@@ -189,7 +190,7 @@ describe('containsChild test', () => {
 describe('retrieveAllRecursiveNodes test', () => {
   it('should find every occurrence', () => {
     const state = createEditorState('rate(1,2,3)');
-    const tree = state.tree.topNode.firstChild;
+    const tree = syntaxTree(state).topNode.firstChild;
     chai.expect(tree).to.not.null;
     if (tree) {
       chai.expect(3).to.equal(retrieveAllRecursiveNodes(walkThrough(tree, FunctionCall, FunctionCallBody), FunctionCallArgs, Expr).length);
@@ -210,7 +211,7 @@ describe('walkbackward test', () => {
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
-      const tree = state.tree.resolve(value.pos, -1);
+      const tree = syntaxTree(state).resolve(value.pos, -1);
       chai.expect(value.expectedResult).to.equal(walkBackward(tree, value.exit)?.type.id);
     });
   });

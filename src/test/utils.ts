@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { LezerSyntax } from '@codemirror/next/syntax';
 import { parser } from 'lezer-promql';
 import { EditorState } from '@codemirror/next/state';
+import { LezerLanguage } from '@codemirror/next/language';
 
-const lightPromQLSyntax = LezerSyntax.define(parser);
+const lightPromQLSyntax = LezerLanguage.define({ parser: parser });
 
 export function createEditorState(expr: string): EditorState {
   return EditorState.create({

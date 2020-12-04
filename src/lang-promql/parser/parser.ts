@@ -63,6 +63,7 @@ import { buildVectorMatching, getFunction, getType, ValueType, VectorMatchCardin
 import { buildLabelMatchers } from './matcher';
 import { EditorState } from '@codemirror/next/state';
 import { Matcher } from '../types/matcher';
+import { syntaxTree } from '@codemirror/next/language';
 
 export class Parser {
   private readonly tree: Tree;
@@ -70,7 +71,7 @@ export class Parser {
   private readonly diagnostics: Diagnostic[];
 
   constructor(state: EditorState) {
-    this.tree = state.tree;
+    this.tree = syntaxTree(state);
     this.state = state;
     this.diagnostics = [];
   }

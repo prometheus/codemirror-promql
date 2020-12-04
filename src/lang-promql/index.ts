@@ -22,4 +22,4 @@
 
 export { PrometheusClient } from './client';
 export { CompleteConfiguration, ContextKind, EnrichCompletionHandler } from './complete';
-export { PromQLExtension, promQLSyntax } from './promql';
+export { PromQLExtension, promQLLanguage } from './promql';
