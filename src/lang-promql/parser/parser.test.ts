@@ -25,6 +25,7 @@ import { Parser } from './parser';
 import { ValueType } from './type';
 import { Diagnostic } from '@codemirror/next/lint';
 import { createEditorState } from '../../test/utils';
+import { syntaxTree } from '@codemirror/next/language';
 
 describe('promql operations', () => {
   const testCases = [
@@ -728,7 +729,7 @@ describe('promql operations', () => {
     const state = createEditorState(value.expr);
     const parser = new Parser(state);
     it(value.expr, () => {
-      chai.expect(parser.checkAST(state.tree.topNode.firstChild)).to.equal(value.expectedValueType);
+      chai.expect(parser.checkAST(syntaxTree(state).topNode.firstChild)).to.equal(value.expectedValueType);
       chai.expect(parser.getDiagnostics()).to.deep.equal(value.expectedDiag);
     });
   });

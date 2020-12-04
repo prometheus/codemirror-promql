@@ -29,11 +29,11 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
-    "lezer-promql": "^0.13.0",
+    "lezer-promql": "^0.14.0",
     "lru-cache": "^6.0.0"
   },
   "devDependencies": {
-    "@codemirror/next": "^0.14.0",
+    "@codemirror/next": "^0.15.0",
     "@types/chai": "^4.2.12",
     "@types/lru-cache": "^5.1.0",
     "@types/mocha": "^8.0.3",
@@ -58,7 +58,7 @@
     "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
-    "@codemirror/next": "^0.13.0"
+    "@codemirror/next": "^0.15.0"
   },
   "prettier": {
     "singleQuote": true,

@@ -76,6 +76,7 @@ import {
 } from './promql.terms';
 import { buildLabelMatchers } from '../parser/matcher';
 import { Matcher } from '../types/matcher';
+import { syntaxTree } from '@codemirror/next/language';
 
 const autocompleteNodes: { [key: string]: Completion[] } = {
   matchOp: matchOpTerms,
@@ -410,7 +411,7 @@ export class HybridComplete implements CompleteStrategy {
 
   promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null {
     const { state, pos } = context;
-    const tree = state.tree.resolve(pos, -1);
+    const tree = syntaxTree(state).resolve(pos, -1);
     const contexts = analyzeCompletion(state, tree);
     let asyncResult: Promise<Completion[]> = Promise.resolve([]);
     let completeSnippet = false;

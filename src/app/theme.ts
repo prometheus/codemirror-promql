@@ -1,29 +1,82 @@
-import { highlighter } from '@codemirror/next/highlight';
 import { EditorView } from '@codemirror/next/basic-setup';
+import { highlightStyle, tags } from '@codemirror/next/highlight';
 
 // promQLHighlightMaterialTheme is based on the material theme defined here:
 // https://codemirror.net/theme/material.css
-export const promQLHighlightMaterialTheme = highlighter({
-  deleted: { textDecoration: 'line-through' },
-  inserted: { textDecoration: 'underline' },
-  link: { textDecoration: 'underline' },
-  strong: { fontWeight: 'bold' },
-  emphasis: { fontStyle: 'italic' },
-  invalid: { color: '#f00' },
-  keyword: { color: '#C792EA' },
-  operator: { color: '#89DDFF' },
-  atom: { color: '#F78C6C' },
-  number: { color: '#FF5370' },
-  string: { color: '#99b867' },
-  'regexp, escape': { color: '#e40' },
-  'variableName definition': { color: '#f07178' },
-  labelName: { color: '#f07178' },
-  typeName: { color: '#085' },
-  functionName: { color: '#C792EA' },
-  'propertyName definition': { color: '#00c' },
-  comment: { color: '#546E7A' },
-  meta: { color: '#FFCB6B' },
-});
+export const promQLHighlightMaterialTheme = highlightStyle(
+  {
+    tag: tags.deleted,
+    textDecoration: 'line-through',
+  },
+  {
+    tag: tags.inserted,
+    textDecoration: 'underline',
+  },
+  {
+    tag: tags.link,
+    textDecoration: 'underline',
+  },
+  {
+    tag: tags.strong,
+    fontWeight: 'bold',
+  },
+  {
+    tag: tags.emphasis,
+    fontStyle: 'italic',
+  },
+  {
+    tag: tags.invalid,
+    color: '#f00',
+  },
+  {
+    tag: tags.keyword,
+    color: '#C792EA',
+  },
+  {
+    tag: tags.operator,
+    color: '#89DDFF',
+  },
+  {
+    tag: tags.atom,
+    color: '#F78C6C',
+  },
+  {
+    tag: tags.number,
+    color: '#FF5370',
+  },
+  {
+    tag: tags.string,
+    color: '#99b867',
+  },
+  {
+    tag: [tags.escape, tags.regexp],
+    color: '#e40',
+  },
+  {
+    tag: tags.definition(tags.variableName),
+    color: '#f07178',
+  },
+  {
+    tag: tags.labelName,
+    color: '#f07178',
+  },
+  {
+    tag: tags.typeName,
+    color: '#085',
+  },
+  {
+    tag: tags.function(tags.variableName),
+    color: '#C792EA',
+  },
+  {
+    tag: tags.definition(tags.propertyName),
+    color: '#00c',
+  },
+  {
+    tag: tags.comment,
+    color: '#546E7A',
+  }
+);
 
 export const customTheme = EditorView.theme({
   $completionDetail: {

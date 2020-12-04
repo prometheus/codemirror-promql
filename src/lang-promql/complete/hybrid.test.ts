@@ -35,6 +35,7 @@ import {
   snippets,
 } from './promql.terms';
 import { EqlSingle, Neq } from 'lezer-promql';
+import { syntaxTree } from '@codemirror/next/language';
 
 describe('analyzeCompletion test', () => {
   const testCases = [
@@ -324,7 +325,7 @@ describe('analyzeCompletion test', () => {
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
-      const node = state.tree.resolve(value.pos, -1);
+      const node = syntaxTree(state).resolve(value.pos, -1);
       const result = analyzeCompletion(state, node);
       chai.expect(value.expectedContext).to.deep.equal(result);
     });
@@ -457,7 +458,7 @@ describe('computeStartCompletePosition test', () => {
   testCases.forEach((value) => {
     it(value.title, () => {
       const state = createEditorState(value.expr);
-      const node = state.tree.resolve(value.pos, -1);
+      const node = syntaxTree(state).resolve(value.pos, -1);
       const result = computeStartCompletePosition(node, value.pos);
       chai.expect(value.expectedStart).to.equal(result);
     });

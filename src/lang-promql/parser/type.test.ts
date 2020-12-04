@@ -25,6 +25,7 @@ import { createEditorState } from '../../test/utils';
 import { walkThrough } from './path-finder';
 import { BinaryExpr, Expr } from 'lezer-promql';
 import chai from 'chai';
+import { syntaxTree } from '@codemirror/next/language';
 
 describe('buildVectorMatching test', () => {
   const testCases = [
@@ -209,7 +210,7 @@ describe('buildVectorMatching test', () => {
   testCases.forEach((value) => {
     it(value.binaryExpr, () => {
       const state = createEditorState(value.binaryExpr);
-      const node = walkThrough(state.tree.topNode, Expr, BinaryExpr);
+      const node = walkThrough(syntaxTree(state).topNode, Expr, BinaryExpr);
       chai.expect(node).to.not.null;
       chai.expect(node).to.not.undefined;
       if (node) {
