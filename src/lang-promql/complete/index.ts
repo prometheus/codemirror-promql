@@ -21,8 +21,7 @@
 // SOFTWARE.
 
 import { EnrichCompletionHandler, HybridComplete } from './hybrid';
-import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
-import { FetchFn } from '../client';
+import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient, PrometheusConfig } from '../client/prometheus';
 import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
 
 export { EnrichCompletionHandler, ContextKind } from './hybrid';
@@ -34,21 +33,7 @@ export interface CompleteStrategy {
 
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
-  remote: {
-    // Provide these settings when not using a custom PrometheusClient.
-    url?: string;
-    lookbackInterval?: number;
-    httpErrorHandler?: (error: any) => void;
-    fetchFn?: FetchFn;
-    // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
-    cache?: {
-      // maxAge is the maximum amount of time that a cached completion item is valid before it needs to be refreshed.
-      // It is in milliseconds. Default value:  300 000 (5min)
-      maxAge: number;
-    };
-    // When providing this custom PrometheusClient, the settings above will not be used.
-    prometheusClient?: PrometheusClient;
-  };
+  remote?: PrometheusConfig | PrometheusClient;
   // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
   // Under this limit, it allows the completion to get the metadata of the metrics.
   maxMetricsMetadata?: number;
@@ -58,19 +43,20 @@ export interface CompleteConfiguration {
   completeStrategy?: CompleteStrategy;
 }
 
+function isPrometheusConfig(remoteConfig: PrometheusConfig | PrometheusClient): remoteConfig is PrometheusConfig {
+  return (remoteConfig as PrometheusConfig).url !== undefined;
+}
+
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
   if (conf?.completeStrategy) {
     return conf.completeStrategy;
   }
-  if (conf?.remote.prometheusClient) {
-    return new HybridComplete(conf.remote.prometheusClient, conf.maxMetricsMetadata, conf.enricher);
-  }
-  if (conf?.remote.url) {
+  if (conf?.remote) {
+    if (!isPrometheusConfig(conf.remote)) {
+      return new HybridComplete(conf.remote, conf.maxMetricsMetadata, conf.enricher);
+    }
     return new HybridComplete(
-      new CachedPrometheusClient(
-        new HTTPPrometheusClient(conf.remote.url, conf.remote.httpErrorHandler, conf.remote.lookbackInterval, conf.remote.fetchFn),
-        conf.remote.cache?.maxAge
-      ),
+      new CachedPrometheusClient(new HTTPPrometheusClient(conf.remote), conf.remote.cache?.maxAge),
       conf.maxMetricsMetadata,
       conf.enricher
     );

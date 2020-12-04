@@ -111,7 +111,7 @@ export interface Context {
   matchers?: Matcher[];
 }
 
-// EnrichCompletionHandler define a function that will be called during the completion calculation.
+// EnrichCompletionHandler defines a function that will be called during the completion calculation.
 // * `trigger` should be used to decide whenever you would like to trigger your custom completion.
 //   It's better to not trigger the same completion for multiple different ContextKind.
 //   For example, the autocompletion of the metricName / the function / the aggregation happens at the same time.
