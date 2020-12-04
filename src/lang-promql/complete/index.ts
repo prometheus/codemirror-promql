@@ -20,10 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { HybridComplete } from './hybrid';
-import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient } from '../client/prometheus';
-import { FetchFn } from '../client';
+import { EnrichCompletionHandler, HybridComplete } from './hybrid';
+import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient, PrometheusConfig } from '../client/prometheus';
 import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
+
+export { EnrichCompletionHandler, ContextKind } from './hybrid';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
@@ -32,41 +33,32 @@ export interface CompleteStrategy {
 
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
-  // Provide these settings when not using a custom PrometheusClient.
-  url?: string;
-  lookbackInterval?: number;
-  httpErrorHandler?: (error: any) => void;
-  fetchFn?: FetchFn;
-  // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
-  cache?: {
-    // maxAge is the maximum amount of time that a cached completion item is valid before it needs to be refreshed.
-    // It is in milliseconds. Default value:  300 000 (5min)
-    maxAge: number;
-  };
-
-  // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
-  // Under this limit, it allows the completion to get the metadata of the metrics.
+  remote?: PrometheusConfig | PrometheusClient;
+  // maxMetricsMetadata is the maximum number of metrics in Prometheus for which metadata is fetched.
+  // If the number of metrics exceeds this limit, no metric metadata is fetched at all.
   maxMetricsMetadata?: number;
-
-  // When providing this custom PrometheusClient, the settings above will not be used.
-  prometheusClient?: PrometheusClient;
-
+  // enricher is a function that will allow user to enrich the current completion by adding a custom one
+  enricher?: EnrichCompletionHandler;
   // When providing this custom CompleteStrategy, the settings above will not be used.
   completeStrategy?: CompleteStrategy;
+}
+
+function isPrometheusConfig(remoteConfig: PrometheusConfig | PrometheusClient): remoteConfig is PrometheusConfig {
+  return (remoteConfig as PrometheusConfig).url !== undefined;
 }
 
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
   if (conf?.completeStrategy) {
     return conf.completeStrategy;
   }
-
-  if (conf?.prometheusClient) {
-    return new HybridComplete(conf.prometheusClient, conf.maxMetricsMetadata);
-  }
-  if (conf?.url) {
+  if (conf?.remote) {
+    if (!isPrometheusConfig(conf.remote)) {
+      return new HybridComplete(conf.remote, conf.maxMetricsMetadata, conf.enricher);
+    }
     return new HybridComplete(
-      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn), conf.cache?.maxAge),
-      conf.maxMetricsMetadata
+      new CachedPrometheusClient(new HTTPPrometheusClient(conf.remote), conf.remote.cache?.maxAge),
+      conf.maxMetricsMetadata,
+      conf.enricher
     );
   }
   return new HybridComplete();

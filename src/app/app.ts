@@ -36,7 +36,9 @@ function setCompletion() {
       break;
     case 'prometheus':
       promqlExtension.setComplete({
-        url: 'http://localhost:9090',
+        remote: {
+          url: 'http://localhost:9090',
+        },
       });
       break;
     default:

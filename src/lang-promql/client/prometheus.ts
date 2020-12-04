@@ -53,6 +53,19 @@ export interface PrometheusClient {
   metricNames(prefix?: string): Promise<string[]>;
 }
 
+export interface PrometheusConfig {
+  url: string;
+  lookbackInterval?: number;
+  httpErrorHandler?: (error: any) => void;
+  fetchFn?: FetchFn;
+  // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
+  cache?: {
+    // maxAge is the maximum amount of time that a cached completion item is valid before it needs to be refreshed.
+    // It is in milliseconds. Default value:  300 000 (5min)
+    maxAge: number;
+  };
+}
+
 interface APIResponse<T> {
   status: 'success' | 'error';
   data?: T;
@@ -75,14 +88,14 @@ export class HTTPPrometheusClient implements PrometheusClient {
   // when calling it, thus the indirection via another function wrapper.
   private readonly fetchFn: FetchFn = (input: RequestInfo, init?: RequestInit): Promise<Response> => fetch(input, init);
 
-  constructor(url: string, errorHandler?: (error: any) => void, lookbackInterval?: number, fetchFn?: FetchFn) {
-    this.url = url;
-    this.errorHandler = errorHandler;
-    if (lookbackInterval) {
-      this.lookbackInterval = lookbackInterval;
+  constructor(config: PrometheusConfig) {
+    this.url = config.url;
+    this.errorHandler = config.httpErrorHandler;
+    if (config.lookbackInterval) {
+      this.lookbackInterval = config.lookbackInterval;
     }
-    if (fetchFn) {
-      this.fetchFn = fetchFn;
+    if (config.fetchFn) {
+      this.fetchFn = config.fetchFn;
     }
   }
 

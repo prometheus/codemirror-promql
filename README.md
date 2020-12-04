@@ -63,6 +63,48 @@ In case you would like to deactivate the linter and/or the autocompletion it's s
 const promQL = new PromQLExtension().activateLinter(false).activateCompletion(false) // here the linter and the autocomplete are deactivated
 ```
 
+### maxMetricsMetadata
+
+`maxMetricsMetadata` is the maximum number of metrics in Prometheus for which metadata is fetched. 
+If the number of metrics exceeds this limit, no metric metadata is fetched at all.
+
+By default, the limit is 10 000 metrics. 
+
+Use it cautiously. A high value of this limit can cause a crash of your browser due to too many data fetched.
+
+```typescript
+const promQL = new PromQLExtension().setComplete({maxMetricsMetadata: 10000})
+```
+
+### enricher
+
+enricher is a function that will allow user to enrich the current completion by adding a custom one. It takes two parameters:
+
+* `trigger` should be used to decide whenever you would like to trigger your custom completion.
+  It's better to not trigger the same completion for multiple different ContextKind.
+  For example, the autocompletion of the metricName / the function / the aggregation happens at the same time.
+  So if you want to trigger your custom completion for metricName / function / aggregation, you should just choose to trigger it for the function for example.
+  Otherwise, you will end up to have the same completion result multiple time.
+
+* `result` is the current result of the completion. Usually you don't want to override it but instead to concat your own completion with this one.
+
+```typescript
+import { Completion } from '@codemirror/next/autocomplete';
+import { ContextKind } from 'codemirror-promql';
+
+function myCustomEnricher(trigger: ContextKind, result: Completion[]): Completion[] | Promise<Completion[]> {
+  switch (trigger) {
+      case ContextKind.Aggregation:
+        // custom completion
+        // ...
+        // return result.concat( myCustomCompletionArray )
+      default:
+        return result;
+    }
+}
+const promQL = new PromQLExtension().setComplete({enricher: myCustomEnricher})
+```
+
 ### Connect the autocompletion extension to a remote Prometheus server
 Connecting the autocompletion extension to a remote Prometheus server will provide autocompletion of metric names, label names, and label values.
 
@@ -72,21 +114,21 @@ Connecting the autocompletion extension to a remote Prometheus server will provi
 If you want to use the default Prometheus client provided by this lib, you have to provide the url used to contact the Prometheus server.
 
 ```typescript
-const promQL = new PromQLExtension().setComplete({url: 'https://prometheus.land'})
+const promQL = new PromQLExtension().setComplete({remote: {url: 'https://prometheus.land'}})
 ```
 
 ##### Override FetchFn
 In case your Prometheus server is protected and requires a special HTTP client, you can override the function `fetchFn` that is used to perform any required HTTP request.
 
 ```typescript
-const promQL = new PromQLExtension().setComplete({fetchFn: myHTTPClient})
+const promQL = new PromQLExtension().setComplete({remote: {fetchFn: myHTTPClient}})
 ```
 
 ##### Error Handling
 You can set up your own error handler to catch any HTTP error that can occur when the PrometheusClient is contacting Prometheus.
 
 ```typescript
-const promQL = new PromQLExtension().setComplete({httpErrorHandler: (error:any) => console.error(error)})
+const promQL = new PromQLExtension().setComplete({remote: {httpErrorHandler: (error:any) => console.error(error)}})
 ```
 
 #### Override the default Prometheus client
@@ -94,7 +136,7 @@ In case you are not satisfied by our default Prometheus client, you can still pr
 It has to implement the interface [PrometheusClient](https://github.com/prometheus-community/codemirror-promql/blob/master/src/lang-promql/client/prometheus.ts#L111-L117).
 
 ```typescript
-const promQL = new PromQLExtension().setComplete({prometheusClient: MyPrometheusClient})
+const promQL = new PromQLExtension().setComplete({remote: {prometheusClient: MyPrometheusClient}})
 ```
 
 ### Example
