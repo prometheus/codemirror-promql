@@ -39,7 +39,7 @@ export interface CompleteConfiguration {
   fetchFn?: FetchFn;
   // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
   cache?: {
-    // maxAge is the maximum amount of time that the cache will keep in memory the data fetched from Prometheus.
+    // maxAge is the maximum amount of time that a cached completion item is valid before it needs to be refreshed.
     // It is in milliseconds. Default value:  300 000 (5min)
     maxAge: number;
   };
