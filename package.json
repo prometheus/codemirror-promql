@@ -29,11 +29,13 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
-    "lezer-promql": "^0.13.0"
+    "lezer-promql": "^0.13.0",
+    "lru-cache": "^6.0.0"
   },
   "devDependencies": {
     "@codemirror/next": "^0.14.0",
     "@types/chai": "^4.2.12",
+    "@types/lru-cache": "^5.1.0",
     "@types/mocha": "^8.0.3",
     "@types/node": "^14.0.13",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
