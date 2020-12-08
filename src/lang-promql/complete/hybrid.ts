@@ -28,6 +28,7 @@ import {
   AggregateExpr,
   And,
   BinaryExpr,
+  BoolModifier,
   Div,
   Duration,
   Eql,
@@ -103,6 +104,7 @@ export enum ContextKind {
   AggregateOpModifier,
   Duration,
   Offset,
+  Bool,
 }
 
 export interface Context {
@@ -297,6 +299,15 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
             { kind: ContextKind.Aggregation },
             { kind: ContextKind.BinOpModifier }
           );
+          // in  case the BinaryExpr is a comparison, we should autocomplete the `bool` keyword. But only if it is not present.
+          // When the `bool` keyword is NOT present, then the expression looks like this:
+          // 			BinaryExpr( Expr(...), Gtr, BoolModifier , BinModifier(GroupModifiers), Expr(...) )
+          // When the `bool` keyword is present, then the expression looks like this:
+          //      BinaryExpr( Expr(...), Gtr , BinModifier(GroupModifiers(BoolModifier)), Expr(...) )
+          // To know if it is not present, we just have to check if the BoolModifier is present as a child of the BinaryExpr.
+          if (containsAtLeastOneChild(parent, Eql, Gte, Gtr, Lte, Lss, Neq) && containsChild(parent, BoolModifier)) {
+            result.push({ kind: ContextKind.Bool });
+          }
         } else if (parent.type.id !== BinaryExpr || (parent.type.id === BinaryExpr && containsAtLeastOneChild(parent, 0))) {
           result.push({ kind: ContextKind.BinOp }, { kind: ContextKind.Offset });
         }
@@ -457,6 +468,11 @@ export class HybridComplete implements CompleteStrategy {
         case ContextKind.Offset:
           asyncResult = asyncResult.then((result) => {
             return result.concat([{ label: 'offset' }]);
+          });
+          break;
+        case ContextKind.Bool:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat([{ label: 'bool' }]);
           });
           break;
         case ContextKind.MetricName:
