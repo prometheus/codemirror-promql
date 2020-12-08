@@ -94,8 +94,7 @@ export function retrieveAllRecursiveNodes(parentNode: SyntaxNode | null, recursi
   const nodes: SyntaxNode[] = [];
 
   function recursiveRetrieveNode(node: SyntaxNode | null, nodes: SyntaxNode[]) {
-    // todo use getChild here once it allows number
-    const subNode = node ? walkThrough(node, recursiveNode) : undefined;
+    const subNode = node?.getChild(recursiveNode);
     const le = node?.lastChild;
     if (subNode && subNode.type.id === recursiveNode) {
       recursiveRetrieveNode(subNode, nodes);
