@@ -59,11 +59,14 @@ import {
   VectorSelector,
 } from 'lezer-promql';
 import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
-import { buildVectorMatching, getFunction, getType, ValueType, VectorMatchCardinality } from './type';
+import { getType } from './type';
 import { buildLabelMatchers } from './matcher';
 import { EditorState } from '@codemirror/next/state';
 import { Matcher } from '../types/matcher';
 import { syntaxTree } from '@codemirror/next/language';
+import { getFunction, ValueType } from '../types/function';
+import { VectorMatchCardinality } from '../types/vector';
+import { buildVectorMatching } from './vector';
 
 export class Parser {
   private readonly tree: Tree;

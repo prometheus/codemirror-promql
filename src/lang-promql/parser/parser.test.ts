@@ -22,10 +22,10 @@
 
 import chai from 'chai';
 import { Parser } from './parser';
-import { ValueType } from './type';
 import { Diagnostic } from '@codemirror/next/lint';
 import { createEditorState } from '../../test/utils';
 import { syntaxTree } from '@codemirror/next/language';
+import { ValueType } from '../types/function';
 
 describe('promql operations', () => {
   const testCases = [
