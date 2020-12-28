@@ -1,9 +1,9 @@
 import { EditorView } from '@codemirror/next/basic-setup';
-import { highlightStyle, tags } from '@codemirror/next/highlight';
+import { HighlightStyle, tags } from '@codemirror/next/highlight';
 
 // promQLHighlightMaterialTheme is based on the material theme defined here:
 // https://codemirror.net/theme/material.css
-export const promQLHighlightMaterialTheme = highlightStyle(
+export const promQLHighlightMaterialTheme = HighlightStyle.define(
   {
     tag: tags.deleted,
     textDecoration: 'line-through',

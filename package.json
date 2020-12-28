@@ -33,7 +33,7 @@
     "lru-cache": "^6.0.0"
   },
   "devDependencies": {
-    "@codemirror/next": "^0.15.0",
+    "@codemirror/next": "^0.16.0",
     "@types/chai": "^4.2.12",
     "@types/lru-cache": "^5.1.0",
     "@types/mocha": "^8.0.3",
