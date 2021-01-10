@@ -1,4 +1,4 @@
-import { Completion, snippet } from '@codemirror/next/autocomplete';
+import { Completion, snippet } from '@codemirror/autocomplete';
 
 export const durationTerms = [{ label: 'y' }, { label: 'w' }, { label: 'd' }, { label: 'h' }, { label: 'm' }, { label: 's' }, { label: 'ms' }];
 export const matchOpTerms = [{ label: '=' }, { label: '!=' }, { label: '=~' }, { label: '!~' }];

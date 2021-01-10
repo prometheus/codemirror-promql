@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 import { LintStrategy } from './index';
-import { EditorView } from '@codemirror/next/view';
-import { Diagnostic } from '@codemirror/next/lint';
+import { EditorView } from '@codemirror/view';
+import { Diagnostic } from '@codemirror/lint';
 import { Parser } from '../parser/parser';
 
 // HybridLint will provide a promQL linter with static analysis

@@ -45,7 +45,7 @@ import {
 import { createEditorState } from '../../test/utils';
 import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from './path-finder';
 import { SyntaxNode } from 'lezer-tree';
-import { syntaxTree } from '@codemirror/next/language';
+import { syntaxTree } from '@codemirror/language';
 
 describe('walkThrough test', () => {
   const testCases = [

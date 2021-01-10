@@ -38,7 +38,9 @@ then the easiest way is this one:
 
 ```typescript
 import { PromQLExtension } from 'codemirror-promql';
-import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
+import { basicSetup } from '@codemirror/basic-setup';
+import { EditorState} from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 
 const promQL = new PromQLExtension()
 new EditorView({
@@ -89,7 +91,7 @@ enricher is a function that will allow user to enrich the current completion by 
 * `result` is the current result of the completion. Usually you don't want to override it but instead to concat your own completion with this one.
 
 ```typescript
-import { Completion } from '@codemirror/next/autocomplete';
+import { Completion } from '@codemirror/autocomplete';
 import { ContextKind } from 'codemirror-promql';
 
 function myCustomEnricher(trigger: ContextKind, result: Completion[]): Completion[] | Promise<Completion[]> {

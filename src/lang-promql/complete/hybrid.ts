@@ -62,8 +62,8 @@ import {
   Unless,
   VectorSelector,
 } from 'lezer-promql';
-import { Completion, CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
-import { EditorState } from '@codemirror/next/state';
+import { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import { EditorState } from '@codemirror/state';
 import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from '../parser/path-finder';
 import {
   aggregateOpModifierTerms,
@@ -77,7 +77,7 @@ import {
 } from './promql.terms';
 import { buildLabelMatchers } from '../parser/matcher';
 import { Matcher } from '../types/matcher';
-import { syntaxTree } from '@codemirror/next/language';
+import { syntaxTree } from '@codemirror/language';
 
 const autocompleteNodes: { [key: string]: Completion[] } = {
   matchOp: matchOpTerms,

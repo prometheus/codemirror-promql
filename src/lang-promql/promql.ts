@@ -21,12 +21,12 @@
 // SOFTWARE.
 
 import { parser } from 'lezer-promql';
-import { styleTags, tags } from '@codemirror/next/highlight';
-import { Extension } from '@codemirror/next/state';
+import { styleTags, tags } from '@codemirror/highlight';
+import { Extension } from '@codemirror/state';
 import { CompleteConfiguration, CompleteStrategy, newCompleteStrategy } from './complete';
 import { LintStrategy, newLintStrategy, promQLLinter } from './lint';
-import { CompletionContext } from '@codemirror/next/autocomplete';
-import { LezerLanguage } from '@codemirror/next/language';
+import { CompletionContext } from '@codemirror/autocomplete';
+import { LezerLanguage } from '@codemirror/language';
 
 export const promQLLanguage = LezerLanguage.define({
   parser: parser.configure({

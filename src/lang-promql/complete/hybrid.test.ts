@@ -23,7 +23,7 @@
 import chai from 'chai';
 import { analyzeCompletion, computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
 import { createEditorState } from '../../test/utils';
-import { Completion, CompletionContext } from '@codemirror/next/autocomplete';
+import { Completion, CompletionContext } from '@codemirror/autocomplete';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -35,7 +35,7 @@ import {
   snippets,
 } from './promql.terms';
 import { EqlSingle, Neq } from 'lezer-promql';
-import { syntaxTree } from '@codemirror/next/language';
+import { syntaxTree } from '@codemirror/language';
 
 describe('analyzeCompletion test', () => {
   const testCases = [

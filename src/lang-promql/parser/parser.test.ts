@@ -22,9 +22,9 @@
 
 import chai from 'chai';
 import { Parser } from './parser';
-import { Diagnostic } from '@codemirror/next/lint';
+import { Diagnostic } from '@codemirror/lint';
 import { createEditorState } from '../../test/utils';
-import { syntaxTree } from '@codemirror/next/language';
+import { syntaxTree } from '@codemirror/language';
 import { ValueType } from '../types/function';
 
 describe('promql operations', () => {

@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 import { parser } from 'lezer-promql';
-import { EditorState } from '@codemirror/next/state';
-import { LezerLanguage } from '@codemirror/next/language';
+import { EditorState } from '@codemirror/state';
+import { LezerLanguage } from '@codemirror/language';
 
 const lightPromQLSyntax = LezerLanguage.define({ parser: parser });
 

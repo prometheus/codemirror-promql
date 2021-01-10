@@ -1,5 +1,5 @@
-import { EditorView } from '@codemirror/next/basic-setup';
-import { HighlightStyle, tags } from '@codemirror/next/highlight';
+import { EditorView } from '@codemirror/view';
+import { HighlightStyle, tags } from '@codemirror/highlight';
 
 // promQLHighlightMaterialTheme is based on the material theme defined here:
 // https://codemirror.net/theme/material.css

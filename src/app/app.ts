@@ -20,7 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
+import { basicSetup } from '@codemirror/basic-setup';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 import { PromQLExtension } from '../lang-promql';
 import { customTheme, promQLHighlightMaterialTheme } from './theme';
 
