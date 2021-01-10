@@ -58,7 +58,7 @@
     "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
-    "@codemirror/next": "^0.15.0"
+    "@codemirror/next": "^0.16.0"
   },
   "prettier": {
     "singleQuote": true,
