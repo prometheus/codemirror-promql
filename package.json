@@ -33,7 +33,13 @@
     "lru-cache": "^6.0.0"
   },
   "devDependencies": {
-    "@codemirror/next": "^0.16.0",
+    "@codemirror/autocomplete": "^0.17.1",
+    "@codemirror/basic-setup": "^0.17.1",
+    "@codemirror/highlight": "^0.17.1",
+    "@codemirror/language": "^0.17.1",
+    "@codemirror/lint": "^0.17.1",
+    "@codemirror/state": "^0.17.1",
+    "@codemirror/view": "^0.17.1",
     "@types/chai": "^4.2.12",
     "@types/lru-cache": "^5.1.0",
     "@types/mocha": "^8.0.3",
@@ -58,7 +64,13 @@
     "webpack-dev-server": "^3.11.0"
   },
   "peerDependencies": {
-    "@codemirror/next": "^0.16.0"
+    "@codemirror/autocomplete": "^0.17.1",
+    "@codemirror/basic-setup": "^0.17.1",
+    "@codemirror/highlight": "^0.17.1",
+    "@codemirror/language": "^0.17.1",
+    "@codemirror/lint": "^0.17.1",
+    "@codemirror/state": "^0.17.1",
+    "@codemirror/view": "^0.17.1"
   },
   "prettier": {
     "singleQuote": true,

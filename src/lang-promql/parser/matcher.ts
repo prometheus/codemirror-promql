@@ -22,7 +22,7 @@
 
 import { SyntaxNode } from 'lezer-tree';
 import { EqlRegex, EqlSingle, LabelName, MatchOp, Neq, NeqRegex, StringLiteral } from 'lezer-promql';
-import { EditorState } from '@codemirror/next/basic-setup';
+import { EditorState } from '@codemirror/state';
 import { Matcher } from '../types/matcher';
 
 function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {

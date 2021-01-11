@@ -22,7 +22,7 @@
 
 import { EnrichCompletionHandler, HybridComplete } from './hybrid';
 import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient, PrometheusConfig } from '../client/prometheus';
-import { CompletionContext, CompletionResult } from '@codemirror/next/autocomplete';
+import { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 
 export { EnrichCompletionHandler, ContextKind } from './hybrid';
 // Complete is the interface that defines the simple method that returns a CompletionResult.

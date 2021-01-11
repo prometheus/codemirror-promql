@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { Diagnostic } from '@codemirror/next/lint';
+import { Diagnostic } from '@codemirror/lint';
 import { SyntaxNode, Tree } from 'lezer-tree';
 import {
   AggregateExpr,
@@ -61,9 +61,9 @@ import {
 import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
 import { getType } from './type';
 import { buildLabelMatchers } from './matcher';
-import { EditorState } from '@codemirror/next/state';
+import { EditorState } from '@codemirror/state';
 import { Matcher } from '../types/matcher';
-import { syntaxTree } from '@codemirror/next/language';
+import { syntaxTree } from '@codemirror/language';
 import { getFunction, ValueType } from '../types/function';
 import { VectorMatchCardinality } from '../types/vector';
 import { buildVectorMatching } from './vector';

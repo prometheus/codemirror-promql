@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { EditorState } from '@codemirror/next/state';
+import { EditorState } from '@codemirror/state';
 import { SyntaxNode } from 'lezer-tree';
 import {
   And,

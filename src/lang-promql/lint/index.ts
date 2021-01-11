@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { EditorView } from '@codemirror/next/view';
-import { Diagnostic, linter } from '@codemirror/next/lint';
+import { EditorView } from '@codemirror/view';
+import { Diagnostic, linter } from '@codemirror/lint';
 import { HybridLint } from './hybrid';
 
 type lintFunc = (view: EditorView) => readonly Diagnostic[] | Promise<readonly Diagnostic[]>;

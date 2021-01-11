@@ -23,36 +23,20 @@
 import { SyntaxNode } from 'lezer-tree';
 import {
   AggregateExpr,
-  And,
   BinaryExpr,
-  BinModifier,
   Expr,
   FunctionCall,
-  GroupingLabel,
-  GroupingLabelList,
-  GroupingLabels,
-  GroupLeft,
-  GroupModifiers,
-  GroupRight,
-  Ignoring,
   MatrixSelector,
-  MaybeGroupingLabels,
   NumberLiteral,
   OffsetExpr,
-  On,
-  OnOrIgnoring,
-  Or,
   ParenExpr,
   StringLiteral,
   SubqueryExpr,
   UnaryExpr,
-  Unless,
   VectorSelector,
 } from 'lezer-promql';
-import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
-import { EditorState } from '@codemirror/next/state';
+import { walkThrough } from './path-finder';
 import { getFunction, ValueType } from '../types/function';
-import { VectorMatchCardinality, VectorMatching } from '../types/vector';
 
 // Based on https://github.com/prometheus/prometheus/blob/d668a7efe3107dbdcc67bf4e9f12430ed8e2b396/promql/parser/ast.go#L191
 export function getType(node: SyntaxNode | null): ValueType {

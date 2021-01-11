@@ -25,7 +25,7 @@ import { createEditorState } from '../../test/utils';
 import { walkThrough } from './path-finder';
 import { BinaryExpr, Expr } from 'lezer-promql';
 import chai from 'chai';
-import { syntaxTree } from '@codemirror/next/language';
+import { syntaxTree } from '@codemirror/language';
 import { VectorMatchCardinality } from '../types/vector';
 
 describe('buildVectorMatching test', () => {
