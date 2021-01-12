@@ -25,22 +25,19 @@ import { SyntaxNode } from 'lezer-tree';
 import {
   And,
   BinaryExpr,
-  BinModifier,
+  BinModifiers,
   GroupingLabel,
   GroupingLabelList,
   GroupingLabels,
   GroupLeft,
-  GroupModifiers,
   GroupRight,
-  Ignoring,
-  MaybeGroupingLabels,
   On,
   OnOrIgnoring,
   Or,
   Unless,
 } from 'lezer-promql';
 import { VectorMatchCardinality, VectorMatching } from '../types/vector';
-import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from './path-finder';
+import { containsAtLeastOneChild, retrieveAllRecursiveNodes } from './path-finder';
 
 export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode) {
   if (!binaryNode || binaryNode.type.id !== BinaryExpr) {
@@ -52,34 +49,28 @@ export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode) 
     on: false,
     include: [],
   };
-  const on = walkThrough(binaryNode, BinModifier, GroupModifiers, OnOrIgnoring, On);
-  const ignoring = walkThrough(binaryNode, BinModifier, GroupModifiers, OnOrIgnoring, Ignoring);
-  if (on || ignoring) {
-    result.on = on !== null && on !== undefined;
-    const labels = retrieveAllRecursiveNodes(
-      walkThrough(binaryNode, BinModifier, GroupModifiers, OnOrIgnoring, GroupingLabels),
-      GroupingLabelList,
-      GroupingLabel
-    );
-    if (labels.length > 0) {
-      for (const label of labels) {
-        result.matchingLabels.push(state.sliceDoc(label.from, label.to));
+  const binModifiers = binaryNode.getChild(BinModifiers);
+  if (binModifiers) {
+    const onOrIgnoring = binModifiers.getChild(OnOrIgnoring);
+    if (onOrIgnoring) {
+      result.on = onOrIgnoring.getChild(On) !== null;
+      const labels = retrieveAllRecursiveNodes(onOrIgnoring.getChild(GroupingLabels), GroupingLabelList, GroupingLabel);
+      if (labels.length > 0) {
+        for (const label of labels) {
+          result.matchingLabels.push(state.sliceDoc(label.from, label.to));
+        }
       }
     }
-  }
 
-  const groupLeft = walkThrough(binaryNode, BinModifier, GroupModifiers, GroupLeft);
-  const groupRight = walkThrough(binaryNode, BinModifier, GroupModifiers, GroupRight);
-  if (groupLeft || groupRight) {
-    result.card = groupLeft ? VectorMatchCardinality.CardManyToOne : VectorMatchCardinality.CardOneToMany;
-    const includeLabels = retrieveAllRecursiveNodes(
-      walkThrough(binaryNode, BinModifier, GroupModifiers, MaybeGroupingLabels, GroupingLabels),
-      GroupingLabelList,
-      GroupingLabel
-    );
-    if (includeLabels.length > 0) {
-      for (const label of includeLabels) {
-        result.include.push(state.sliceDoc(label.from, label.to));
+    const groupLeft = binModifiers.getChild(GroupLeft);
+    const groupRight = binModifiers.getChild(GroupRight);
+    if (groupLeft || groupRight) {
+      result.card = groupLeft ? VectorMatchCardinality.CardManyToOne : VectorMatchCardinality.CardOneToMany;
+      const includeLabels = retrieveAllRecursiveNodes(binModifiers.getChild(GroupingLabels), GroupingLabelList, GroupingLabel);
+      if (includeLabels.length > 0) {
+        for (const label of includeLabels) {
+          result.include.push(state.sliceDoc(label.from, label.to));
+        }
       }
     }
   }

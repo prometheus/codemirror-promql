@@ -28,7 +28,8 @@ import {
   AggregateExpr,
   And,
   BinaryExpr,
-  BoolModifier,
+  BinModifiers,
+  Bool,
   Div,
   Duration,
   Eql,
@@ -301,11 +302,11 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
           );
           // in  case the BinaryExpr is a comparison, we should autocomplete the `bool` keyword. But only if it is not present.
           // When the `bool` keyword is NOT present, then the expression looks like this:
-          // 			BinaryExpr( Expr(...), Gtr, BoolModifier , BinModifier(GroupModifiers), Expr(...) )
+          // 			BinaryExpr( Expr(...), Gtr , BinModifiers, Expr(...) )
           // When the `bool` keyword is present, then the expression looks like this:
-          //      BinaryExpr( Expr(...), Gtr , BinModifier(GroupModifiers(BoolModifier)), Expr(...) )
-          // To know if it is not present, we just have to check if the BoolModifier is present as a child of the BinaryExpr.
-          if (containsAtLeastOneChild(parent, Eql, Gte, Gtr, Lte, Lss, Neq) && containsChild(parent, BoolModifier)) {
+          //      BinaryExpr( Expr(...), Gtr , BinModifiers(Bool), Expr(...) )
+          // To know if it is not present, we just have to check if the Bool is not present as a child of the BinModifiers.
+          if (containsAtLeastOneChild(parent, Eql, Gte, Gtr, Lte, Lss, Neq) && !walkThrough(parent, BinModifiers, Bool)) {
             result.push({ kind: ContextKind.Bool });
           }
         } else if (parent.type.id !== BinaryExpr || (parent.type.id === BinaryExpr && containsAtLeastOneChild(parent, 0))) {

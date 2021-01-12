@@ -26,9 +26,8 @@ import {
   AggregateExpr,
   And,
   BinaryExpr,
-  BinModifier,
+  BinModifiers,
   Bool,
-  BoolModifier,
   Bottomk,
   CountValues,
   Eql,
@@ -37,7 +36,6 @@ import {
   FunctionCall,
   FunctionCallArgs,
   FunctionCallBody,
-  GroupModifiers,
   Gte,
   Gtr,
   Identifier,
@@ -198,7 +196,7 @@ export class Parser {
     }
     const lt = this.checkAST(lExpr);
     const rt = this.checkAST(rExpr);
-    const boolModifierUsed = walkThrough(node, BinModifier, GroupModifiers, BoolModifier, Bool);
+    const boolModifierUsed = walkThrough(node, BinModifiers, Bool);
     const isComparisonOperator = containsAtLeastOneChild(node, Eql, Neq, Lte, Lss, Gte, Gtr);
     const isSetOperator = containsAtLeastOneChild(node, And, Or, Unless);
 
