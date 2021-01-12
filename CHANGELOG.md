@@ -1,3 +1,9 @@
+0.12.0 / 2021-01-12
+===================
+
+* **[Enhancement]**: Improve the parsing of `BinExpr` thanks to the changes provided by lezer-promql (v0.15.0)
+* **[BreakingChange]**: Support the new version of codemirror v0.17.x
+
 0.11.0 / 2020-12-08
 ===================
 
