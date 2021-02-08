@@ -65,7 +65,6 @@
   },
   "peerDependencies": {
     "@codemirror/autocomplete": "^0.17.1",
-    "@codemirror/basic-setup": "^0.17.1",
     "@codemirror/highlight": "^0.17.1",
     "@codemirror/language": "^0.17.1",
     "@codemirror/lint": "^0.17.1",
