@@ -27,6 +27,7 @@ import {
   AvgOverTime,
   Ceil,
   Changes,
+  Clamp,
   ClampMax,
   ClampMin,
   CountOverTime,
@@ -45,6 +46,7 @@ import {
   Irate,
   LabelJoin,
   LabelReplace,
+  LastOverTime,
   Ln,
   Log10,
   Log2,
@@ -58,6 +60,7 @@ import {
   Resets,
   Round,
   Scalar,
+  Sgn,
   Sort,
   SortDesc,
   Sqrt,
@@ -121,6 +124,12 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [Changes]: {
     name: 'changes',
     argTypes: [ValueType.matrix],
+    variadic: 0,
+    returnType: ValueType.vector,
+  },
+  [Clamp]: {
+    name: 'clamp',
+    argTypes: [ValueType.vector, ValueType.scalar, ValueType.scalar],
     variadic: 0,
     returnType: ValueType.vector,
   },
@@ -232,6 +241,12 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
     variadic: -1,
     returnType: ValueType.vector,
   },
+  [LastOverTime]: {
+    name: 'last_over_time',
+    argTypes: [ValueType.matrix],
+    variadic: 0,
+    returnType: ValueType.vector,
+  },
   [Ln]: {
     name: 'ln',
     argTypes: [ValueType.vector],
@@ -309,6 +324,12 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
     argTypes: [ValueType.vector],
     variadic: 0,
     returnType: ValueType.scalar,
+  },
+  [Sgn]: {
+    name: 'sgn',
+    argTypes: [ValueType.vector],
+    variadic: 0,
+    returnType: ValueType.vector,
   },
   [Sort]: {
     name: 'sort',
