@@ -63,6 +63,12 @@ export const functionIdentifierTerms = [
     type: 'function',
   },
   {
+    label: 'clamp',
+    detail: 'function',
+    info: 'Limit the value of input series between a minimum and a maximum',
+    type: 'function',
+  },
+  {
     label: 'clamp_max',
     detail: 'function',
     info: 'Limit the value of input series to a maximum',
@@ -171,6 +177,12 @@ export const functionIdentifierTerms = [
     type: 'function',
   },
   {
+    label: 'last_over_time',
+    detail: 'function',
+    info: 'The most recent point value in specified interval.',
+    type: 'function',
+  },
+  {
     label: 'ln',
     detail: 'function',
     info: 'Calculate natural logarithm of input series',
@@ -246,6 +258,12 @@ export const functionIdentifierTerms = [
     label: 'scalar',
     detail: 'function',
     info: 'Convert single-element series vector into scalar value',
+    type: 'function',
+  },
+  {
+    label: 'sgn',
+    detail: 'function',
+    info: 'Returns the sign of the instant vector',
     type: 'function',
   },
   {
