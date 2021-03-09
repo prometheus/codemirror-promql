@@ -30,6 +30,7 @@ import {
   NumberLiteral,
   OffsetExpr,
   ParenExpr,
+  StepInvariantExpr,
   StringLiteral,
   SubqueryExpr,
   UnaryExpr,
@@ -77,6 +78,8 @@ export function getType(node: SyntaxNode | null): ValueType {
         return ValueType.none;
       }
       return getFunction(funcNode.type.id).returnType;
+    case StepInvariantExpr:
+      return getType(walkThrough(node, Expr));
     default:
       return ValueType.none;
   }

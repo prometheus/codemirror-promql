@@ -724,6 +724,38 @@ describe('promql operations', () => {
       expectedValueType: ValueType.vector,
       expectedDiag: [],
     },
+    {
+      expr: '1 @ start()',
+      expectedValueType: ValueType.scalar,
+      expectedDiag: [
+        {
+          from: 0,
+          to: 11,
+          message: '@ modifier must be preceded by an instant selector vector or range vector selector or a subquery',
+          severity: 'error',
+        },
+      ],
+    },
+    {
+      expr: 'foo @ 879',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'food @ start()',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'food @ end()',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
+    {
+      expr: 'sum (rate(foo[5m])) @ 456',
+      expectedValueType: ValueType.vector,
+      expectedDiag: [],
+    },
   ];
   testCases.forEach((value) => {
     const state = createEditorState(value.expr);

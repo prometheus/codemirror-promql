@@ -41,9 +41,9 @@ export const promQLLanguage = LezerLanguage.define({
           tags.variableName
         ),
         'Avg Bottomk Count Count_values Group Max Min Quantile Stddev Stdvar Sum Topk': tags.operatorKeyword,
-        'By Without Bool On Ignoring GroupLeft GroupRight Offset': tags.modifier,
+        'By Without Bool On Ignoring GroupLeft GroupRight Offset Start End': tags.modifier,
         'And Unless Or': tags.logicOperator,
-        'Sub Add Mul Mod Div Eql Neq Lte Lss Gte Gtr EqlRegex EqlSingle NeqRegex Pow': tags.operator,
+        'Sub Add Mul Mod Div Eql Neq Lte Lss Gte Gtr EqlRegex EqlSingle NeqRegex Pow At': tags.operator,
         UnaryOp: tags.arithmeticOperator,
         '( )': tags.paren,
         '[ ]': tags.squareBracket,
