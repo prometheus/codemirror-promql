@@ -36,11 +36,5 @@ module.exports = {
   },
   devServer: {
     contentBase: './dist',
-    proxy: {
-      '/lsp': {
-        target: 'http://localhost:8000',
-        pathRewrite: { '^/lsp': '' },
-      },
-    },
   },
 };

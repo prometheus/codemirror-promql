@@ -47,10 +47,6 @@ jobs:
       - run:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/project/.npmrc
-      - run: cp ~/project/README.md ~/project/lib/README.md
-      - run: cp ~/project/package.json ~/project/lib/package.json
-      - run: cp ~/project/LICENSE ~/project/lib/LICENSE
-      - run: cp ~/project/CHANGELOG.md ~/project/lib/CHANGELOG.md
       - run: npm publish ~/project/lib --access public
 
 workflows:
