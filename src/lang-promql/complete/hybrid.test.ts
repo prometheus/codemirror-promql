@@ -27,6 +27,7 @@ import { Completion, CompletionContext } from '@codemirror/autocomplete';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
+  atModifierTerms,
   binOpModifierTerms,
   binOpTerms,
   durationTerms,
@@ -404,6 +405,12 @@ describe('analyzeCompletion test', () => {
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
       expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete at modifiers',
+      expr: '1 @ s',
+      pos: 5,
+      expectedContext: [{ kind: ContextKind.AtModifiers }],
     },
   ];
   testCases.forEach((value) => {
@@ -921,6 +928,17 @@ describe('autocomplete promQL test', () => {
         from: 26,
         to: 26,
         span: undefined,
+      },
+    },
+    {
+      title: 'autocomplete at modifiers',
+      expr: '1 @ s',
+      pos: 5,
+      expectedResult: {
+        options: atModifierTerms,
+        from: 4,
+        to: 5,
+        span: /^[a-zA-Z0-9_:]+$/,
       },
     },
   ];

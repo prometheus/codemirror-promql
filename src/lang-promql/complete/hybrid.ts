@@ -58,6 +58,7 @@ import {
   OffsetExpr,
   Or,
   Pow,
+  StepInvariantExpr,
   StringLiteral,
   Sub,
   Unless,
@@ -69,6 +70,7 @@ import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walk
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
+  atModifierTerms,
   binOpModifierTerms,
   binOpTerms,
   durationTerms,
@@ -85,6 +87,7 @@ const autocompleteNodes: { [key: string]: Completion[] } = {
   binOp: binOpTerms,
   duration: durationTerms,
   binOpModifier: binOpModifierTerms,
+  atModifier: atModifierTerms,
   functionIdentifier: functionIdentifierTerms,
   aggregateOp: aggregateOpTerms,
   aggregateOpModifier: aggregateOpModifierTerms,
@@ -106,6 +109,7 @@ export enum ContextKind {
   Duration,
   Offset,
   Bool,
+  AtModifiers,
 }
 
 export interface Context {
@@ -216,6 +220,13 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         // `metric_name{}[5]`
         // We can also just autocomplete a duration
         result.push({ kind: ContextKind.Duration });
+        break;
+      }
+      if (node.parent?.type.id === StepInvariantExpr) {
+        // we are likely in the given situation:
+        //   `expr @ s`
+        // we can autocomplete start / end
+        result.push({ kind: ContextKind.AtModifiers });
         break;
       }
       // when we are in the situation 'metric_name !', we have the following tree
@@ -474,6 +485,11 @@ export class HybridComplete implements CompleteStrategy {
         case ContextKind.Bool:
           asyncResult = asyncResult.then((result) => {
             return result.concat([{ label: 'bool' }]);
+          });
+          break;
+        case ContextKind.AtModifiers:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat(autocompleteNodes.atModifier);
           });
           break;
         case ContextKind.MetricName:
