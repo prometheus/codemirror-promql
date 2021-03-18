@@ -7,7 +7,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.config.cjs --open",
     "build": "bash ./build.sh",
-    "build-app": "webpack",
+    "build-app": "webpack --config webpack.config.cjs",
     "test": "node --experimental-specifier-resolution=node --experimental-modules --loader ts-node/esm node_modules/mocha/lib/cli/cli.js src/**/*.test.ts",
     "lint": "eslint src/ --ext .ts",
     "lint:fix": "eslint --fix src/ --ext .ts"
