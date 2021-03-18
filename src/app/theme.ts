@@ -3,7 +3,7 @@ import { HighlightStyle, tags } from '@codemirror/highlight';
 
 // promQLHighlightMaterialTheme is based on the material theme defined here:
 // https://codemirror.net/theme/material.css
-export const promQLHighlightMaterialTheme = HighlightStyle.define(
+export const promQLHighlightMaterialTheme = HighlightStyle.define([
   {
     tag: tags.deleted,
     textDecoration: 'line-through',
@@ -75,8 +75,8 @@ export const promQLHighlightMaterialTheme = HighlightStyle.define(
   {
     tag: tags.comment,
     color: '#546E7A',
-  }
-);
+  },
+]);
 
 export const customTheme = EditorView.theme({
   $completionDetail: {
