@@ -19,7 +19,7 @@ jobs:
     steps:
       - checkout
       - node/install-packages
-      - run: npm run build
+      - run: npm run build-app
 
   lint-lib:
     executor:
