@@ -1,3 +1,11 @@
+0.13.0 / 2021-03-22
+===================
+* **[Feature]**: Linter and Autocompletion support 3 new PromQL functions: `clamp` , `last_over_time`, `sgn`
+* **[Feature]**: Linter and Autocompletion support the `@` expression.
+* **[Enhancement]**: Signature of `CompleteStrategy.promQL` has been updated to support the type `Promise<null>` (v0.18.0)
+* **[BreakingChange]**: Support last version of Codemirror.next (v0.18.0)
+* **[BreakingChange]**: Remove the function `enricher`
+
 0.12.0 / 2021-01-12
 ===================
 
