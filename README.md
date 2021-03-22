@@ -102,38 +102,6 @@ Use it cautiously. A high value of this limit can cause a crash of your browser 
 const promQL = new PromQLExtension().setComplete({ maxMetricsMetadata: 10000 })
 ```
 
-### enricher
-
-enricher is a function that will allow user to enrich the current completion by adding a custom one. It takes two
-parameters:
-
-* `trigger` should be used to decide whenever you would like to trigger your custom completion. It's better to not
-  trigger the same completion for multiple different ContextKind. For example, the autocompletion of the metricName /
-  the function / the aggregation happens at the same time. So if you want to trigger your custom completion for
-  metricName / function / aggregation, you should just choose to trigger it for the function for example. Otherwise, you
-  will end up to have the same completion result multiple time.
-
-* `result` is the current result of the completion. Usually you don't want to override it but instead to concat your own
-  completion with this one.
-
-```typescript
-import { Completion } from '@codemirror/autocomplete';
-import { ContextKind } from 'codemirror-promql';
-
-function myCustomEnricher(trigger: ContextKind, result: Completion[]): Completion[] | Promise<Completion[]> {
-  switch (trigger) {
-    case ContextKind.Aggregation:
-    // custom completion
-    // ...
-    // return result.concat( myCustomCompletionArray )
-    default:
-      return result;
-  }
-}
-
-const promQL = new PromQLExtension().setComplete({ enricher: myCustomEnricher })
-```
-
 ### Connect the autocompletion extension to a remote Prometheus server
 
 Connecting the autocompletion extension to a remote Prometheus server will provide autocompletion of metric names, label

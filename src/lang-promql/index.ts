@@ -21,5 +21,5 @@
 // SOFTWARE.
 
 export { PrometheusClient } from './client';
-export { CompleteConfiguration, ContextKind, EnrichCompletionHandler } from './complete';
+export { CompleteConfiguration } from './complete';
 export { PromQLExtension, promQLLanguage } from './promql';
