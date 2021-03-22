@@ -28,7 +28,7 @@ export { EnrichCompletionHandler, ContextKind } from './hybrid';
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
-  promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null;
+  promQL(context: CompletionContext): Promise<CompletionResult | null> | CompletionResult | null;
 }
 
 // CompleteConfiguration should be used to customize the autocompletion.

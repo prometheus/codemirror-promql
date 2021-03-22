@@ -432,7 +432,7 @@ export class HybridComplete implements CompleteStrategy {
     this.enricher = enricher;
   }
 
-  promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null {
+  promQL(context: CompletionContext): Promise<CompletionResult | null> | CompletionResult | null {
     const { state, pos } = context;
     const tree = syntaxTree(state).resolve(pos, -1);
     const contexts = analyzeCompletion(state, tree);
