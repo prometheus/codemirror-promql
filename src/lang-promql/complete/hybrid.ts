@@ -55,6 +55,7 @@ import {
   Mul,
   Neq,
   NeqRegex,
+  NumberLiteral,
   OffsetExpr,
   Or,
   Pow,
@@ -164,6 +165,7 @@ export function computeStartCompletePosition(node: SyntaxNode, pos: number): num
     start++;
   } else if (
     node.type.id === OffsetExpr ||
+    (node.type.id === NumberLiteral && node.parent?.type.id === 0 && node.parent.parent?.type.id === SubqueryExpr) ||
     (node.type.id === 0 &&
       (node.parent?.type.id === OffsetExpr ||
         node.parent?.type.id === MatrixSelector ||
@@ -361,6 +363,19 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         // finally get the full matcher available
         const labelMatchers = buildLabelMatchers(retrieveAllRecursiveNodes(walkBackward(node, LabelMatchList), LabelMatchList, LabelMatcher), state);
         result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName, matchers: labelMatchers });
+      }
+      break;
+    case NumberLiteral:
+      if (node.parent?.type.id === 0 && node.parent.parent?.type.id === SubqueryExpr) {
+        // Here we are likely in this situation:
+        //     `go[5d:4]`
+        // and we have the given tree:
+        // Expr( SubqueryExpr(
+        // 		Expr(VectorSelector(MetricIdentifier(Identifier))),
+        // 		Duration, Duration, ⚠(NumberLiteral)
+        // ))
+        // So we should continue to autocomplete a duration
+        result.push({ kind: ContextKind.Duration });
       }
       break;
     case Duration:
