@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { basicSetup, EditorState, EditorView } from '@codemirror/next/basic-setup';
 import { PromQLExtension } from 'codemirror-promql';
-import { highlightStyle, tags } from '@codemirror/next/highlight';
+import { HighlightStyle, tags } from '@codemirror/highlight';
+import { EditorView } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
+import { basicSetup } from '@codemirror/basic-setup';
 
 @Component({
   selector: 'app-root',
@@ -11,7 +13,7 @@ import { highlightStyle, tags } from '@codemirror/next/highlight';
 export class AppComponent implements OnInit {
   // promQLHighlightMaterialTheme is based on the material theme defined here:
   // https://codemirror.net/theme/material.css
-  private promQLHighlightMaterialTheme = highlightStyle(
+  private static promQLHighlightMaterialTheme = HighlightStyle.define([
     {
       tag: tags.deleted,
       textDecoration: 'line-through',
@@ -82,9 +84,9 @@ export class AppComponent implements OnInit {
     },
     {
       tag: tags.comment,
-      color: '#546E7A',
-    }
-  );
+      color: '#546e7a',
+    },
+  ]);
 
   private customTheme = EditorView.theme({
     $completionDetail: {
@@ -104,7 +106,7 @@ export class AppComponent implements OnInit {
     // tslint:disable-next-line:no-unused-expression
     const view = new EditorView({
       state: EditorState.create({
-        extensions: [basicSetup, promqlExtension.asExtension(), this.promQLHighlightMaterialTheme, this.customTheme],
+        extensions: [basicSetup, promqlExtension.asExtension(), AppComponent.promQLHighlightMaterialTheme, this.customTheme],
       }),
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       // tslint:disable-next-line:no-non-null-assertion
