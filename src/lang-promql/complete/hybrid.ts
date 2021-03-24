@@ -61,6 +61,7 @@ import {
   StepInvariantExpr,
   StringLiteral,
   Sub,
+  SubqueryExpr,
   Unless,
   VectorSelector,
 } from 'lezer-promql';
@@ -163,7 +164,10 @@ export function computeStartCompletePosition(node: SyntaxNode, pos: number): num
     start++;
   } else if (
     node.type.id === OffsetExpr ||
-    (node.type.id === 0 && (node.parent?.type.id === OffsetExpr || node.parent?.type.id === MatrixSelector))
+    (node.type.id === 0 &&
+      (node.parent?.type.id === OffsetExpr ||
+        node.parent?.type.id === MatrixSelector ||
+        (node.parent?.type.id === SubqueryExpr && containsAtLeastOneChild(node.parent, Duration))))
   ) {
     start = pos;
   }
@@ -203,6 +207,13 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         //   `expr @ s`
         // we can autocomplete start / end
         result.push({ kind: ContextKind.AtModifiers });
+        break;
+      }
+      if (node.parent?.type.id === SubqueryExpr && containsAtLeastOneChild(node.parent, Duration)) {
+        // we are likely in the given situation:
+        //    `rate(foo[5d:5])`
+        // so we should autocomplete a duration
+        result.push({ kind: ContextKind.Duration });
         break;
       }
       // when we are in the situation 'metric_name !', we have the following tree
