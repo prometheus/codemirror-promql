@@ -402,8 +402,20 @@ describe('analyzeCompletion test', () => {
     },
     {
       title: 'autocomplete duration for a matrixSelector 2',
+      expr: 'go[5d1]',
+      pos: 6,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a matrixSelector 3',
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a matrixSelector 4',
+      expr: 'rate(my_metric{l1="l2"}[25d5])',
+      pos: 28,
       expectedContext: [{ kind: ContextKind.Duration }],
     },
     {
@@ -414,8 +426,20 @@ describe('analyzeCompletion test', () => {
     },
     {
       title: 'autocomplete duration for a subQuery 2',
+      expr: 'go[5d:5d4]',
+      pos: 9,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a subQuery 3',
       expr: 'rate(my_metric{l1="l2"}[25d:6])',
       pos: 29,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a subQuery 4',
+      expr: 'rate(my_metric{l1="l2"}[25d:6d5])',
+      pos: 31,
       expectedContext: [{ kind: ContextKind.Duration }],
     },
     {
@@ -553,9 +577,21 @@ describe('computeStartCompletePosition test', () => {
     },
     {
       title: 'start should be equal to the pos for the duration in a matrix selector 2',
+      expr: 'go[5d5]',
+      pos: 6,
+      expectedStart: 6,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector 3',
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
       expectedStart: 26,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a matrix selector 4',
+      expr: 'rate(my_metric{l1="l2"}[25d5])',
+      pos: 28,
+      expectedStart: 28,
     },
     {
       title: 'start should be equal to the pos for the duration in a subquery selector',
@@ -565,9 +601,21 @@ describe('computeStartCompletePosition test', () => {
     },
     {
       title: 'start should be equal to the pos for the duration in a subquery selector 2',
+      expr: 'go[5d:5d5]',
+      pos: 9,
+      expectedStart: 9,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a subquery selector 3',
       expr: 'rate(my_metric{l1="l2"}[25d:6])',
       pos: 29,
       expectedStart: 29,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a subquery selector 3',
+      expr: 'rate(my_metric{l1="l2"}[25d:6d5])',
+      pos: 31,
+      expectedStart: 31,
     },
   ];
   testCases.forEach((value) => {
@@ -945,12 +993,34 @@ describe('autocomplete promQL test', () => {
     },
     {
       title: 'offline autocomplete duration for a matrixSelector 2',
+      expr: 'go[5d1]',
+      pos: 6,
+      expectedResult: {
+        options: durationTerms,
+        from: 6,
+        to: 6,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a matrixSelector 3',
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
       expectedResult: {
         options: durationTerms,
         from: 26,
         to: 26,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a matrixSelector 4',
+      expr: 'rate(my_metric{l1="l2"}[25d5])',
+      pos: 28,
+      expectedResult: {
+        options: durationTerms,
+        from: 28,
+        to: 28,
         span: undefined,
       },
     },
@@ -967,12 +1037,34 @@ describe('autocomplete promQL test', () => {
     },
     {
       title: 'offline autocomplete duration for a subQuery 2',
+      expr: 'go[5d:5d4]',
+      pos: 9,
+      expectedResult: {
+        options: durationTerms,
+        from: 9,
+        to: 9,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a subQuery 3',
       expr: 'rate(my_metric{l1="l2"}[25d:6])',
       pos: 29,
       expectedResult: {
         options: durationTerms,
         from: 29,
         to: 29,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a subQuery 4',
+      expr: 'rate(my_metric{l1="l2"}[25d:6d5])',
+      pos: 31,
+      expectedResult: {
+        options: durationTerms,
+        from: 31,
+        to: 31,
         span: undefined,
       },
     },
