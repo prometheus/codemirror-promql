@@ -407,6 +407,18 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.Duration }],
     },
     {
+      title: 'autocomplete duration for a subQuery',
+      expr: 'go[5d:5]',
+      pos: 7,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
+      title: 'autocomplete duration for a subQuery 2',
+      expr: 'rate(my_metric{l1="l2"}[25d:6])',
+      pos: 29,
+      expectedContext: [{ kind: ContextKind.Duration }],
+    },
+    {
       title: 'autocomplete at modifiers',
       expr: '1 @ s',
       pos: 5,
@@ -544,6 +556,18 @@ describe('computeStartCompletePosition test', () => {
       expr: 'rate(my_metric{l1="l2"}[25])',
       pos: 26,
       expectedStart: 26,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a subquery selector',
+      expr: 'go[5d:5]',
+      pos: 7,
+      expectedStart: 7,
+    },
+    {
+      title: 'start should be equal to the pos for the duration in a subquery selector 2',
+      expr: 'rate(my_metric{l1="l2"}[25d:6])',
+      pos: 29,
+      expectedStart: 29,
     },
   ];
   testCases.forEach((value) => {
@@ -927,6 +951,28 @@ describe('autocomplete promQL test', () => {
         options: durationTerms,
         from: 26,
         to: 26,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a subQuery',
+      expr: 'go[5d:5]',
+      pos: 7,
+      expectedResult: {
+        options: durationTerms,
+        from: 7,
+        to: 7,
+        span: undefined,
+      },
+    },
+    {
+      title: 'offline autocomplete duration for a subQuery 2',
+      expr: 'rate(my_metric{l1="l2"}[25d:6])',
+      pos: 29,
+      expectedResult: {
+        options: durationTerms,
+        from: 29,
+        to: 29,
         span: undefined,
       },
     },
