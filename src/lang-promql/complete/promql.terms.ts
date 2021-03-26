@@ -467,4 +467,25 @@ export const snippets: readonly Completion[] = [
     info: 'Set or replace a label value in an input vector',
     apply: snippet('label_replace(${__input_vector__}, "${__dst__}", "${__replacement__}", "${__src__}", "${__regex__}")'),
   },
+  {
+    label: 'topk(__rank_number__, __input_vector__)',
+    type: 'function',
+    detail: 'snippet',
+    info: 'Largest k elements by sample value',
+    apply: snippet('topk(${__rank_number__}, ${__input_vector__})'),
+  },
+  {
+    label: 'bottomk(__rank_number__, __input_vector__)',
+    type: 'function',
+    detail: 'snippet',
+    info: 'Smallest k elements by sample value',
+    apply: snippet('bottomk(${__rank_number__}, ${__input_vector__})'),
+  },
+  {
+    label: 'count_values("__label_name__", __input_vector__)',
+    type: 'function',
+    detail: 'snippet',
+    info: 'Count the number of series per distinct sample value',
+    apply: snippet('count_values("${__label_name__}", ${__metric__})'),
+  },
 ];
