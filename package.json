@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/prometheus-community/codemirror-promql/blob/master/README.md",
   "dependencies": {
-    "lezer-promql": "^0.17.0",
+    "lezer-promql": "^0.18.0",
     "lru-cache": "^6.0.0"
   },
   "devDependencies": {
