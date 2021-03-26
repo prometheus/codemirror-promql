@@ -1,8 +1,16 @@
+0.14.0 / 2021-03-26
+===================
+
+* **[Feature]**: Through the update of [lezer-promql](https://github.com/promlabs/lezer-promql/releases/tag/0.18.0)
+  support negative offset
+* **[Enhancement]**: Add snippet to ease the usage of the aggregation `topk`, `bottomk` and `count_value`
+* **[Enhancement]**: Autocomplete the 2nd hard of subquery time selector
+
 0.13.0 / 2021-03-22
 ===================
 * **[Feature]**: Linter and Autocompletion support 3 new PromQL functions: `clamp` , `last_over_time`, `sgn`
 * **[Feature]**: Linter and Autocompletion support the `@` expression.
-* **[Enhancement]**: Signature of `CompleteStrategy.promQL` has been updated to support the type `Promise<null>` (v0.18.0)
+* **[Enhancement]**: Signature of `CompleteStrategy.promQL` has been updated to support the type `Promise<null>`
 * **[BreakingChange]**: Support last version of Codemirror.next (v0.18.0)
 * **[BreakingChange]**: Remove the function `enricher`
 
