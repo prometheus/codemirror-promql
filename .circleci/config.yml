@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
   node: circleci/node@3.0.1
+  prometheus: prometheus/prometheus@0.11.0
 jobs:
   build-lib:
     executor:
@@ -20,7 +21,6 @@ jobs:
       - checkout
       - node/install-packages
       - run: npm run build-app
-
   lint-lib:
     executor:
       name: node/default
@@ -28,7 +28,6 @@ jobs:
       - checkout
       - node/install-packages
       - run: npm run lint
-
   test-lib:
     executor:
       name: node/default
@@ -36,7 +35,6 @@ jobs:
       - checkout
       - node/install-packages
       - run: npm test
-
   publish:
     executor:
       name: node/default
@@ -48,7 +46,6 @@ jobs:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/project/.npmrc
       - run: npm publish ~/project/lib --access public
-
 workflows:
   version: 2
   test-deploy:
