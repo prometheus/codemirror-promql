@@ -39,7 +39,7 @@ function setCompletion() {
     case 'prometheus':
       promqlExtension.setComplete({
         remote: {
-          url: 'http://localhost:9090',
+          url: 'https://prometheus.demo.do.prometheus.io',
         },
       });
       break;
