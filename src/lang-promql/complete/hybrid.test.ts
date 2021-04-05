@@ -190,6 +190,12 @@ describe('analyzeCompletion test', () => {
     },
     {
       title: 'autocomplete labelName in a list',
+      expr: 'sum by (myLabel1,)',
+      pos: 17, // cursor is between the bracket after the string myLab
+      expectedContext: [{ kind: ContextKind.LabelName }],
+    },
+    {
+      title: 'autocomplete labelName in a list 2',
       expr: 'sum by (myLabel1, myLab)',
       pos: 23, // cursor is between the bracket after the string myLab
       expectedContext: [{ kind: ContextKind.LabelName }],
@@ -213,9 +219,21 @@ describe('analyzeCompletion test', () => {
       expectedContext: [{ kind: ContextKind.LabelName, metricName: 'metric_name' }],
     },
     {
+      title: 'continue to autocomplete labelName associated to a metric 2',
+      expr: 'metric_name{myLabel="labelValue",}',
+      pos: 33, // cursor is between the bracket after the comma
+      expectedContext: [{ kind: ContextKind.LabelName, metricName: 'metric_name' }],
+    },
+    {
       title: 'continue autocomplete labelName that defined a metric',
       expr: '{myL}',
       pos: 4, // cursor is between the bracket after the string myL
+      expectedContext: [{ kind: ContextKind.LabelName, metricName: '' }],
+    },
+    {
+      title: 'continue autocomplete labelName that defined a metric 2',
+      expr: '{myLabel="labelValue",}',
+      pos: 22, // cursor is between the bracket after the comma
       expectedContext: [{ kind: ContextKind.LabelName, metricName: '' }],
     },
     {
@@ -505,24 +523,42 @@ describe('computeStartCompletePosition test', () => {
     },
     {
       title: 'bracket containing a substring 2',
+      expr: '{myLabel="LabelValue",}',
+      pos: 22, // cursor is after the comma
+      expectedStart: 22,
+    },
+    {
+      title: 'bracket containing a substring 2',
       expr: 'metricName{myL}',
       pos: 14, // cursor is between the bracket
       expectedStart: 11,
     },
     {
       title: 'bracket containing a substring 3',
+      expr: 'metricName{myLabel="LabelValue",}',
+      pos: 32, // cursor is after the comma
+      expectedStart: 32,
+    },
+    {
+      title: 'bracket containing a substring 4',
       expr: 'sum by(myL)',
       pos: 10, // cursor is between the bracket
       expectedStart: 7,
     },
     {
-      title: 'bracket containing a substring 3',
+      title: 'bracket containing a substring 5',
+      expr: 'sum by(myLabel,)',
+      pos: 15, // cursor is after the comma
+      expectedStart: 15,
+    },
+    {
+      title: 'bracket containing a substring 6',
       expr: 'sum(ra)',
       pos: 6, // cursor is between the bracket
       expectedStart: 4,
     },
     {
-      title: 'bracket containing a substring 3',
+      title: 'bracket containing a substring 7',
       expr: 'sum(rate(my))',
       pos: 11, // cursor is between the bracket
       expectedStart: 9,

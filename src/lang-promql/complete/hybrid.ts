@@ -149,18 +149,30 @@ function arrayToCompletionResult(data: Completion[], from: number, to: number, i
   } as CompletionResult;
 }
 
+// computeStartCompleteLabelPositionInLabelMatcherOrInGroupingLabel calculates the start position only when the node is a LabelMatchers or a GroupingLabels
+function computeStartCompleteLabelPositionInLabelMatcherOrInGroupingLabel(node: SyntaxNode, pos: number): number {
+  // Here we can have two different situations:
+  // 1. `metric{}` or `sum by()` with the cursor between the bracket
+  // and so we have increment the starting position to avoid to consider the open bracket when filtering the autocompletion list.
+  // 2. `metric{foo="bar",} or `sum by(foo,)  with the cursor after the comma.
+  // Then the start number should be the current position to avoid to consider the previous labelMatcher/groupingLabel when filtering the autocompletion list.
+  let start = node.from + 1;
+  if (node.firstChild !== null) {
+    // here that means the LabelMatchers / GroupingLabels has a child, which is not possible if we have the expression `metric{}`. So we are likely trying to autocomplete the label list after a comma
+    start = pos;
+  }
+  return start;
+}
+
 // computeStartCompletePosition calculates the start position of the autocompletion.
 // It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
 // A wrong `start` position will lead to have the completion not working.
 // Note: this method is exported only for testing purpose.
 export function computeStartCompletePosition(node: SyntaxNode, pos: number): number {
   let start = node.from;
-  if (
-    node.type.id === GroupingLabels ||
-    node.type.id === LabelMatchers ||
-    node.type.id === FunctionCallBody ||
-    (node.type.id === StringLiteral && node.parent?.type.id === LabelMatcher)
-  ) {
+  if (node.type.id === LabelMatchers || node.type.id === GroupingLabels) {
+    start = computeStartCompleteLabelPositionInLabelMatcherOrInGroupingLabel(node, pos);
+  } else if (node.type.id === FunctionCallBody || (node.type.id === StringLiteral && node.parent?.type.id === LabelMatcher)) {
     // When the cursor is between bracket, quote, we need to increment the starting position to avoid to consider the open bracket/ first string.
     start++;
   } else if (

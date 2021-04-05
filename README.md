@@ -175,17 +175,6 @@ npm start
 
 This should create a tab in your browser with the development app that contains CodeMirror Next with the PromQL plugin.
 
-### Autocompletion
-
-The autocompletion feature has 2 different modes, each requiring a different setup:
-
-* **prometheus**: This mode requires starting a Prometheus server listening on port 9090.
-* **offline**: This mode doesn't require anything.
-
-### Linter
-
-The linter feature has only an offline mode that doesn't require any particular setup.
-
 ### Deploy to Github Pages
 
 * `npm install -g angular-cli-ghpages`
