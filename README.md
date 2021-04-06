@@ -39,9 +39,7 @@ npm install --save @codemirror/basic-setup
 
 ### Playground
 
-You can try out the latest release version of this mode on:
-
-https://prometheus-community.github.io/codemirror-promql/
+[Here](https://codemirror-promql.netlify.app/) you have a playground available that is deployed from the latest commit available on the `master` branch.
 
 Here is a short preview of it looks like currently:
 
@@ -149,7 +147,8 @@ const promQL = new PromQLExtension().setComplete({ remote: { prometheusClient: M
 ### Example
 
 * The development [app](./src/app) can give you an example of how to use it with no TS Framework.
-* [How to use it in an angular project](./examples/angular-promql/README.md)
+* [ReactJS example](https://github.com/prometheus/prometheus/blob/431ea75a11ca165dad9dd5d629b3cf975f4c186b/web/ui/react-app/src/pages/graph/CMExpressionInput.tsx)
+* [Angular example](https://github.com/perses/perses/blob/28b3bdac88b0ed7a4602f9c91106442eafcb6c34/internal/api/front/perses/src/app/project/prometheusrule/promql-editor/promql-editor.component.ts)
 
 ## Contributions
 
@@ -174,14 +173,6 @@ npm start
 ```
 
 This should create a tab in your browser with the development app that contains CodeMirror Next with the PromQL plugin.
-
-### Deploy to Github Pages
-
-* `npm install -g angular-cli-ghpages`
-* Change into the `examples/angular-promql` directory.
-* `ng build --prod --base-href "https://prometheus-community.github.io/codemirror-promql/"`
-* `ngh -d dist/angular-promql`
-
 ## License
 
 [MIT](./LICENSE)
