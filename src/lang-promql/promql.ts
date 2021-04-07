@@ -63,7 +63,7 @@ export const promQLLanguage = LezerLanguage.define({
  */
 export class PromQLExtension {
   private complete: CompleteStrategy;
-  private readonly lint: LintStrategy;
+  private lint: LintStrategy;
   private enableCompletion: boolean;
   private enableLinter: boolean;
 
@@ -79,9 +79,22 @@ export class PromQLExtension {
     return this;
   }
 
+  getComplete(): CompleteStrategy {
+    return this.complete;
+  }
+
   activateCompletion(activate: boolean): PromQLExtension {
     this.enableCompletion = activate;
     return this;
+  }
+
+  setLinter(linter: LintStrategy): PromQLExtension {
+    this.lint = linter;
+    return this;
+  }
+
+  getLinter(): LintStrategy {
+    return this.lint;
   }
 
   activateLinter(activate: boolean): PromQLExtension {
