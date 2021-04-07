@@ -1,3 +1,9 @@
+0.14.1 / 2021-04-07
+===================
+
+* **[Enhancement]**: Provide getter and setter to easily manipulate the different objects exposed by the lib
+* **[BugFix]**: fix the autocompletion of the labels after a comma (in a label matcher list or in a grouping label list)
+
 0.14.0 / 2021-03-26
 ===================
 
