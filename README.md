@@ -1,7 +1,7 @@
 CodeMirror-promql
 =================
 [![CircleCI](https://circleci.com/gh/prometheus-community/codemirror-promql.svg?style=shield)](https://circleci.com/gh/prometheus-community/codemirror-promql) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![NPM version](https://img.shields.io/npm/v/codemirror-promql.svg)](https://www.npmjs.org/package/codemirror-promql)
+[![NPM version](https://img.shields.io/npm/v/codemirror-promql.svg)](https://www.npmjs.org/package/codemirror-promql) [![codecov](https://codecov.io/gh/prometheus-community/codemirror-promql/branch/master/graph/badge.svg?token=1OSVPBDKZC)](https://codecov.io/gh/prometheus-community/codemirror-promql)
 
 ## Overview
 
