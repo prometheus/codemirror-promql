@@ -59,6 +59,7 @@ import {
   OffsetExpr,
   Or,
   Pow,
+  PromQL,
   StepInvariantExpr,
   StringLiteral,
   Sub,
@@ -329,6 +330,12 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
           { kind: ContextKind.Function },
           { kind: ContextKind.Aggregation }
         );
+      }
+      break;
+    case PromQL:
+      if (!node.firstChild) {
+        // this situation can happen when there is nothing in the text area and the user is explicitly triggering the autocompletion (with ctrl + space)
+        result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       }
       break;
     case GroupingLabels:

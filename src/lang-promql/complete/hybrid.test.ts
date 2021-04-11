@@ -41,6 +41,12 @@ import { syntaxTree } from '@codemirror/language';
 describe('analyzeCompletion test', () => {
   const testCases = [
     {
+      title: 'empty expr',
+      expr: '',
+      pos: 0,
+      expectedContext: [{ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+    },
+    {
       title: 'simple metric autocompletion',
       expr: 'go_',
       pos: 3, // cursor is at the end of the expr
@@ -666,6 +672,18 @@ describe('computeStartCompletePosition test', () => {
 
 describe('autocomplete promQL test', () => {
   const testCases = [
+    {
+      title: 'offline empty expr',
+      expr: '',
+      pos: 0,
+      prometheusClient: undefined,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 0,
+        to: 0,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
     {
       title: 'offline simple function/aggregation autocompletion',
       expr: 'go_',
