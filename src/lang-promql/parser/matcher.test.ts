@@ -22,7 +22,7 @@
 
 import { EqlRegex, EqlSingle, Neq, NeqRegex } from 'lezer-promql';
 import { labelMatchersToString } from './matcher';
-import { Matcher } from '../types/matcher';
+import { Matcher } from '../types';
 import chai from 'chai';
 
 describe('labelMatchersToString test', () => {

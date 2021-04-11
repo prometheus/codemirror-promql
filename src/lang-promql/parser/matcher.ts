@@ -23,7 +23,7 @@
 import { SyntaxNode } from 'lezer-tree';
 import { EqlRegex, EqlSingle, LabelName, MatchOp, Neq, NeqRegex, StringLiteral } from 'lezer-promql';
 import { EditorState } from '@codemirror/state';
-import { Matcher } from '../types/matcher';
+import { Matcher } from '../types';
 
 function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {
   const matcher = new Matcher(0, '', '');

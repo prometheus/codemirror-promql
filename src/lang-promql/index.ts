@@ -21,5 +21,6 @@
 // SOFTWARE.
 
 export { PrometheusClient } from './client';
-export { CompleteConfiguration } from './complete';
+export { CompleteConfiguration, CompleteStrategy } from './complete';
+export { LintStrategy } from './lint';
 export { PromQLExtension, promQLLanguage } from './promql';

@@ -25,7 +25,7 @@ import { Parser } from './parser';
 import { Diagnostic } from '@codemirror/lint';
 import { createEditorState } from '../../test/utils';
 import { syntaxTree } from '@codemirror/language';
-import { ValueType } from '../types/function';
+import { ValueType } from '../types';
 
 describe('promql operations', () => {
   const testCases = [
