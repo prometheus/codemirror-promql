@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 import { FetchFn } from '.';
-import { Matcher } from '../types/matcher';
-import { labelMatchersToString } from '../parser/matcher';
+import { Matcher } from '../types';
+import { labelMatchersToString } from '../parser';
 import LRUCache from 'lru-cache';
 
 const apiPrefix = '/api/v1';

@@ -61,10 +61,8 @@ import { containsAtLeastOneChild, retrieveAllRecursiveNodes, walkThrough } from 
 import { getType } from './type';
 import { buildLabelMatchers } from './matcher';
 import { EditorState } from '@codemirror/state';
-import { Matcher } from '../types/matcher';
 import { syntaxTree } from '@codemirror/language';
-import { getFunction, ValueType } from '../types/function';
-import { VectorMatchCardinality } from '../types/vector';
+import { getFunction, Matcher, VectorMatchCardinality, ValueType } from '../types';
 import { buildVectorMatching } from './vector';
 
 export class Parser {

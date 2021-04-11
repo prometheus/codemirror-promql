@@ -68,7 +68,7 @@ import {
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
-import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from '../parser/path-finder';
+import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough, buildLabelMatchers } from '../parser';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -80,8 +80,7 @@ import {
   matchOpTerms,
   snippets,
 } from './promql.terms';
-import { buildLabelMatchers } from '../parser/matcher';
-import { Matcher } from '../types/matcher';
+import { Matcher } from '../types';
 import { syntaxTree } from '@codemirror/language';
 
 const autocompleteNodes: { [key: string]: Completion[] } = {

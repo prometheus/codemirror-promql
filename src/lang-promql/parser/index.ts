@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (c) 2020 The Prometheus Authors
+// Copyright (c) 2021 The Prometheus Authors
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,18 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { LintStrategy } from './index';
-import { EditorView } from '@codemirror/view';
-import { Diagnostic } from '@codemirror/lint';
-import { Parser } from '../parser';
-
-// HybridLint will provide a promQL linter with static analysis
-export class HybridLint implements LintStrategy {
-  public promQL(this: HybridLint): (view: EditorView) => readonly Diagnostic[] {
-    return (view: EditorView) => {
-      const parser = new Parser(view.state);
-      parser.analyze();
-      return parser.getDiagnostics();
-    };
-  }
-}
+export { buildLabelMatchers, labelMatchersToString } from './matcher';
+export { Parser } from './parser';
+export { walkBackward, walkThrough, containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes } from './path-finder';

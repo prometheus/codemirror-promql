@@ -36,7 +36,7 @@ import {
   Or,
   Unless,
 } from 'lezer-promql';
-import { VectorMatchCardinality, VectorMatching } from '../types/vector';
+import { VectorMatchCardinality, VectorMatching } from '../types';
 import { containsAtLeastOneChild, retrieveAllRecursiveNodes } from './path-finder';
 
 export function buildVectorMatching(state: EditorState, binaryNode: SyntaxNode) {
