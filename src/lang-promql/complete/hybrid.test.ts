@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 import chai from 'chai';
-import { analyzeCompletion, computeStartCompletePosition, ContextKind, HybridComplete } from './hybrid';
-import { createEditorState } from '../../test/utils';
+import { analyzeCompletion, computeStartCompletePosition, ContextKind } from './hybrid';
+import { createEditorState, mockedMetricsTerms, mockPrometheusServer } from '../../test/utils';
 import { Completion, CompletionContext } from '@codemirror/autocomplete';
 import {
   aggregateOpModifierTerms,
@@ -37,38 +37,87 @@ import {
 } from './promql.terms';
 import { EqlSingle, Neq } from 'lezer-promql';
 import { syntaxTree } from '@codemirror/language';
+import { newCompleteStrategy } from './index';
 
 describe('analyzeCompletion test', () => {
   const testCases = [
     {
+      title: 'empty expr',
+      expr: '',
+      pos: 0,
+      expectedContext: [
+        {
+          kind: ContextKind.MetricName,
+          metricName: '',
+        },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+      ],
+    },
+    {
       title: 'simple metric autocompletion',
       expr: 'go_',
       pos: 3, // cursor is at the end of the expr
-      expectedContext: [{ kind: ContextKind.MetricName, metricName: 'go_' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [
+        {
+          kind: ContextKind.MetricName,
+          metricName: 'go_',
+        },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+      ],
     },
     {
       title: 'metric/function/aggregation autocompletion',
       expr: 'sum()',
       pos: 4,
-      expectedContext: [{ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [
+        {
+          kind: ContextKind.MetricName,
+          metricName: '',
+        },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+      ],
     },
     {
       title: 'metric/function/aggregation autocompletion 2',
       expr: 'sum(rat)',
       pos: 7,
-      expectedContext: [{ kind: ContextKind.MetricName, metricName: 'rat' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [
+        {
+          kind: ContextKind.MetricName,
+          metricName: 'rat',
+        },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+      ],
     },
     {
       title: 'metric/function/aggregation autocompletion 3',
       expr: 'sum(rate())',
       pos: 9,
-      expectedContext: [{ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [
+        {
+          kind: ContextKind.MetricName,
+          metricName: '',
+        },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+      ],
     },
     {
       title: 'metric/function/aggregation autocompletion 4',
       expr: 'sum(rate(my_))',
       pos: 12,
-      expectedContext: [{ kind: ContextKind.MetricName, metricName: 'my_' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation }],
+      expectedContext: [
+        {
+          kind: ContextKind.MetricName,
+          metricName: 'my_',
+        },
+        { kind: ContextKind.Function },
+        { kind: ContextKind.Aggregation },
+      ],
     },
     {
       title: 'autocomplete binOp modifier or metric',
@@ -665,12 +714,25 @@ describe('computeStartCompletePosition test', () => {
 });
 
 describe('autocomplete promQL test', () => {
+  beforeEach(() => {
+    mockPrometheusServer();
+  });
   const testCases = [
+    {
+      title: 'offline empty expr',
+      expr: '',
+      pos: 0,
+      expectedResult: {
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 0,
+        to: 0,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
     {
       title: 'offline simple function/aggregation autocompletion',
       expr: 'go_',
       pos: 3,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
         from: 0,
@@ -682,7 +744,6 @@ describe('autocomplete promQL test', () => {
       title: 'offline function/aggregation autocompletion in aggregation',
       expr: 'sum()',
       pos: 4,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
         from: 4,
@@ -694,7 +755,6 @@ describe('autocomplete promQL test', () => {
       title: 'offline function/aggregation autocompletion in aggregation 2',
       expr: 'sum(ra)',
       pos: 6,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
         from: 4,
@@ -706,7 +766,6 @@ describe('autocomplete promQL test', () => {
       title: 'offline function/aggregation autocompletion in aggregation 3',
       expr: 'sum(rate())',
       pos: 9,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
         from: 9,
@@ -719,7 +778,6 @@ describe('autocomplete promQL test', () => {
       expr:
         'sum by (instance, job) ( sum_over(scrape_series_added[1h])) / sum by (instance, job) (sum_over_time(scrape_samples_scraped[1h])) > 0.1 and sum by(instance, job) (scrape_samples_scraped{) > 100',
       pos: 33,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
         from: 25,
@@ -731,7 +789,6 @@ describe('autocomplete promQL test', () => {
       title: 'autocomplete binOp modifier or metric',
       expr: 'metric_name / ignor',
       pos: 19,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, snippets),
         from: 14,
@@ -743,7 +800,6 @@ describe('autocomplete promQL test', () => {
       title: 'autocomplete binOp modifier or metric 2',
       expr: 'sum(http_requests_total{method="GET"} / o)',
       pos: 41,
-      prometheusClient: undefined,
       expectedResult: {
         options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, snippets),
         from: 40,
@@ -755,7 +811,6 @@ describe('autocomplete promQL test', () => {
       title: 'offline autocomplete labelName return nothing',
       expr: 'sum by ()',
       pos: 8, // cursor is between the bracket
-      prometheusClient: undefined,
       expectedResult: {
         options: [],
         from: 8,
@@ -854,7 +909,7 @@ describe('autocomplete promQL test', () => {
     {
       title: 'offline autocomplete aggregate operation modifier or binary operator',
       expr: 'sum() b',
-      pos: 7, // cursor is between the quotes
+      pos: 7, // cursor is after 'b'
       expectedResult: {
         options: ([] as Completion[]).concat(aggregateOpModifierTerms, binOpTerms),
         from: 6,
@@ -865,7 +920,7 @@ describe('autocomplete promQL test', () => {
     {
       title: 'offline autocomplete aggregate operation modifier or binary operator 2',
       expr: 'sum(rate(foo[5m])) an',
-      pos: 21, // cursor is between the quotes
+      pos: 21, // cursor is after the string 'an'
       expectedResult: {
         options: ([] as Completion[]).concat(aggregateOpModifierTerms, binOpTerms),
         from: 19,
@@ -1105,7 +1160,7 @@ describe('autocomplete promQL test', () => {
       },
     },
     {
-      title: 'autocomplete at modifiers',
+      title: 'offline autocomplete at modifiers',
       expr: '1 @ s',
       pos: 5,
       expectedResult: {
@@ -1115,12 +1170,70 @@ describe('autocomplete promQL test', () => {
         span: /^[a-zA-Z0-9_:]+$/,
       },
     },
+    {
+      title: 'online autocomplete of metrics',
+      expr: 'alert',
+      pos: 5,
+      conf: { remote: { url: 'http://localhost:8080' } },
+      expectedResult: {
+        options: ([] as Completion[]).concat(mockedMetricsTerms, functionIdentifierTerms, aggregateOpTerms, snippets),
+        from: 0,
+        to: 5,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'online autocomplete of label name corresponding to a metric',
+      expr: 'alertmanager_alerts{}',
+      pos: 20,
+      conf: { remote: { url: 'http://localhost:8080' } },
+      expectedResult: {
+        options: [
+          {
+            label: 'env',
+            type: 'constant',
+          },
+          {
+            label: 'instance',
+            type: 'constant',
+          },
+          {
+            label: 'job',
+            type: 'constant',
+          },
+          {
+            label: 'state',
+            type: 'constant',
+          },
+        ],
+        from: 20,
+        to: 20,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
+    {
+      title: 'online autocomplete of label value corresponding to a metric and a label name',
+      expr: 'alertmanager_alerts{env=""}',
+      pos: 25,
+      conf: { remote: { url: 'http://localhost:8080' } },
+      expectedResult: {
+        options: [
+          {
+            label: 'demo',
+            type: 'text',
+          },
+        ],
+        from: 25,
+        to: 25,
+        span: /^[a-zA-Z0-9_:]+$/,
+      },
+    },
   ];
   testCases.forEach((value) => {
     it(value.title, async () => {
       const state = createEditorState(value.expr);
       const context = new CompletionContext(state, value.pos, true);
-      const completion = new HybridComplete(value.prometheusClient);
+      const completion = newCompleteStrategy(value.conf);
       const result = await completion.promQL(context);
       chai.expect(value.expectedResult).to.deep.equal(result);
     });
