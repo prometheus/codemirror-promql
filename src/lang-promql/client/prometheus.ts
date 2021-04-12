@@ -53,17 +53,21 @@ export interface PrometheusClient {
   metricNames(prefix?: string): Promise<string[]>;
 }
 
+export interface CacheConfig {
+  // maxAge is the maximum amount of time that a cached completion item is valid before it needs to be refreshed.
+  // It is in milliseconds. Default value:  300 000 (5min)
+  maxAge?: number;
+  // the cache can be initialized with a list of metrics
+  initialMetricList?: string[];
+}
+
 export interface PrometheusConfig {
   url: string;
   lookbackInterval?: number;
   httpErrorHandler?: (error: any) => void;
   fetchFn?: FetchFn;
   // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
-  cache?: {
-    // maxAge is the maximum amount of time that a cached completion item is valid before it needs to be refreshed.
-    // It is in milliseconds. Default value:  300 000 (5min)
-    maxAge: number;
-  };
+  cache?: CacheConfig;
 }
 
 interface APIResponse<T> {
@@ -225,11 +229,15 @@ class Cache {
   private labelValues: LRUCache<string, string[]>;
   private labelNames: string[];
 
-  constructor(maxAge: number) {
+  constructor(config?: CacheConfig) {
+    const maxAge = config && config.maxAge ? config.maxAge : 5 * 60 * 1000;
     this.completeAssociation = new LRUCache<string, Map<string, Set<string>>>(maxAge);
     this.metricMetadata = {};
     this.labelValues = new LRUCache<string, string[]>(maxAge);
     this.labelNames = [];
+    if (config?.initialMetricList) {
+      this.setLabelValues('__name__', config.initialMetricList);
+    }
   }
 
   setAssociations(metricName: string, series: Map<string, string>[]): void {
@@ -300,9 +308,9 @@ export class CachedPrometheusClient implements PrometheusClient {
   private readonly cache: Cache;
   private readonly client: PrometheusClient;
 
-  constructor(client: PrometheusClient, maxAge = 5 * 60 * 1000) {
+  constructor(client: PrometheusClient, config?: CacheConfig) {
     this.client = client;
-    this.cache = new Cache(maxAge);
+    this.cache = new Cache(config);
   }
 
   labelNames(metricName?: string): Promise<string[]> {

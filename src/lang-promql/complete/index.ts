@@ -52,7 +52,7 @@ export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrat
     if (!isPrometheusConfig(conf.remote)) {
       return new HybridComplete(conf.remote, conf.maxMetricsMetadata);
     }
-    return new HybridComplete(new CachedPrometheusClient(new HTTPPrometheusClient(conf.remote), conf.remote.cache?.maxAge), conf.maxMetricsMetadata);
+    return new HybridComplete(new CachedPrometheusClient(new HTTPPrometheusClient(conf.remote), conf.remote.cache), conf.maxMetricsMetadata);
   }
   return new HybridComplete();
 }
