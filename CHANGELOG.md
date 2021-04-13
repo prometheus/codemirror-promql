@@ -1,3 +1,18 @@
+0.15.0 / 2021-04-13
+===================
+
+* **[Feature]**: Provide a way to inject an initial metric list for the autocompletion (#134)
+* **[Enhancement]**: Autocomplete metrics/function/aggregation when the editor is empty (#133)
+* **[Enhancement]**: Improve the documentation to reflect what the lib is providing. (#134)
+* **[Change]**: Export the essential interface in the root index of the lib. (#132)
+* **[Change]**: Downgrade the NodeJS version required (from 14 to 12) (#112)
+* **[BreakingChange]**: Support CommonJS module. (#130)
+
+Note that this requires to change the import path if you are using something not exported by the root index of lib. For
+example: `import { labelMatchersToString } from 'codemirror-promql/parser/matcher';`
+becomes `import { labelMatchersToString } from 'codemirror-promql/esm/parser/matcher';`
+or `import { labelMatchersToString } from 'codemirror-promql/cjs/parser/matcher';`
+
 0.14.1 / 2021-04-07
 ===================
 
