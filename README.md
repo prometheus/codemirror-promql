@@ -166,7 +166,7 @@ const promQL = new PromQLExtension().setComplete({ remote: { httpErrorHandler: (
 The default client has an embedded cache that is used to store the different metrics and labels retrieved from a remote
 Prometheus server.
 
-####### Max Age
+###### Max Age
 
 The data are stored in the cache for a limited amount of time defined by the variable `maxAge` which is by default 5
 minutes. The value must be defined in **milliseconds**.
@@ -175,7 +175,7 @@ minutes. The value must be defined in **milliseconds**.
 const promQL = new PromQLExtension().setComplete({ remote: { cache: { maxAge: 5 * 60 * 1000 } } })
 ```
 
-####### Initial Metric List
+###### Initial Metric List
 
 The cache can be initialized with a list of metrics name. It is useful when you already have the list of
 the metrics somewhere else in your application, and you would like to share this list with the embedded Prometheus
