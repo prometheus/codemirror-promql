@@ -46,6 +46,8 @@ export function mockPrometheusServer() {
     .replyWithFile(200, __dirname + '/metadata.json')
     .get('/api/v1/series')
     .query(true)
+    .replyWithFile(200, __dirname + '/alertmanager_alerts_series.json')
+    .post('/api/v1/series')
     .replyWithFile(200, __dirname + '/alertmanager_alerts_series.json');
 }
 
