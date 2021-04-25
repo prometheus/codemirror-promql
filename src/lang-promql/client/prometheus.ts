@@ -182,13 +182,16 @@ export class HTTPPrometheusClient implements PrometheusClient {
   series(metricName: string, matchers?: Matcher[], labelName?: string): Promise<Map<string, string>[]> {
     const end = new Date();
     const start = new Date(end.getTime() - this.lookbackInterval);
-    const params: URLSearchParams = new URLSearchParams({
+    const body: URLSearchParams = new URLSearchParams({
       start: start.toISOString(),
       end: end.toISOString(),
       'match[]': labelMatchersToString(metricName, matchers, labelName),
     });
     // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
-    return this.fetchAPI<Map<string, string>[]>(`${seriesEndpoint}?${params}`).catch((error) => {
+    return this.fetchAPI<Map<string, string>[]>(`${seriesEndpoint}`, {
+      method: 'post',
+      body: body,
+    }).catch((error) => {
       if (this.errorHandler) {
         this.errorHandler(error);
       }
@@ -200,8 +203,8 @@ export class HTTPPrometheusClient implements PrometheusClient {
     return this.labelValues('__name__');
   }
 
-  private fetchAPI<T>(resource: string): Promise<T> {
-    return this.fetchFn(this.url + resource)
+  private fetchAPI<T>(resource: string, init?: RequestInit): Promise<T> {
+    return this.fetchFn(this.url + resource, init)
       .then((res) => {
         if (!res.ok && ![badRequest, unprocessableEntity, serviceUnavailable].includes(res.status)) {
           throw new Error(res.statusText);
