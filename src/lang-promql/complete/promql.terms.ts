@@ -445,6 +445,11 @@ export const aggregateOpModifierTerms = [
   },
 ];
 
+export const numberTerms = [
+  { label: 'nan', info: 'not a number', type: 'constant' },
+  { label: 'inf', info: 'the infinite and beyond of the number', type: 'constant' },
+];
+
 export const snippets: readonly Completion[] = [
   {
     label: 'sum(rate(__input_vector__[5m]))',

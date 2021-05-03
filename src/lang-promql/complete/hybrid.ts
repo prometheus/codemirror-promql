@@ -36,6 +36,7 @@ import {
   EqlRegex,
   EqlSingle,
   Expr,
+  FunctionCallArgs,
   FunctionCallBody,
   GroupingLabel,
   GroupingLabels,
@@ -79,6 +80,7 @@ import {
   durationTerms,
   functionIdentifierTerms,
   matchOpTerms,
+  numberTerms,
   snippets,
 } from './promql.terms';
 import { Matcher } from '../types';
@@ -93,6 +95,7 @@ const autocompleteNodes: { [key: string]: Completion[] } = {
   functionIdentifier: functionIdentifierTerms,
   aggregateOp: aggregateOpTerms,
   aggregateOpModifier: aggregateOpModifierTerms,
+  number: numberTerms,
 };
 
 // ContextKind is the different possible value determinate by the autocompletion
@@ -112,6 +115,7 @@ export enum ContextKind {
   Offset,
   Bool,
   AtModifiers,
+  Number,
 }
 
 export interface Context {
@@ -280,7 +284,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       // 3. rate(foo[5m]) un --> offset or binOp should be autocompleted
       // 4. sum(http_requests_total{method="GET"} off) --> offset or binOp should be autocompleted
       // 5. sum(http_requests_total{method="GET"} / o) --> BinOpModifier + metric/function/aggregation
-      // All examples above gives a different tree each time but ends up to be treated in this case.
+      // All examples above give a different tree each time but ends up to be treated in this case.
       // But they all have the following common tree pattern:
       // Parent( Expr(...),
       //         ... ,
@@ -297,7 +301,8 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         result.push(
           { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
           { kind: ContextKind.Function },
-          { kind: ContextKind.Aggregation }
+          { kind: ContextKind.Aggregation },
+          { kind: ContextKind.Number }
         );
         break;
       }
@@ -310,7 +315,8 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
             { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
             { kind: ContextKind.Function },
             { kind: ContextKind.Aggregation },
-            { kind: ContextKind.BinOpModifier }
+            { kind: ContextKind.BinOpModifier },
+            { kind: ContextKind.Number }
           );
           // in  case the BinaryExpr is a comparison, we should autocomplete the `bool` keyword. But only if it is not present.
           // When the `bool` keyword is NOT present, then the expression looks like this:
@@ -330,12 +336,22 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
           { kind: ContextKind.Function },
           { kind: ContextKind.Aggregation }
         );
+        if (parent.type.id !== FunctionCallArgs && parent.type.id !== MatrixSelector) {
+          // it's too avoid to autocomplete a number in situation where it shouldn't.
+          // Like with `sum by(rat)`
+          result.push({ kind: ContextKind.Number });
+        }
       }
       break;
     case PromQL:
       if (!node.firstChild) {
         // this situation can happen when there is nothing in the text area and the user is explicitly triggering the autocompletion (with ctrl + space)
-        result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+        result.push(
+          { kind: ContextKind.MetricName, metricName: '' },
+          { kind: ContextKind.Function },
+          { kind: ContextKind.Aggregation },
+          { kind: ContextKind.Number }
+        );
       }
       break;
     case GroupingLabels:
@@ -394,6 +410,8 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         // ))
         // So we should continue to autocomplete a duration
         result.push({ kind: ContextKind.Duration });
+      } else {
+        result.push({ kind: ContextKind.Number });
       }
       break;
     case Duration:
@@ -512,6 +530,11 @@ export class HybridComplete implements CompleteStrategy {
         case ContextKind.AtModifiers:
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNodes.atModifier);
+          });
+          break;
+        case ContextKind.Number:
+          asyncResult = asyncResult.then((result) => {
+            return result.concat(autocompleteNodes.number);
           });
           break;
         case ContextKind.MetricName:
