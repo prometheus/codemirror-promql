@@ -446,8 +446,8 @@ export const aggregateOpModifierTerms = [
 ];
 
 export const numberTerms = [
-  { label: 'nan', info: 'not a number', type: 'constant' },
-  { label: 'inf', info: 'the infinite and beyond of the number', type: 'constant' },
+  { label: 'nan', info: 'Floating-point NaN value', type: 'constant' },
+  { label: 'inf', info: 'Floating-point infinity', type: 'constant' },
 ];
 
 export const snippets: readonly Completion[] = [
