@@ -32,7 +32,8 @@ import {
   binOpTerms,
   durationTerms,
   functionIdentifierTerms,
-  matchOpTerms, numberTerms,
+  matchOpTerms,
+  numberTerms,
   snippets,
 } from './promql.terms';
 import { EqlSingle, Neq } from 'lezer-promql';
