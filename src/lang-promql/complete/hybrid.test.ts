@@ -33,6 +33,7 @@ import {
   durationTerms,
   functionIdentifierTerms,
   matchOpTerms,
+  numberTerms,
   snippets,
 } from './promql.terms';
 import { EqlSingle, Neq } from 'lezer-promql';
@@ -52,10 +53,11 @@ describe('analyzeCompletion test', () => {
         },
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
+        { kind: ContextKind.Number },
       ],
     },
     {
-      title: 'simple metric autocompletion',
+      title: 'simple metric & number autocompletion',
       expr: 'go_',
       pos: 3, // cursor is at the end of the expr
       expectedContext: [
@@ -65,6 +67,7 @@ describe('analyzeCompletion test', () => {
         },
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
+        { kind: ContextKind.Number },
       ],
     },
     {
@@ -120,7 +123,7 @@ describe('analyzeCompletion test', () => {
       ],
     },
     {
-      title: 'autocomplete binOp modifier or metric',
+      title: 'autocomplete binOp modifier or metric or number',
       expr: 'metric_name / ignor',
       pos: 19,
       expectedContext: [
@@ -128,10 +131,11 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
       ],
     },
     {
-      title: 'autocomplete binOp modifier or metric 2',
+      title: 'autocomplete binOp modifier or metric or number 2',
       expr: 'sum(http_requests_total{method="GET"} / o)',
       pos: 41,
       expectedContext: [
@@ -139,10 +143,11 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 1',
+      title: 'autocomplete bool/binOp modifier/metric/number 1',
       expr: '1 > b)',
       pos: 5,
       expectedContext: [
@@ -150,11 +155,12 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 2',
+      title: 'autocomplete bool/binOp modifier/metric/number 2',
       expr: '1 == b)',
       pos: 6,
       expectedContext: [
@@ -162,11 +168,12 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 3',
+      title: 'autocomplete bool/binOp modifier/metric/number 3',
       expr: '1 != b)',
       pos: 6,
       expectedContext: [
@@ -174,11 +181,12 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 4',
+      title: 'autocomplete bool/binOp modifier/metric/number 4',
       expr: '1 > b)',
       pos: 5,
       expectedContext: [
@@ -186,11 +194,12 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 5',
+      title: 'autocomplete bool/binOp modifier/metric/number 5',
       expr: '1 >= b)',
       pos: 6,
       expectedContext: [
@@ -198,11 +207,12 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 6',
+      title: 'autocomplete bool/binOp modifier/metric/number 6',
       expr: '1 <= b)',
       pos: 6,
       expectedContext: [
@@ -210,11 +220,12 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
     {
-      title: 'autocomplete bool or binOp modifier or metric 7',
+      title: 'autocomplete bool/binOp modifier/metric/number 7',
       expr: '1 < b)',
       pos: 5,
       expectedContext: [
@@ -222,6 +233,7 @@ describe('analyzeCompletion test', () => {
         { kind: ContextKind.Function },
         { kind: ContextKind.Aggregation },
         { kind: ContextKind.BinOpModifier },
+        { kind: ContextKind.Number },
         { kind: ContextKind.Bool },
       ],
     },
@@ -723,18 +735,18 @@ describe('autocomplete promQL test', () => {
       expr: '',
       pos: 0,
       expectedResult: {
-        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, numberTerms, snippets),
         from: 0,
         to: 0,
         span: /^[a-zA-Z0-9_:]+$/,
       },
     },
     {
-      title: 'offline simple function/aggregation autocompletion',
+      title: 'offline simple function/aggregation/number autocompletion',
       expr: 'go_',
       pos: 3,
       expectedResult: {
-        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, snippets),
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, numberTerms, snippets),
         from: 0,
         to: 3,
         span: /^[a-zA-Z0-9_:]+$/,
@@ -786,22 +798,22 @@ describe('autocomplete promQL test', () => {
       },
     },
     {
-      title: 'autocomplete binOp modifier or metric',
+      title: 'autocomplete binOp modifier/metric/number',
       expr: 'metric_name / ignor',
       pos: 19,
       expectedResult: {
-        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, snippets),
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, numberTerms, snippets),
         from: 14,
         to: 19,
         span: /^[a-zA-Z0-9_:]+$/,
       },
     },
     {
-      title: 'autocomplete binOp modifier or metric 2',
+      title: 'autocomplete binOp modifier/metric/number 2',
       expr: 'sum(http_requests_total{method="GET"} / o)',
       pos: 41,
       expectedResult: {
-        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, snippets),
+        options: ([] as Completion[]).concat(functionIdentifierTerms, aggregateOpTerms, binOpModifierTerms, numberTerms, snippets),
         from: 40,
         to: 41,
         span: /^[a-zA-Z0-9_:]+$/,
@@ -1176,7 +1188,7 @@ describe('autocomplete promQL test', () => {
       pos: 5,
       conf: { remote: { url: 'http://localhost:8080' } },
       expectedResult: {
-        options: ([] as Completion[]).concat(mockedMetricsTerms, functionIdentifierTerms, aggregateOpTerms, snippets),
+        options: ([] as Completion[]).concat(mockedMetricsTerms, functionIdentifierTerms, aggregateOpTerms, numberTerms, snippets),
         from: 0,
         to: 5,
         span: /^[a-zA-Z0-9_:]+$/,

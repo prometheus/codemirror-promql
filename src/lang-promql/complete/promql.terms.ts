@@ -445,6 +445,11 @@ export const aggregateOpModifierTerms = [
   },
 ];
 
+export const numberTerms = [
+  { label: 'nan', info: 'Floating-point NaN value', type: 'constant' },
+  { label: 'inf', info: 'Floating-point infinity', type: 'constant' },
+];
+
 export const snippets: readonly Completion[] = [
   {
     label: 'sum(rate(__input_vector__[5m]))',
