@@ -70,14 +70,7 @@ import {
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
-import {
-  buildLabelMatchers,
-  containsAtLeastOneChild,
-  containsChild,
-  retrieveAllRecursiveNodes,
-  walkBackward,
-  walkThrough
-} from '../parser';
+import { buildLabelMatchers, containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from '../parser';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -403,7 +396,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
           kind: ContextKind.LabelValue,
           metricName: metricName,
           labelName: labelName,
-          matchers: labelMatchers
+          matchers: labelMatchers,
         });
       }
       break;
@@ -430,10 +423,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       // In this case we are in the given situation:
       //       sum() or in rate()
       // with the cursor between the bracket. So we can autocomplete the metric, the function and the aggregation.
-      result.push({
-        kind: ContextKind.MetricName,
-        metricName: ''
-      }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+      result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
