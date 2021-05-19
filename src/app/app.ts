@@ -29,6 +29,12 @@ import { customTheme, promQLHighlightMaterialTheme } from './theme';
 const promqlExtension = new PromQLExtension();
 let editor: EditorView;
 
+function getFullLanguage(): boolean {
+  const completionSelect = document.getElementById('fullLanguage') as HTMLSelectElement;
+  const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
+  return completionValue === 'yes';
+}
+
 function setCompletion() {
   const completionSelect = document.getElementById('completion') as HTMLSelectElement;
   const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
@@ -59,7 +65,7 @@ function createEditor() {
   }
   editor = new EditorView({
     state: EditorState.create({
-      extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme, customTheme],
+      extensions: [basicSetup, promqlExtension.asExtension(getFullLanguage()), promQLHighlightMaterialTheme, customTheme],
       doc: doc,
     }),
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

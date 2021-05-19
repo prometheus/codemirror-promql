@@ -70,7 +70,14 @@ import {
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
-import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough, buildLabelMatchers } from '../parser';
+import {
+  buildLabelMatchers,
+  containsAtLeastOneChild,
+  containsChild,
+  retrieveAllRecursiveNodes,
+  walkBackward,
+  walkThrough
+} from '../parser';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -297,14 +304,9 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
 
       const parent = node.parent?.parent?.parent?.parent;
       if (!parent) {
-        // this case is normally impossible since by definition, the identifier has 3 parents,
-        // and in Lexer, there is always a default parent in top of everything.
-        result.push(
-          { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
-          { kind: ContextKind.Function },
-          { kind: ContextKind.Aggregation },
-          { kind: ContextKind.Number }
-        );
+        // this case can be possible if the topNode is not anymore PromQL but MetricName.
+        // In this particular case, then we just want to autocomplete the metric
+        result.push({ kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) });
         break;
       }
       // now we have to know if we have two Expr in the direct children of the `parent`
@@ -397,7 +399,12 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         const metricName = getMetricNameInVectorSelector(node, state);
         // finally get the full matcher available
         const labelMatchers = buildLabelMatchers(retrieveAllRecursiveNodes(walkBackward(node, LabelMatchList), LabelMatchList, LabelMatcher), state);
-        result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName, matchers: labelMatchers });
+        result.push({
+          kind: ContextKind.LabelValue,
+          metricName: metricName,
+          labelName: labelName,
+          matchers: labelMatchers
+        });
       }
       break;
     case NumberLiteral:
@@ -423,7 +430,10 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
       // In this case we are in the given situation:
       //       sum() or in rate()
       // with the cursor between the bracket. So we can autocomplete the metric, the function and the aggregation.
-      result.push({ kind: ContextKind.MetricName, metricName: '' }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
+      result.push({
+        kind: ContextKind.MetricName,
+        metricName: ''
+      }, { kind: ContextKind.Function }, { kind: ContextKind.Aggregation });
       break;
     case Neq:
       if (node.parent?.type.id === MatchOp) {
@@ -483,11 +493,13 @@ export class HybridComplete implements CompleteStrategy {
     for (const context of contexts) {
       switch (context.kind) {
         case ContextKind.Aggregation:
+          completeSnippet = true;
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNodes.aggregateOp);
           });
           break;
         case ContextKind.Function:
+          completeSnippet = true;
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNodes.functionIdentifier);
           });
@@ -540,7 +552,6 @@ export class HybridComplete implements CompleteStrategy {
           break;
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
-            completeSnippet = true;
             return this.autocompleteMetricName(result, context);
           });
           break;
