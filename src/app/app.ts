@@ -32,7 +32,7 @@ let editor: EditorView;
 function getFullLanguage(): boolean {
   const completionSelect = document.getElementById('fullLanguage') as HTMLSelectElement;
   const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
-  return completionValue === 'yes';
+  return completionValue === 'promql';
 }
 
 function setCompletion() {
