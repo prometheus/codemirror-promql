@@ -220,13 +220,6 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         result.push({ kind: ContextKind.Duration });
         break;
       }
-      if (node.parent?.type.id === StepInvariantExpr) {
-        // we are likely in the given situation:
-        //   `expr @ s`
-        // we can autocomplete start / end
-        result.push({ kind: ContextKind.AtModifiers });
-        break;
-      }
       if (node.parent?.type.id === SubqueryExpr && containsAtLeastOneChild(node.parent, Duration)) {
         // we are likely in the given situation:
         //    `rate(foo[5d:5])`
@@ -246,14 +239,22 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
     case Identifier:
       // sometimes an Identifier has an error has parent. This should be treated in priority
       if (node.parent?.type.id === 0) {
-        if (node.parent.parent?.type.id === AggregateExpr) {
+        const parent = node.parent;
+        if (parent.parent?.type.id === StepInvariantExpr) {
+          // we are likely in the given situation:
+          //   `expr @ s`
+          // we can autocomplete start / end
+          result.push({ kind: ContextKind.AtModifiers });
+          break;
+        }
+        if (parent.parent?.type.id === AggregateExpr) {
           // it matches 'sum() b'. So here we can autocomplete:
           // - the aggregate operation modifier
           // - the binary operation (since it's not mandatory to have an aggregate operation modifier)
           result.push({ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp });
           break;
         }
-        if (node.parent.parent?.type.id === VectorSelector) {
+        if (parent.parent?.type.id === VectorSelector) {
           // it matches 'sum b'. So here we also have to autocomplete the aggregate operation modifier only
           // if the associated metricIdentifier is matching an aggregation operation.
           // Note: here is the corresponding tree in order to understand the situation:
