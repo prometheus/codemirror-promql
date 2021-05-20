@@ -29,8 +29,8 @@ import { customTheme, promQLHighlightMaterialTheme } from './theme';
 const promqlExtension = new PromQLExtension();
 let editor: EditorView;
 
-function getFullLanguage(): LanguageType {
-  const completionSelect = document.getElementById('fullLanguage') as HTMLSelectElement;
+function getLanguageType(): LanguageType {
+  const completionSelect = document.getElementById('languageType') as HTMLSelectElement;
   const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
   switch (completionValue) {
     case 'promql':
@@ -72,7 +72,7 @@ function createEditor() {
   }
   editor = new EditorView({
     state: EditorState.create({
-      extensions: [basicSetup, promqlExtension.asExtension(getFullLanguage()), promQLHighlightMaterialTheme, customTheme],
+      extensions: [basicSetup, promqlExtension.asExtension(getLanguageType()), promQLHighlightMaterialTheme, customTheme],
       doc: doc,
     }),
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
