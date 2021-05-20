@@ -1,3 +1,14 @@
+0.16.0 / 2021-05-20
+===================
+
+* **[Feature]**: Support partial PromQL language called `MetricName`. Can be used to autocomplete only the metric
+  name. (#142)
+* **[Feature]**: Autocomplete `NaN` and `Inf` (#141)
+* **[Enhancement]**: Fetch series using the HTTP `POST` method (#139)
+* **[Enhancement]**: Upgrade lezer-promql that fixed the parsing of metric names starting with `Inf`/`NaN` like infra (#142)  
+* **[BreakingChange]**: The constant `promQLLanguage` has been changed to be a function. It takes a `LanguageType` as a 
+  parameter (#142)
+
 0.15.0 / 2021-04-13
 ===================
 
