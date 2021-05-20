@@ -70,7 +70,7 @@ import {
 } from 'lezer-promql';
 import { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
-import { containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough, buildLabelMatchers } from '../parser';
+import { buildLabelMatchers, containsAtLeastOneChild, containsChild, retrieveAllRecursiveNodes, walkBackward, walkThrough } from '../parser';
 import {
   aggregateOpModifierTerms,
   aggregateOpTerms,
@@ -220,13 +220,6 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         result.push({ kind: ContextKind.Duration });
         break;
       }
-      if (node.parent?.type.id === StepInvariantExpr) {
-        // we are likely in the given situation:
-        //   `expr @ s`
-        // we can autocomplete start / end
-        result.push({ kind: ContextKind.AtModifiers });
-        break;
-      }
       if (node.parent?.type.id === SubqueryExpr && containsAtLeastOneChild(node.parent, Duration)) {
         // we are likely in the given situation:
         //    `rate(foo[5d:5])`
@@ -246,14 +239,22 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
     case Identifier:
       // sometimes an Identifier has an error has parent. This should be treated in priority
       if (node.parent?.type.id === 0) {
-        if (node.parent.parent?.type.id === AggregateExpr) {
+        const parent = node.parent;
+        if (parent.parent?.type.id === StepInvariantExpr) {
+          // we are likely in the given situation:
+          //   `expr @ s`
+          // we can autocomplete start / end
+          result.push({ kind: ContextKind.AtModifiers });
+          break;
+        }
+        if (parent.parent?.type.id === AggregateExpr) {
           // it matches 'sum() b'. So here we can autocomplete:
           // - the aggregate operation modifier
           // - the binary operation (since it's not mandatory to have an aggregate operation modifier)
           result.push({ kind: ContextKind.AggregateOpModifier }, { kind: ContextKind.BinOp });
           break;
         }
-        if (node.parent.parent?.type.id === VectorSelector) {
+        if (parent.parent?.type.id === VectorSelector) {
           // it matches 'sum b'. So here we also have to autocomplete the aggregate operation modifier only
           // if the associated metricIdentifier is matching an aggregation operation.
           // Note: here is the corresponding tree in order to understand the situation:
@@ -296,14 +297,9 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
 
       const parent = node.parent?.parent?.parent?.parent;
       if (!parent) {
-        // this case is normally impossible since by definition, the identifier has 3 parents,
-        // and in Lexer, there is always a default parent in top of everything.
-        result.push(
-          { kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) },
-          { kind: ContextKind.Function },
-          { kind: ContextKind.Aggregation },
-          { kind: ContextKind.Number }
-        );
+        // this case can be possible if the topNode is not anymore PromQL but MetricName.
+        // In this particular case, then we just want to autocomplete the metric
+        result.push({ kind: ContextKind.MetricName, metricName: state.sliceDoc(node.from, node.to) });
         break;
       }
       // now we have to know if we have two Expr in the direct children of the `parent`
@@ -396,7 +392,12 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
         const metricName = getMetricNameInVectorSelector(node, state);
         // finally get the full matcher available
         const labelMatchers = buildLabelMatchers(retrieveAllRecursiveNodes(walkBackward(node, LabelMatchList), LabelMatchList, LabelMatcher), state);
-        result.push({ kind: ContextKind.LabelValue, metricName: metricName, labelName: labelName, matchers: labelMatchers });
+        result.push({
+          kind: ContextKind.LabelValue,
+          metricName: metricName,
+          labelName: labelName,
+          matchers: labelMatchers,
+        });
       }
       break;
     case NumberLiteral:
@@ -482,11 +483,13 @@ export class HybridComplete implements CompleteStrategy {
     for (const context of contexts) {
       switch (context.kind) {
         case ContextKind.Aggregation:
+          completeSnippet = true;
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNodes.aggregateOp);
           });
           break;
         case ContextKind.Function:
+          completeSnippet = true;
           asyncResult = asyncResult.then((result) => {
             return result.concat(autocompleteNodes.functionIdentifier);
           });
@@ -539,7 +542,6 @@ export class HybridComplete implements CompleteStrategy {
           break;
         case ContextKind.MetricName:
           asyncResult = asyncResult.then((result) => {
-            completeSnippet = true;
             return this.autocompleteMetricName(result, context);
           });
           break;

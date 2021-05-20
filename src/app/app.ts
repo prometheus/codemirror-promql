@@ -23,11 +23,24 @@
 import { basicSetup } from '@codemirror/basic-setup';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { PromQLExtension } from '../lang-promql';
+import { LanguageType, PromQLExtension } from '../lang-promql';
 import { customTheme, promQLHighlightMaterialTheme } from './theme';
 
 const promqlExtension = new PromQLExtension();
 let editor: EditorView;
+
+function getLanguageType(): LanguageType {
+  const completionSelect = document.getElementById('languageType') as HTMLSelectElement;
+  const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
+  switch (completionValue) {
+    case 'promql':
+      return LanguageType.PromQL;
+    case 'metricName':
+      return LanguageType.MetricName;
+    default:
+      return LanguageType.PromQL;
+  }
+}
 
 function setCompletion() {
   const completionSelect = document.getElementById('completion') as HTMLSelectElement;
@@ -59,7 +72,7 @@ function createEditor() {
   }
   editor = new EditorView({
     state: EditorState.create({
-      extensions: [basicSetup, promqlExtension.asExtension(), promQLHighlightMaterialTheme, customTheme],
+      extensions: [basicSetup, promqlExtension.asExtension(getLanguageType()), promQLHighlightMaterialTheme, customTheme],
       doc: doc,
     }),
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
