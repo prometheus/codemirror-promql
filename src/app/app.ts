@@ -23,16 +23,23 @@
 import { basicSetup } from '@codemirror/basic-setup';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { PromQLExtension } from '../lang-promql';
+import { LanguageType, PromQLExtension } from '../lang-promql';
 import { customTheme, promQLHighlightMaterialTheme } from './theme';
 
 const promqlExtension = new PromQLExtension();
 let editor: EditorView;
 
-function getFullLanguage(): boolean {
+function getFullLanguage(): LanguageType {
   const completionSelect = document.getElementById('fullLanguage') as HTMLSelectElement;
   const completionValue = completionSelect.options[completionSelect.selectedIndex].value;
-  return completionValue === 'promql';
+  switch (completionValue) {
+    case 'promql':
+      return LanguageType.PromQL;
+    case 'metricName':
+      return LanguageType.MetricName;
+    default:
+      return LanguageType.PromQL;
+  }
 }
 
 function setCompletion() {

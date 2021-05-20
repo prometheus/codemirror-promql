@@ -28,7 +28,12 @@ import { LintStrategy, newLintStrategy, promQLLinter } from './lint';
 import { CompletionContext } from '@codemirror/autocomplete';
 import { LezerLanguage } from '@codemirror/language';
 
-function promQLLanguage(top: string) {
+export enum LanguageType {
+  PromQL = 'PromQL',
+  MetricName = 'MetricName',
+}
+
+function promQLLanguage(top: LanguageType) {
   return LezerLanguage.define({
     parser: parser.configure({
       top: top,
@@ -105,9 +110,8 @@ export class PromQLExtension {
     return this;
   }
 
-  asExtension(fullPromQLLanguage = true): Extension {
-    const top = fullPromQLLanguage ? 'PromQL' : 'MetricName';
-    const language = promQLLanguage(top);
+  asExtension(languageType = LanguageType.PromQL): Extension {
+    const language = promQLLanguage(languageType);
     let extension: Extension = [language];
     if (this.enableCompletion) {
       const completion = language.data.of({
