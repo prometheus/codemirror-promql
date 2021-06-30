@@ -142,8 +142,8 @@ const promQL = new PromQLExtension().setComplete({ remote: { fetchFn: myHTTPClie
 
 ###### Duration to use for looking back when retrieving metrics / labels
 
-If you are a bit familiar with the Prometheus API, you are aware that you can pass a time interval that is used to
-tell to Prometheus which period of time you are looking for when retrieving metadata (like metrics / labels).
+If you are a bit familiar with the Prometheus API, you are aware that you can pass a time interval that is used to tell
+to Prometheus which period of time you are looking for when retrieving metadata (like metrics / labels).
 
 In case you would like to provide your own duration, you can override the variable `lookbackInterval`. By default, the
 value is `12 * 60 * 60 * 1000` (12h). The value must be defined in **milliseconds**.
@@ -159,6 +159,17 @@ Prometheus.
 
 ```typescript
 const promQL = new PromQLExtension().setComplete({ remote: { httpErrorHandler: (error: any) => console.error(error) } })
+```
+
+###### HTTP method used
+
+By default, the Prometheus client will use the HTTP method `POST` when contacting Prometheus for the
+endpoints `/api/v1/labels` and `/api/v1/series`.
+
+You can change it to use the HTTP method `GET` if you prefer.
+
+```typescript
+const promQL = new PromQLExtension().setComplete({ remote: { httpMethod: 'GET' } })
 ```
 
 ###### Cache
@@ -177,24 +188,25 @@ const promQL = new PromQLExtension().setComplete({ remote: { cache: { maxAge: 5 
 
 ###### Initial Metric List
 
-The cache can be initialized with a list of metrics name. It is useful when you already have the list of
-the metrics somewhere else in your application, and you would like to share this list with the embedded Prometheus
-client of `codemirror-promql`.
+The cache can be initialized with a list of metric names. It is useful when you already have the list of the metrics
+somewhere else in your application, and you would like to share this list with the embedded Prometheus client
+of `codemirror-promql`.
 
 Note: keep in mind that this list will be kept into the embedded Prometheus client until the time defined by `maxAge`.
 
 ```typescript
 const promQL = new PromQLExtension().setComplete({
-  remote: {
-    cache: {
-      initialMetricList: ['ALERTS',
-        'ALERTS_FOR_STATE',
-        'alertmanager_alerts',
-        'alertmanager_alerts_invalid_total',
-        'alertmanager_alerts_received_total',
-      ]
+    remote: {
+        cache: {
+            initialMetricList: [
+                'ALERTS',
+                'ALERTS_FOR_STATE',
+                'alertmanager_alerts',
+                'alertmanager_alerts_invalid_total',
+                'alertmanager_alerts_received_total',
+            ]
+        }
     }
-  }
 })
 ```
 

@@ -68,6 +68,7 @@ export interface PrometheusConfig {
   fetchFn?: FetchFn;
   // cache will allow user to change the configuration of the cached Prometheus client (which is used by default)
   cache?: CacheConfig;
+  httpMethod?: 'POST' | 'GET';
 }
 
 interface APIResponse<T> {
@@ -88,6 +89,7 @@ export class HTTPPrometheusClient implements PrometheusClient {
   private readonly lookbackInterval = 60 * 60 * 1000 * 12; //12 hours
   private readonly url: string;
   private readonly errorHandler?: (error: any) => void;
+  private readonly httpMethod: 'POST' | 'GET' = 'POST';
   // For some reason, just assigning via "= fetch" here does not end up executing fetch correctly
   // when calling it, thus the indirection via another function wrapper.
   private readonly fetchFn: FetchFn = (input: RequestInfo, init?: RequestInit): Promise<Response> => fetch(input, init);
@@ -101,18 +103,27 @@ export class HTTPPrometheusClient implements PrometheusClient {
     if (config.fetchFn) {
       this.fetchFn = config.fetchFn;
     }
+    if (config.httpMethod) {
+      this.httpMethod = config.httpMethod;
+    }
   }
 
   labelNames(metricName?: string): Promise<string[]> {
     const end = new Date();
     const start = new Date(end.getTime() - this.lookbackInterval);
     if (metricName === undefined || metricName === '') {
-      const params: URLSearchParams = new URLSearchParams({
-        start: start.toISOString(),
-        end: end.toISOString(),
-      });
+      const request = this.buildRequest(
+        labelsEndpoint,
+        new URLSearchParams({
+          start: start.toISOString(),
+          end: end.toISOString(),
+        })
+      );
       // See https://prometheus.io/docs/prometheus/latest/querying/api/#getting-label-names
-      return this.fetchAPI<string[]>(`${labelsEndpoint}?${params}`).catch((error) => {
+      return this.fetchAPI<string[]>(request.uri, {
+        method: this.httpMethod,
+        body: request.body,
+      }).catch((error) => {
         if (this.errorHandler) {
           this.errorHandler(error);
         }
@@ -182,15 +193,18 @@ export class HTTPPrometheusClient implements PrometheusClient {
   series(metricName: string, matchers?: Matcher[], labelName?: string): Promise<Map<string, string>[]> {
     const end = new Date();
     const start = new Date(end.getTime() - this.lookbackInterval);
-    const body: URLSearchParams = new URLSearchParams({
-      start: start.toISOString(),
-      end: end.toISOString(),
-      'match[]': labelMatchersToString(metricName, matchers, labelName),
-    });
+    const request = this.buildRequest(
+      seriesEndpoint,
+      new URLSearchParams({
+        start: start.toISOString(),
+        end: end.toISOString(),
+        'match[]': labelMatchersToString(metricName, matchers, labelName),
+      })
+    );
     // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
-    return this.fetchAPI<Map<string, string>[]>(`${seriesEndpoint}`, {
-      method: 'post',
-      body: body,
+    return this.fetchAPI<Map<string, string>[]>(request.uri, {
+      method: this.httpMethod,
+      body: request.body,
     }).catch((error) => {
       if (this.errorHandler) {
         this.errorHandler(error);
@@ -221,6 +235,16 @@ export class HTTPPrometheusClient implements PrometheusClient {
         }
         return apiRes.data;
       });
+  }
+
+  private buildRequest(endpoint: string, params: URLSearchParams) {
+    let uri = endpoint;
+    let body: URLSearchParams | null = params;
+    if (this.httpMethod === 'GET') {
+      uri = `${uri}?${params}`;
+      body = null;
+    }
+    return { uri, body };
   }
 }
 
