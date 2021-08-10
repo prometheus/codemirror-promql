@@ -260,6 +260,12 @@ export const functionIdentifierTerms = [
     type: 'function',
   },
   {
+    label: 'present_over_time',
+    detail: 'function',
+    info: 'the value 1 for any series in the specified interval',
+    type: 'function',
+  },
+  {
     label: 'quantile_over_time',
     detail: 'function',
     info: 'Calculate value quantiles over time for input series',
