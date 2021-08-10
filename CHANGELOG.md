@@ -1,3 +1,9 @@
+0.17.0 / 2021-08-10
+===================
+
+* **[Feature]**: Support `present_over_time`
+* **[Feature]**: HTTP method used to contact Prometheus is now configurable.
+
 0.16.0 / 2021-05-20
 ===================
 
