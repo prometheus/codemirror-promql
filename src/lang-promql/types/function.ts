@@ -55,6 +55,7 @@ import {
   Minute,
   Month,
   PredictLinear,
+  PresentOverTime,
   QuantileOverTime,
   Rate,
   Resets,
@@ -292,6 +293,12 @@ const promqlFunctions: { [key: number]: PromQLFunction } = {
   [PredictLinear]: {
     name: 'predict_linear',
     argTypes: [ValueType.matrix, ValueType.scalar],
+    variadic: 0,
+    returnType: ValueType.vector,
+  },
+  [PresentOverTime]: {
+    name: 'present_over_time',
+    argTypes: [ValueType.matrix],
     variadic: 0,
     returnType: ValueType.vector,
   },
