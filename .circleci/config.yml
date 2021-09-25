@@ -2,10 +2,10 @@ version: 2.1
 orbs:
   node: circleci/node@4.2.0
 jobs:
-  build-lib:
+  build:
     executor:
       name: node/default
-      tag: '12.16.0'
+      tag: '16.10.0'
     steps:
       - checkout
       - node/install-packages
@@ -14,28 +14,20 @@ jobs:
           root: ~/project
           paths:
             - lib
-  build-app:
-    executor:
-      name: node/default
-      tag: '12.16.0'
-    steps:
-      - checkout
-      - node/install-packages
-      - run: npm run build-app
 
-  lint-lib:
+  lint:
     executor:
       name: node/default
-      tag: '12.16.0'
+      tag: '16.10.0'
     steps:
       - checkout
       - node/install-packages
       - run: npm run lint
 
-  test-lib:
+  test:
     executor:
       name: node/default
-      tag: '12.16.0'
+      tag: '16.10.0'
     steps:
       - checkout
       - node/install-packages
@@ -45,7 +37,7 @@ jobs:
   publish:
     executor:
       name: node/default
-      tag: '12.16.0'
+      tag: '16.10.0'
     steps:
       - checkout
       - attach_workspace:
@@ -53,35 +45,31 @@ jobs:
       - run:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/project/.npmrc
-      - run: npm publish ~/project/lib --access public
+      - run: npm publish ~/project --access public
 
 workflows:
   version: 2
   test-deploy:
     jobs:
-      - build-lib:
+      - build:
           filters:
             tags:
               only: /.*/
-      - build-app:
+      - lint:
+          requires:
+            - build
           filters:
             tags:
               ignore: /.*/
-      - lint-lib:
+      - test:
           requires:
-            - build-lib
-          filters:
-            tags:
-              ignore: /.*/
-      - test-lib:
-          requires:
-            - build-lib
+            - build
           filters:
             tags:
               ignore: /.*/
       - publish:
           requires:
-            - build-lib
+            - build
           filters:
             tags:
               only: /.*/
