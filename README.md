@@ -253,4 +253,4 @@ or [send a pull request](https://github.com/prometheus-community/codemirror-prom
 
 ## License
 
-[MIT](./LICENSE)
+[Apache 2.0](./LICENSE)
