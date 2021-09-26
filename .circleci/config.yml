@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  node: circleci/node@4.2.0
+  node: circleci/node@4.7.0
 jobs:
   build:
     executor:
@@ -8,12 +8,14 @@ jobs:
       tag: '16.10.0'
     steps:
       - checkout
-      - node/install-packages
+      - node/install-packages:
+          cache-path: ~/project/node_modules
+          override-ci-command: npm install
       - run: npm run build
       - persist_to_workspace:
           root: ~/project
           paths:
-            - lib
+            - dist
 
   lint:
     executor:
@@ -21,7 +23,9 @@ jobs:
       tag: '16.10.0'
     steps:
       - checkout
-      - node/install-packages
+      - node/install-packages:
+          cache-path: ~/project/node_modules
+          override-ci-command: npm install
       - run: npm run lint
 
   test:
@@ -30,8 +34,10 @@ jobs:
       tag: '16.10.0'
     steps:
       - checkout
-      - node/install-packages
-      - run: npm run test-coverage
+      - node/install-packages:
+          cache-path: ~/project/node_modules
+          override-ci-command: npm install
+      - run: npm run test:coverage
       - run: npm run codecov
 
   publish:
