@@ -10,11 +10,13 @@ and autocompletion for PromQL ([Prometheus Query Language](https://prometheus.io
 
 ![preview](https://user-images.githubusercontent.com/4548045/95660829-d5e4b680-0b2a-11eb-9ecb-41dca6396273.gif)
 
-## Where does it come from?
+## Status
 
-The authoritative copy of this code lives in `prometheus/prometheus` and is synced to 
-`prometheus/codemirror-promql` on a regular basis by a bot. Please contribute any code changes to the code 
-in https://github.com/prometheus/prometheus/tree/main/web/ui/module/codemirror-promql.
+This package is deprecated. It has been fully migrated to the repository prometheus/prometheus, and it is published
+under the npm organization `@prometheus-io`.
+
+See the corresponding [readme](https://github.com/prometheus/prometheus/blob/main/web/ui/module/codemirror-promql/README.md)
+for further information.
 
 ### Installation
 
